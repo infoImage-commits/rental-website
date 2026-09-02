@@ -43,7 +43,7 @@ const rules: Rule[] = [
   {
     title: "Apartment and Resort Care",
     body: "Treat the apartment and resort with the same care and respect as you would your own home.",
-    icon: "/homepage/how-it-works/icons/building.svg",
+    icon: "/icons/amenities/essentials.svg",
   },
   {
     title: "Air Conditioning",
