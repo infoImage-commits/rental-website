@@ -16,6 +16,7 @@ const quickLinks = [
   { label: "Contact Us", href: "/contact" },
   { label: "Blogs", href: "/blogs" },
   { label: "FAQ", href: "/faq" },
+  { label: "House Rules", href: "/house-rules" },
 ];
 
 const propertyTypes = [
