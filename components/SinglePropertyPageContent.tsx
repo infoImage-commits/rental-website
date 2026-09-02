@@ -1,15 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PropertyImageGallery from "./PropertyImageGallery";
 import ScrollAnimation from "./ScrollAnimation";
-import { usePropertyById, usePropertyAvailability } from "@/lib/hooks/useProperties";
+import {
+  useCheckPropertyAvailabilityRange,
+  useCheckPropertyDailyPrices,
+  usePropertyById,
+  usePropertyAvailability,
+} from "@/lib/hooks/useProperties";
 import { API_BASE_URL } from "@/lib/api/config";
 import { useCreateRentBooking } from "@/lib/hooks/useBooking";
 import { useCreatePaypalOrder } from "@/lib/hooks/usePayment";
 import type { Property, PropertyCategoryGroup } from "@/lib/types/property";
 import { savePaymentBookingContext } from "@/lib/utils/paymentBookingContext";
+import { formatUsd } from "@/lib/utils/currency";
 import { toast } from "sonner";
 
 
@@ -99,7 +105,7 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
   ];
 
   const priceDetails: DetailRow[] = [
-    ["Price per night:", `$${property.basePrice} / night`],
+    ["Price per night:", `${formatUsd(property.basePrice)} / night`],
   ];
 
   const locationDetails: DetailRow[] = [
@@ -280,7 +286,14 @@ function AvailabilitySection({
 
   const { mutate: createRentBooking, isPending: isCreatingBooking } = useCreateRentBooking();
   const { mutate: createPaypalOrder, isPending: isCreatingOrder } = useCreatePaypalOrder();
-  const isPending = isCreatingBooking || isCreatingOrder;
+  const {
+    mutateAsync: checkDailyPrices,
+    data: priceCheck,
+    isPending: isCheckingPrice,
+    reset: resetPriceCheck,
+  } = useCheckPropertyDailyPrices();
+  const { mutateAsync: checkAvailabilityRange, isPending: isCheckingAvailability } = useCheckPropertyAvailabilityRange();
+  const isPending = isCreatingBooking || isCreatingOrder || isCheckingPrice || isCheckingAvailability;
 
   const startDate = todayString;
   const endDate = formatLocalDate(new Date(currentYear, currentMonth + monthsToShow, 0));
@@ -292,10 +305,11 @@ function AvailabilitySection({
     return Boolean(overlappingBooking && overlappingBooking.isBookable === false);
   };
 
-  const rangeHasBookedDate = (from: string, to: string) => {
+  const rangeHasBookedDate = (from: string, to: string, calendar = bookings) => {
     let cursor = from;
     while (cursor <= to) {
-      if (isDateBooked(cursor)) return true;
+      const overlappingBooking = calendar.find((booking) => cursor >= booking.from && cursor <= booking.to);
+      if (overlappingBooking && overlappingBooking.isBookable === false) return true;
       cursor = addDays(cursor, 1);
     }
     return false;
@@ -351,10 +365,34 @@ function AvailabilitySection({
     [monthsToShow, bookings, todayString],
   );
 
-  const nights = checkIn && checkOut ? getNights(checkIn, checkOut) : 0;
-  const estimatedTotal = nights * basePrice;
+  useEffect(() => {
+    if (!checkIn || !checkOut || checkOut <= checkIn) {
+      resetPriceCheck();
+      return;
+    }
 
-  const submitBooking = (e: React.FormEvent<HTMLFormElement>) => {
+    let isCurrent = true;
+
+    checkDailyPrices({
+      propertyId,
+      payload: { checkIn, checkOut },
+    }).catch((error) => {
+      if (!isCurrent) return;
+      const message = getApiErrorMessage(error, "Could not check prices for this date range.");
+      setFormError(message);
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [checkDailyPrices, checkIn, checkOut, propertyId, resetPriceCheck]);
+
+  const nights = checkIn && checkOut ? getNights(checkIn, checkOut) : 0;
+  const estimatedTotal = checkIn && checkOut && priceCheck?.isPriceAvailable ? priceCheck.totalPrice : nights * basePrice;
+  const missingDates = priceCheck?.missingDates || [];
+  const isPriceUnavailable = Boolean(checkIn && checkOut && priceCheck && !priceCheck.isPriceAvailable);
+
+  const submitBooking = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError("");
 
@@ -375,6 +413,38 @@ function AvailabilitySection({
 
     if (bookingForm.person > capacity) {
       setFormError(`This property allows up to ${capacity} guests.`);
+      return;
+    }
+
+    try {
+      const latestAvailability = await checkAvailabilityRange({ propertyId, startDate: checkIn, endDate: checkOut });
+      const latestBookings = (latestAvailability?.bookingCalendar || []) as BookingCalendarItem[];
+
+      if (rangeHasBookedDate(checkIn, checkOut, latestBookings)) {
+        const message = "This date range includes unavailable days. Please choose a different checkout date.";
+        setFormError(message);
+        toast.error(message);
+        return;
+      }
+
+      const latestPriceCheck = await checkDailyPrices({
+        propertyId,
+        payload: { checkIn, checkOut },
+      });
+
+      if (!latestPriceCheck?.isPriceAvailable) {
+        const missing = latestPriceCheck?.missingDates?.length
+          ? ` Missing prices: ${latestPriceCheck.missingDates.join(", ")}.`
+          : "";
+        const message = `Pricing is not available for the selected dates.${missing}`;
+        setFormError(message);
+        toast.error(message);
+        return;
+      }
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Could not verify availability and pricing for this booking.");
+      setFormError(message);
+      toast.error(message);
       return;
     }
 
@@ -542,10 +612,18 @@ function AvailabilitySection({
               <dd className="font-semibold text-[#183c2f]">{nights || "-"}</dd>
             </div>
             <div className="flex justify-between gap-4 border-t border-[#eef3f1] pt-3">
-              <dt className="text-[#667c74]">Estimated total</dt>
-              <dd className="font-semibold text-[#2e6f57]">${estimatedTotal}</dd>
+              <dt className="text-[#667c74]">Total</dt>
+              <dd className="font-semibold text-[#2e6f57]">
+                {isCheckingPrice && checkIn && checkOut ? "Checking..." : formatUsd(estimatedTotal)}
+              </dd>
             </div>
           </dl>
+
+          {isPriceUnavailable && (
+            <p className="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[12px] leading-5 text-amber-700">
+              Pricing is missing for {missingDates.length ? missingDates.join(", ") : "this date range"}.
+            </p>
+          )}
 
           {formError && (
             <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-[12px] leading-5 text-red-600">
@@ -555,7 +633,7 @@ function AvailabilitySection({
 
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || isPriceUnavailable}
             className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[#2e6f57] text-[15px] font-semibold text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isPending ? "Processing..." : "Book & Pay Now"}

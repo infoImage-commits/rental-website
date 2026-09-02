@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   usePropertyById,
@@ -11,25 +11,100 @@ import {
   useUploadPropertyImages,
   useDeletePropertyImage,
   useSetCoverImage,
-  usePropertyPrices,
-  useCreatePropertyPrices,
-  useUpdatePropertyPrice,
-  useDeletePropertyPrice,
+  useBulkConfigureDailyPrices,
+  useDeletePropertyDailyPrice,
+  usePropertyDailyPrices,
 } from "@/lib/hooks/useProperties";
+import { useAdminPropertyBookings } from "@/lib/hooks/useBooking";
 import { useCategories } from "@/lib/hooks/useCategory";
 import { usePropertyCategoryItems } from "@/lib/hooks/usePropertyCategoryItem";
 import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
 import { API_BASE_URL } from "@/lib/api/config";
 import Image from "next/image";
-import { BedType } from "@/lib/types/property";
+import { BedType, type DailyPrice } from "@/lib/types/property";
+import type { AdminBookingListItem } from "@/lib/types/booking";
+import { formatUsd } from "@/lib/utils/currency";
 
 type Tab = "basic" | "features" | "beds" | "address" | "details" | "images" | "prices";
 
-const DAY_NAMES = ["", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const hiddenListingDefaults = {
   extraPeople: "",
   extraPeopleFee: 0,
 };
+
+const adminCalendarWeekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function formatLocalDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return year + "-" + month + "-" + day;
+}
+
+function getMonthPresetEndDate(dateString: string, months: number) {
+  const date = new Date(dateString + "T00:00:00");
+  date.setMonth(date.getMonth() + months);
+  date.setDate(date.getDate() - 1);
+  return formatLocalDate(date);
+}
+
+function getMonthStart(dateString: string) {
+  const date = new Date(dateString + "T00:00:00");
+  return formatLocalDate(new Date(date.getFullYear(), date.getMonth(), 1));
+}
+
+function getMonthEnd(dateString: string) {
+  const date = new Date(dateString + "T00:00:00");
+  return formatLocalDate(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+}
+
+function addMonths(dateString: string, months: number) {
+  const date = new Date(dateString + "T00:00:00");
+  return formatLocalDate(new Date(date.getFullYear(), date.getMonth() + months, 1));
+}
+
+function getMonthLabel(dateString: string) {
+  return new Date(dateString + "T00:00:00").toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function getCalendarDays(monthDate: string) {
+  const date = new Date(monthDate + "T00:00:00");
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const start = new Date(firstDay);
+  start.setDate(firstDay.getDate() - firstDay.getDay());
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const current = new Date(start);
+    current.setDate(start.getDate() + index);
+    return {
+      date: formatLocalDate(current),
+      day: current.getDate(),
+      isCurrentMonth: current.getMonth() === month,
+    };
+  });
+}
+
+function formatAdminBookingDate(value: string) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "2-digit" }).format(new Date(value));
+}
+
+function formatAdminBookingMoney(value: number) {
+  return formatUsd(value);
+}
+
+function adminBookingStatusClass(statusName: string) {
+  const normalized = statusName.toLowerCase();
+  if (normalized.includes("confirm")) return "bg-emerald-50 text-emerald-700";
+  if (normalized.includes("pending")) return "bg-amber-50 text-amber-700";
+  if (normalized.includes("cancel")) return "bg-red-50 text-red-700";
+  return "bg-[#f5f7f6] text-[#667c74]";
+}
 
 // Strip IDs from sleeping arrangements — the PUT endpoint does NOT accept them
 function stripArrangements(arrangements: any[]) {
@@ -617,117 +692,514 @@ function ImagesTab({ property }: { property: any }) {
   );
 }
 
-// ── 7. Prices — POST /api/properties/{id}/prices + DELETE + PUT ──────────────
+// Prices - date-based daily pricing
 function PricesTab({ property }: { property: any }) {
-  const { data: prices, isLoading } = usePropertyPrices(property.id);
-  const { mutateAsync: createPrices } = useCreatePropertyPrices();
-  const { mutateAsync: updatePrice } = useUpdatePropertyPrice();
-  const { mutateAsync: deletePrice } = useDeletePropertyPrice();
-  
-  const [isSaving, setIsSaving] = useState(false);
-  const [dayOverrides, setDayOverrides] = useState<Record<number, { enabled: boolean; price: number }>>({});
+  const today = formatLocalDate(new Date());
+  const defaultViewEnd = getMonthPresetEndDate(today, 1);
+  const { mutateAsync: bulkConfigurePrices, isPending: isSaving } = useBulkConfigureDailyPrices();
+  const { mutateAsync: deleteDailyPrice, isPending: isDeleting } = useDeletePropertyDailyPrice();
 
-  // Initialize state when prices load
-  useEffect(() => {
-    if (!prices) return;
-    const init: Record<number, { enabled: boolean; price: number }> = {};
-    for (let i = 1; i <= 7; i++) {
-      const existing = prices.find((p: any) => p.dayNo === i);
-      init[i] = {
-        enabled: !!existing,
-        price: existing ? existing.price : property.basePrice,
-      };
+  const [mode, setMode] = useState<"months" | "custom">("months");
+  const [startDate, setStartDate] = useState(today);
+  const [durationInMonths, setDurationInMonths] = useState(1);
+  const [endDate, setEndDate] = useState(defaultViewEnd);
+  const [calendarMonth, setCalendarMonth] = useState(getMonthStart(today));
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [price, setPrice] = useState(property.basePrice || 0);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const calendarStartDate = getMonthStart(calendarMonth);
+  const calendarEndDate = getMonthEnd(calendarMonth);
+
+  const { data: dailyPricesData, isLoading } = usePropertyDailyPrices({
+    propertyId: property.id,
+    startDate: calendarStartDate,
+    endDate: calendarEndDate,
+  });
+  const {
+    data: bookingsResponse,
+    isLoading: isLoadingBookings,
+    isError: isBookingsError,
+  } = useAdminPropertyBookings({
+    PropertyId: property.id,
+    PropertyNumber: property.code || undefined,
+    PageNumber: 1,
+    PageSize: 10,
+    SortBy: "checkIn",
+    IsDescending: false,
+  });
+
+  const dailyPrices = dailyPricesData?.prices || [];
+  const selectedCount = selectedDates.length;
+  const propertyBookings = bookingsResponse?.items || [];
+
+  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMessage("");
+    setError("");
+
+    if (!startDate) {
+      setError("Choose a start date.");
+      return;
     }
-    setDayOverrides(init);
-  }, [prices, property.basePrice]);
 
-  const toggleDay = (day: number) =>
-    setDayOverrides(prev => ({ ...prev, [day]: { ...prev[day], enabled: !prev[day].enabled } }));
+    if (price < 0) {
+      setError("Price cannot be negative.");
+      return;
+    }
 
-  const setDayPrice = (day: number, price: number) =>
-    setDayOverrides(prev => ({ ...prev, [day]: { ...prev[day], price } }));
+    if (mode === "custom" && (!endDate || endDate < startDate)) {
+      setError("Choose an end date after the start date.");
+      return;
+    }
 
-  const handleSave = async () => {
-    setIsSaving(true);
     try {
-      // Collect operations
-      const pricesToCreate: { dayNo: number; price: number }[] = [];
-      const updatePromises: Promise<any>[] = [];
-      const deletePromises: Promise<any>[] = [];
+      const result = await bulkConfigurePrices({
+        propertyId: property.id,
+        payload: {
+          startDate,
+          durationInMonths: mode === "months" ? durationInMonths : null,
+          endDate: mode === "custom" ? endDate : null,
+          price,
+        },
+      });
 
-      for (let i = 1; i <= 7; i++) {
-        const state = dayOverrides[i];
-        const existing = (prices || []).find((p: any) => p.dayNo === i);
-
-        if (state.enabled && !existing) {
-          // Checked but no existing price -> Collect for bulk create
-          pricesToCreate.push({ dayNo: i, price: state.price });
-        } else if (!state.enabled && existing) {
-          // Unchecked but price exists -> Delete
-          deletePromises.push(deletePrice({ propertyId: property.id, priceId: existing.id }));
-        } else if (state.enabled && existing && state.price !== existing.price) {
-          // Checked, exists, but price changed -> Update
-          updatePromises.push(updatePrice({
-            propertyId: property.id,
-            priceId: existing.id,
-            payload: { dayNo: i, price: state.price }
-          }));
-        }
+      if (!result.isSuccess) {
+        setError(result.errors?.[0] || result.message || "Failed to save daily prices.");
+        return;
       }
 
-      // Execute operations
-      const allPromises: Promise<any>[] = [...updatePromises, ...deletePromises];
-      
-      // Bulk create prices if any
-      if (pricesToCreate.length > 0) {
-        allPromises.push(createPrices({ propertyId: property.id, prices: pricesToCreate }));
-      }
-
-      await Promise.all(allPromises);
-    } catch (error) {
-      console.error("Failed to save prices", error);
-    } finally {
-      setIsSaving(false);
+      setCalendarMonth(getMonthStart(startDate));
+      setSelectedDates([]);
+      setMessage(result.message || "Daily prices saved.");
+    } catch (err) {
+      const apiError = err as { response?: { data?: { errors?: string[]; message?: string } } };
+      setError(apiError.response?.data?.errors?.[0] || apiError.response?.data?.message || "Failed to save daily prices.");
     }
   };
 
-  if (isLoading || Object.keys(dayOverrides).length === 0) {
-    return <div className="py-10 text-center text-[#8a9a94]">Loading prices…</div>;
-  }
+  const handleDelete = async (date: string) => {
+    setMessage("");
+    setError("");
+
+    try {
+      const result = await deleteDailyPrice({ propertyId: property.id, date });
+      if (!result.isSuccess) {
+        setError(result.errors?.[0] || result.message || "Failed to delete this daily price.");
+        return;
+      }
+      setSelectedDates(prev => prev.filter(selectedDate => selectedDate !== date));
+      setMessage(result.message || "Daily price deleted.");
+    } catch (err) {
+      const apiError = err as { response?: { data?: { errors?: string[]; message?: string } } };
+      setError(apiError.response?.data?.errors?.[0] || apiError.response?.data?.message || "Failed to delete this daily price.");
+    }
+  };
+
+  const toggleSelectedDate = (date: string) => {
+    setSelectedDates(prev =>
+      prev.includes(date) ? prev.filter(selectedDate => selectedDate !== date) : [...prev, date]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    setMessage("");
+    setError("");
+
+    if (selectedDates.length === 0) {
+      setError("Select at least one priced date to delete.");
+      return;
+    }
+
+    const datesToDelete = [...selectedDates];
+    const results = await Promise.allSettled(
+      datesToDelete.map(date => deleteDailyPrice({ propertyId: property.id, date }))
+    );
+    const deletedDates = datesToDelete.filter((_, index) => {
+      const result = results[index];
+      return result.status === "fulfilled" && result.value.isSuccess;
+    });
+    const failedCount = datesToDelete.length - deletedDates.length;
+
+    setSelectedDates(prev => prev.filter(date => !deletedDates.includes(date)));
+
+    if (failedCount > 0) {
+      setError(`Deleted ${deletedDates.length} date${deletedDates.length === 1 ? "" : "s"}. ${failedCount} date${failedCount === 1 ? "" : "s"} could not be deleted.`);
+      return;
+    }
+
+    setMessage(`Deleted ${deletedDates.length} selected date${deletedDates.length === 1 ? "" : "s"}.`);
+  };
+
+  const handleMonthChange = (month: string) => {
+    setCalendarMonth(month);
+    setSelectedDates([]);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      <div>
-        <h2 className="mb-1 text-[15px] font-semibold text-[#183c2f]">Daily Rates</h2>
-        <p className="mb-5 text-[13px] text-[#667c74]">
-          Set specific pricing for different days of the week. Unchecked days will fall back to the base price (${property.basePrice}).
+      <form onSubmit={handleSave} className="space-y-5">
+        <div>
+          <h2 className="mb-1 text-[15px] font-semibold text-[#183c2f]">Daily Price Setup</h2>
+          <p className="text-[13px] leading-5 text-[#667c74]">
+            Set one nightly price across a preset month span or a custom calendar range.
+          </p>
+        </div>
+
+        <div className="inline-flex rounded-full border border-[#dfe8e4] bg-[#f8faf9] p-1">
+          <button
+            type="button"
+            onClick={() => setMode("months")}
+            className={mode === "months" ? "h-9 rounded-full bg-[#2e6f57] px-4 text-[12px] font-semibold text-white transition" : "h-9 rounded-full px-4 text-[12px] font-semibold text-[#667c74] transition hover:text-[#183c2f]"}
+          >
+            Month presets
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("custom")}
+            className={mode === "custom" ? "h-9 rounded-full bg-[#2e6f57] px-4 text-[12px] font-semibold text-white transition" : "h-9 rounded-full px-4 text-[12px] font-semibold text-[#667c74] transition hover:text-[#183c2f]"}
+          >
+            Custom range
+          </button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="block">
+            <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Start Date</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="h-11 w-full rounded-xl border border-[#dfe8e4] px-4 text-[14px] outline-none focus:border-[#2e6f57]"
+            />
+          </label>
+
+          {mode === "months" ? (
+            <label className="block">
+              <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Duration</span>
+              <select
+                value={durationInMonths}
+                onChange={(e) => setDurationInMonths(Number(e.target.value))}
+                className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] outline-none focus:border-[#2e6f57]"
+              >
+                <option value={1}>1 month</option>
+                <option value={2}>2 months</option>
+                <option value={3}>3 months</option>
+              </select>
+            </label>
+          ) : (
+            <label className="block">
+              <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">End Date</span>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-11 w-full rounded-xl border border-[#dfe8e4] px-4 text-[14px] outline-none focus:border-[#2e6f57]"
+              />
+            </label>
+          )}
+
+          <label className="block">
+            <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Nightly Price</span>
+            <input
+              type="number"
+              min={0}
+              value={price}
+              onChange={(e) => setPrice(Number(e.target.value))}
+              className="h-11 w-full rounded-xl border border-[#dfe8e4] px-4 text-[14px] outline-none focus:border-[#2e6f57]"
+            />
+          </label>
+        </div>
+
+        {(message || error) && (
+          <p className={error ? "rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-[12px] leading-5 text-red-600" : "rounded-lg border border-[#dceee7] bg-[#f1faf6] px-3 py-2 text-[12px] leading-5 text-[#2e6f57]"}>
+            {error || message}
+          </p>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="rounded-full bg-[#2e6f57] px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? "Saving..." : "Save Daily Prices"}
+          </button>
+        </div>
+      </form>
+
+      <AdminDailyPricesCalendar
+        month={calendarMonth}
+        prices={dailyPrices}
+        isLoading={isLoading}
+        isDeleting={isDeleting}
+        selectedDates={selectedDates}
+        selectedCount={selectedCount}
+        onMonthChange={handleMonthChange}
+        onToggleDate={toggleSelectedDate}
+        onDeleteDate={handleDelete}
+        onBulkDelete={handleBulkDelete}
+        onClearSelection={() => setSelectedDates([])}
+      />
+
+      <PropertyBookingsTable
+        bookings={propertyBookings}
+        isLoading={isLoadingBookings}
+        isError={isBookingsError}
+      />
+    </div>
+  );
+}
+
+type AdminDailyPricesCalendarProps = {
+  month: string;
+  prices: DailyPrice[];
+  isLoading: boolean;
+  isDeleting: boolean;
+  selectedDates: string[];
+  selectedCount: number;
+  onMonthChange: (month: string) => void;
+  onToggleDate: (date: string) => void;
+  onDeleteDate: (date: string) => void;
+  onBulkDelete: () => void;
+  onClearSelection: () => void;
+};
+
+function AdminDailyPricesCalendar({
+  month,
+  prices,
+  isLoading,
+  isDeleting,
+  selectedDates,
+  selectedCount,
+  onMonthChange,
+  onToggleDate,
+  onDeleteDate,
+  onBulkDelete,
+  onClearSelection,
+}: AdminDailyPricesCalendarProps) {
+  const calendarDays = useMemo(() => getCalendarDays(month), [month]);
+  const priceByDate = useMemo(() => new Map(prices.map(item => [item.date, item])), [prices]);
+
+  return (
+    <div className="border-t border-[#eef3f1] pt-6">
+      <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h3 className="text-[15px] font-semibold text-[#183c2f]">Configured Dates</h3>
+          <p className="mt-1 text-[13px] leading-5 text-[#667c74]">
+            Select priced calendar days to remove them, or hover a day to inspect its full date and price.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onMonthChange(addMonths(month, -1))}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-[#dfe8e4] text-[18px] font-semibold text-[#667c74] transition hover:border-[#2e6f57] hover:text-[#183c2f]"
+            aria-label="Previous month"
+          >
+            {"<"}
+          </button>
+          <div className="grid h-9 min-w-[150px] place-items-center rounded-lg border border-[#dfe8e4] px-4 text-[13px] font-semibold text-[#183c2f]">
+            {getMonthLabel(month)}
+          </div>
+          <button
+            type="button"
+            onClick={() => onMonthChange(addMonths(month, 1))}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-[#dfe8e4] text-[18px] font-semibold text-[#667c74] transition hover:border-[#2e6f57] hover:text-[#183c2f]"
+            aria-label="Next month"
+          >
+            {">"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onMonthChange(getMonthStart(formatLocalDate(new Date())))}
+            className="h-9 rounded-lg border border-[#dfe8e4] px-3 text-[12px] font-semibold text-[#667c74] transition hover:border-[#2e6f57] hover:text-[#183c2f]"
+          >
+            Today
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-col gap-3 rounded-xl border border-[#dfe8e4] bg-[#f8faf9] p-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[13px] font-medium text-[#183c2f]">
+          {selectedCount} selected
         </p>
-        <div className="space-y-2">
-          {DAY_NAMES.slice(1).map((name, i) => {
-            const day = i + 1;
-            const { enabled, price } = dayOverrides[day] || { enabled: false, price: property.basePrice };
-            
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onClearSelection}
+            disabled={selectedCount === 0 || isDeleting}
+            className="h-9 rounded-full border border-[#dfe8e4] px-4 text-[12px] font-semibold text-[#667c74] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Clear selection
+          </button>
+          <button
+            type="button"
+            onClick={onBulkDelete}
+            disabled={selectedCount === 0 || isDeleting}
+            className="h-9 rounded-full bg-red-600 px-4 text-[12px] font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isDeleting ? "Deleting..." : "Delete selected"}
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-[#dfe8e4] bg-white p-3">
+        <div className="grid grid-cols-7 gap-1.5">
+          {adminCalendarWeekdays.map(day => (
+            <div key={day} className="grid h-8 place-items-center text-[11px] font-semibold text-[#667c74]">
+              {day}
+            </div>
+          ))}
+
+          {calendarDays.map(day => {
+            const priceInfo = priceByDate.get(day.date);
+            const hasPrice = Boolean(priceInfo);
+            const isSelected = selectedDates.includes(day.date);
+            const title = hasPrice ? `${day.date} - ${formatUsd(priceInfo?.price || 0)}` : `${day.date} - no price`;
+
             return (
-              <div key={day} className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition ${enabled ? "border-[#2e6f57] bg-[#f5f7f6]" : "border-[#dfe8e4] bg-white"}`}>
-                <label className="flex min-w-[150px] items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={enabled} onChange={() => toggleDay(day)} className="size-4 rounded border-gray-300 text-[#2e6f57] focus:ring-[#2e6f57]" />
-                  <span className={`text-[14px] font-medium ${enabled ? "text-[#183c2f]" : "text-[#8a9a94]"}`}>{name}</span>
-                </label>
-                <div className={`flex flex-1 items-center gap-2 transition-opacity ${enabled ? "opacity-100" : "opacity-30 pointer-events-none"}`}>
-                  <span className="text-[13px] text-[#667c74]">$</span>
-                  <input type="number" min={0} value={price} onChange={e => setDayPrice(day, Number(e.target.value))} disabled={!enabled}
-                    className="w-full max-w-[140px] rounded-lg border border-[#dfe8e4] px-3 py-1.5 text-[14px] outline-none focus:border-[#2e6f57]" />
-                  <span className="text-[13px] text-[#667c74]">/ night</span>
-                </div>
+              <div key={day.date} className="group relative min-w-0">
+                <button
+                  type="button"
+                  title={title}
+                  disabled={!hasPrice || isDeleting}
+                  onClick={() => onToggleDate(day.date)}
+                  className={[
+                    "flex h-24 w-full min-w-0 flex-col items-start justify-between rounded-lg border p-2 text-left transition focus:outline-none focus:ring-2 focus:ring-[#2e6f57]/30",
+                    day.isCurrentMonth ? "opacity-100" : "opacity-45",
+                    hasPrice ? "border-[#a7cabb] bg-[#f1faf6] hover:border-[#2e6f57]" : "border-[#eef3f1] bg-[#fbfdfc]",
+                    isSelected ? "border-[#2e6f57] bg-[#e7f4ee] text-[#183c2f] shadow-[0_8px_18px_rgba(46,111,87,0.18)]" : "",
+                    !hasPrice || isDeleting ? "cursor-default" : "cursor-pointer",
+                  ].join(" ")}
+                >
+                  <span className="text-[13px] font-bold text-[#183c2f]">
+                    {day.day}
+                  </span>
+                  <span className={isSelected ? "w-full truncate text-[11px] font-semibold text-[#2e6f57]" : hasPrice ? "w-full truncate text-[11px] font-semibold text-[#2e6f57]" : "w-full truncate text-[10px] text-[#a2b0aa]"}>
+                    {hasPrice ? formatUsd(priceInfo?.price || 0) : "No price"}
+                  </span>
+                </button>
+
+                {hasPrice && (
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => onDeleteDate(day.date)}
+                    className="absolute bottom-2 right-2 h-6 rounded-full bg-white px-2 text-[10px] font-semibold text-red-600 opacity-0 shadow-sm transition hover:bg-red-50 focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 group-hover:opacity-100 group-focus-within:opacity-100"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
-        <div className="mt-6 flex justify-end">
-          <button onClick={handleSave} disabled={isSaving}
-            className="rounded-full bg-[#2e6f57] px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#255f49] disabled:opacity-50">
-            {isSaving ? "Saving…" : "Save Pricing Overrides"}
-          </button>
+
+        {isLoading && (
+          <div className="mt-3 rounded-lg bg-[#f8faf9] px-3 py-2 text-center text-[12px] text-[#8a9a94]">
+            Loading prices...
+          </div>
+        )}
+
+        {!isLoading && prices.length === 0 && (
+          <div className="mt-3 rounded-lg bg-[#f8faf9] px-3 py-2 text-center text-[12px] text-[#8a9a94]">
+            No daily prices found for this month.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PropertyBookingsTable({
+  bookings,
+  isLoading,
+  isError,
+}: {
+  bookings: AdminBookingListItem[];
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  return (
+    <div className="border-t border-[#eef3f1] pt-6">
+      <div className="mb-4">
+        <h3 className="text-[15px] font-semibold text-[#183c2f]">Bookings for this Property</h3>
+        <p className="mt-1 text-[13px] leading-5 text-[#667c74]">
+          Recent bookings that affect this property availability calendar.
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-[#dfe8e4] bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[14px]">
+            <thead className="bg-[#f5f7f6] text-[12px] font-medium uppercase tracking-wider text-[#8a9a94]">
+              <tr>
+                <th className="px-4 py-3">Booking</th>
+                <th className="px-4 py-3">Guest</th>
+                <th className="px-4 py-3">Stay</th>
+                <th className="px-4 py-3 text-right">Total</th>
+                <th className="px-4 py-3 text-center">Status</th>
+                <th className="px-4 py-3">Created</th>
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0f4f2]">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="py-14 text-center text-[14px] text-[#8a9a94]">
+                    <span className="mr-2 inline-block size-5 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
+                    Loading bookings...
+                  </td>
+                </tr>
+              ) : isError ? (
+                <tr>
+                  <td colSpan={7} className="py-14 text-center text-[#183c2f]">
+                    Failed to load bookings for this property.
+                  </td>
+                </tr>
+              ) : bookings.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-14 text-center">
+                    <p className="text-[15px] font-medium text-[#183c2f]">No bookings found</p>
+                    <p className="mt-1 text-[13px] text-[#667c74]">This property has no bookings yet.</p>
+                  </td>
+                </tr>
+              ) : (
+                bookings.map((booking) => (
+                  <tr key={booking.id} className="transition hover:bg-[#f5f7f6]">
+                    <td className="px-4 py-3">
+                      <Link href={`/admin/bookings/${booking.id}`} className="font-semibold text-[#183c2f] hover:underline">
+                        {booking.bookingNumber}
+                      </Link>
+                      <p className="mt-0.5 text-[12px] text-[#8a9a94]">{booking.bookingTypeName}</p>
+                    </td>
+                    <td className="px-4 py-3 text-[#414847]">{booking.fullName}</td>
+                    <td className="px-4 py-3 text-[13px] text-[#667c74]">
+                      {formatAdminBookingDate(booking.checkIn)} - {formatAdminBookingDate(booking.checkOut)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-[#183c2f]">{formatAdminBookingMoney(booking.totalPrice)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${adminBookingStatusClass(booking.statusName || "")}`}>
+                        {booking.statusName}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-[#667c74]">{formatAdminBookingDate(booking.createdAtUtc)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/admin/bookings/${booking.id}`}
+                        className="inline-flex h-8 items-center rounded-lg border border-[#dfe8e4] bg-white px-3 text-[12px] font-medium text-[#2e6f57] transition hover:border-[#2e6f57] hover:bg-[#f5f7f6]"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

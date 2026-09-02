@@ -12,6 +12,7 @@ import { useLocations } from "@/lib/hooks/useLocation";
 import type { JourneyItem, JourneysQuery } from "@/lib/types/journey";
 import { API_BASE_URL } from "@/lib/api/config";
 import ConfirmModal from "./ConfirmModal";
+import { formatUsd } from "@/lib/utils/currency";
 
 // ── Form Panel Component ──────────────────────────────────────────────────────
 function JourneyFormPanel({
@@ -216,7 +217,7 @@ function JourneyFormPanel({
             <div className="grid grid-cols-2 gap-4">
                <div>
                   <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-                     Base Price ($) <span className="text-red-500">*</span>
+                     Base Price (USD) <span className="text-red-500">*</span>
                   </label>
                   <input
                      type="number"
@@ -479,7 +480,7 @@ export default function JourneysContent() {
                       </td>
                       <td className="px-5 py-4 font-medium text-[#3d4d47]">{journey.fromLocationName}</td>
                       <td className="px-5 py-4 font-medium text-[#2e6f57]">{journey.toLocationName}</td>
-                      <td className="px-5 py-4 font-semibold text-[#183c2f]">${journey.basePrice.toFixed(2)}</td>
+                      <td className="px-5 py-4 font-semibold text-[#183c2f]">{formatUsd(journey.basePrice, 2)}</td>
                       <td className="px-5 py-4 text-[#667c74]">{formatDuration(journey.estimatedDurationMinutes)}</td>
                       <td className="px-5 py-4">
                         <button

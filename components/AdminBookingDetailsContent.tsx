@@ -7,6 +7,7 @@ import { useAdminPropertyBooking, useCreateBookingExtension } from "@/lib/hooks/
 import { useBookingPayments, useCreatePaypalOrder } from "@/lib/hooks/usePayment";
 import type { AdminBookingDetails, BookingExtensionResponseData } from "@/lib/types/booking";
 import type { BookingPayment, CreatePaypalOrderResponse } from "@/lib/hooks/usePayment";
+import { formatUsd } from "@/lib/utils/currency";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -24,8 +25,8 @@ function formatDateTime(value?: string | null) {
   }).format(new Date(value));
 }
 
-function money(value: number, currency = "USD") {
-  return new Intl.NumberFormat("en", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
+function money(value: number) {
+  return formatUsd(value);
 }
 
 function addDays(dateString: string, days: number) {
@@ -412,7 +413,7 @@ function PaymentsSection({
               {payments.map((payment) => (
                 <tr key={payment.id} className="transition hover:bg-[#f8faf9]">
                   <td className="px-4 py-3 font-semibold text-[#183c2f]">{payment.paymentTypeName}</td>
-                  <td className="px-4 py-3 font-semibold text-[#183c2f]">{money(payment.amount, payment.currency)}</td>
+                  <td className="px-4 py-3 font-semibold text-[#183c2f]">{money(payment.amount)}</td>
                   <td className="px-4 py-3 text-[#414847]">{payment.providerName}</td>
                   <td className="px-4 py-3 font-mono text-[12px] text-[#414847]">{payment.payPalOrderId || "-"}</td>
                   <td className="px-4 py-3 font-mono text-[12px] text-[#414847]">{payment.transactionId || "-"}</td>
@@ -472,7 +473,7 @@ function ExtensionResultCard({
         <Detail label="Old Checkout" value={formatDate(extension.oldCheckOut)} />
         <Detail label="New Checkout" value={formatDate(extension.newCheckOut)} strong />
         <Detail label="Additional Nights" value={String(extension.additionalNights)} />
-        <Detail label="Additional Amount" value={money(extension.additionalAmount, extension.currency)} strong />
+        <Detail label="Additional Amount" value={money(extension.additionalAmount)} strong />
         <Detail label="Booking Status" value={extension.bookingStatus} />
         <Detail label="Booking Number" value={extension.bookingNumber} mono />
       </div>

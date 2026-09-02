@@ -8,6 +8,7 @@ import { usePublicRentProperties } from "@/lib/hooks/useProperties";
 import { API_BASE_URL } from "@/lib/api/config";
 import { PropertyListItem } from "@/lib/types/property";
 import { slugify } from "@/lib/utils/slugify";
+import { formatUsd } from "@/lib/utils/currency";
 
 const filterTabs = [
   { id: "hot", label: "Hot Deal", icon: "/homepage/properties/icons/hot.svg" },
@@ -157,8 +158,7 @@ function PropertyCard({ property }: { property: PropertyListItem }) {
         </div>
 
         <div className="absolute left-0 top-[68%] inline-flex h-[37px] items-center gap-2 rounded-r-lg bg-[#d59e52] px-3 text-[16px] font-semibold text-white">
-          <span>EGP</span>
-          <span>{property.basePrice} /Month</span>
+          <span>{formatUsd(property.basePrice)} /Month</span>
         </div>
       </div>
 

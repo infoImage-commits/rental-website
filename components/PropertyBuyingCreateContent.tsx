@@ -64,7 +64,7 @@ export default function PropertyBuyingCreateContent() {
       return;
     }
 
-    createProperty(formData, {
+    createProperty({ ...formData, currency: "USD" }, {
       onSuccess: () => {
         router.push("/admin/property-buyings");
       },
@@ -143,7 +143,7 @@ export default function PropertyBuyingCreateContent() {
               </div>
               <div>
                 <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Currency</label>
-                <input type="text" value={formData.currency} onChange={e => updateForm({ currency: e.target.value })} placeholder="e.g. USD, EGP" className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
+                <input type="text" value="USD" readOnly className="w-full rounded-xl border border-[#dfe8e4] bg-[#f8faf9] px-4 py-2.5 text-[14px] text-[#667c74] outline-none" />
               </div>
             </div>
 

@@ -29,16 +29,6 @@ export enum BedType {
   Futon = 8,
 }
 
-export enum DayNo {
-  Saturday = 1,
-  Sunday = 2,
-  Monday = 3,
-  Tuesday = 4,
-  Wednesday = 5,
-  Thursday = 6,
-  Friday = 7,
-}
-
 export interface PropertyAddress {
   id?: string;
   propertyId?: string;
@@ -90,23 +80,50 @@ export interface PropertyImage {
   isCover: boolean;
 }
 
-export interface PropertyPrice {
-  id: string;
+export interface DailyPrice {
+  date: string;
+  price: number;
+}
+
+export interface PropertyDailyPricesData {
   propertyId: string;
-  dayNo: DayNo;
+  prices: DailyPrice[];
+}
+
+export interface BulkDailyPricesRequest {
+  startDate: string;
+  durationInMonths: number | null;
+  endDate: string | null;
   price: number;
 }
 
-// Request payload for creating prices (POST /api/properties/{id}/prices)
-export interface PropertyPriceCreateRequest {
-  dayNo: number;
-  price: number;
+export interface DailyPriceCheckRequest {
+  checkIn: string;
+  checkOut: string;
 }
 
-// Request payload for updating a price (PUT /api/properties/{id}/prices/{priceId})
-export interface PropertyPriceUpdateRequest {
-  dayNo: number;
-  price: number;
+export interface DailyPriceCheckData {
+  isPriceAvailable: boolean;
+  totalPrice: number;
+  dailyPrices: DailyPrice[];
+  missingDates: string[];
+}
+
+export interface PropertyAvailabilityData {
+  bookingCalendar?: unknown[];
+  [key: string]: unknown;
+}
+
+export interface PropertyAvailabilityRequest {
+  propertyId: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface PropertyDailyPricesRequest {
+  propertyId: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface PropertyCategoryGroup {
@@ -152,7 +169,7 @@ export interface Property {
   address: PropertyAddress;
   listingDetails: PropertyListingDetails;
   images: PropertyImage[];
-  prices: PropertyPrice[];
+  prices: DailyPrice[];
   sleepingArrangements: PropertySleepingArrangement[];
   categories: PropertyCategoryGroup[];
 }

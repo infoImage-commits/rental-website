@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useJourneys } from "@/lib/hooks/useJourney";
 import { slugify } from "@/lib/utils/slugify";
 import { API_BASE_URL } from "@/lib/api/config";
+import { formatUsd } from "@/lib/utils/currency";
 
 function resolveImageUrl(url: string): string {
   if (!url || url.trim() === "") return "";
@@ -61,7 +62,7 @@ export default function TransferPageContent() {
                     )}
                     <div className="absolute left-4 top-4 flex flex-col gap-2">
                       <span className="flex items-center justify-center rounded-lg bg-[#d59e52] px-3 py-1 text-[12px] font-semibold text-white">
-                        $ {journey.basePrice}
+                        {formatUsd(journey.basePrice)}
                       </span>
                     </div>
                   </div>

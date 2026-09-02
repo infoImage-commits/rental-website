@@ -144,7 +144,7 @@ export default function HeroSection() {
             {/* Price Range */}
             <label className="block min-w-0 text-[#1F4D3D]">
               <span className="mb-1 block text-[13px] font-medium leading-none sm:mb-2 sm:text-[15px] xl:text-[20px]">
-                Price Range (EGP)
+                Price Range (USD)
               </span>
               <div className="flex items-center gap-1 sm:gap-2">
                 <input

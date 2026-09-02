@@ -8,10 +8,14 @@ import type {
   PropertyAddress,
   PropertyListingDetails,
   PropertyImage,
-  PropertyPrice,
-  PropertyPriceCreateRequest,
-  PropertyPriceUpdateRequest,
+  BulkDailyPricesRequest,
+  DailyPriceCheckData,
+  DailyPriceCheckRequest,
   PropertyApiResponse,
+  PropertyAvailabilityData,
+  PropertyAvailabilityRequest,
+  PropertyDailyPricesData,
+  PropertyDailyPricesRequest,
   PaginatedResponse,
   PropertyTypeCount,
 } from "@/lib/types/property";
@@ -21,11 +25,6 @@ const KEY = "properties";
 type PropertyQueryParams = {
   pageNumber?: number;
   pageSize?: number;
-  [key: string]: unknown;
-};
-
-type PropertyAvailabilityData = {
-  bookingCalendar?: unknown[];
   [key: string]: unknown;
 };
 
@@ -187,6 +186,18 @@ export function usePropertyAvailability(propertyId: string, startDate: string, e
     },
     enabled: !!propertyId && !!startDate && !!endDate,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCheckPropertyAvailabilityRange() {
+  return useMutation({
+    mutationFn: async ({ propertyId, startDate, endDate }: PropertyAvailabilityRequest) => {
+      const { data } = await axiosInstance.get<PropertyApiResponse<PropertyAvailabilityData>>(
+        `/api/properties/${propertyId}/availability`,
+        { params: { startDate, endDate } }
+      );
+      return data.data;
+    },
   });
 }
 
@@ -380,80 +391,68 @@ export function useDeletePropertyImage() {
 }
 
 // ── 6. Prices ────────────────────────────────────────────────────────────────
-export function usePropertyPrices(propertyId: string) {
+export function usePropertyDailyPrices({ propertyId, startDate, endDate }: PropertyDailyPricesRequest) {
   return useQuery({
-    queryKey: [KEY, propertyId, "prices"],
+    queryKey: [KEY, propertyId, "daily-prices", startDate, endDate],
     queryFn: async () => {
-      const { data } = await axiosInstance.get<PropertyApiResponse<PropertyPrice[]>>(
-        `/api/properties/${propertyId}/prices`
+      const { data } = await axiosInstance.get<PropertyApiResponse<PropertyDailyPricesData>>(
+        `/api/properties/${propertyId}/daily-prices`,
+        { params: { startDate, endDate } }
       );
-      return data.data ?? [];
+      return data.data ?? { propertyId, prices: [] };
     },
     enabled: !!propertyId,
     staleTime: 30 * 1000,
   });
 }
 
-export function useCreatePropertyPrices() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ 
-      propertyId, 
-      prices 
-    }: { 
-      propertyId: string; 
-      prices: PropertyPriceCreateRequest[] 
-    }) => {
-      const { data } = await axiosInstance.post<PropertyApiResponse<PropertyPrice[]>>(
-        `/api/properties/${propertyId}/prices`,
-        prices // Send array directly
-      );
-      return data;
-    },
-    onSuccess: (_data, { propertyId }) => {
-      queryClient.invalidateQueries({ queryKey: [KEY, propertyId] });
-      queryClient.invalidateQueries({ queryKey: [KEY, propertyId, "prices"] });
-    },
-  });
-}
-
-export function useUpdatePropertyPrice() {
+export function useBulkConfigureDailyPrices() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
       propertyId,
-      priceId,
       payload,
     }: {
       propertyId: string;
-      priceId: string;
-      payload: PropertyPriceUpdateRequest;
+      payload: BulkDailyPricesRequest;
     }) => {
-      const { data } = await axiosInstance.put<PropertyApiResponse<PropertyPrice>>(
-        `/api/properties/${propertyId}/prices/${priceId}`,
+      const { data } = await axiosInstance.post<PropertyApiResponse<boolean>>(
+        `/api/properties/${propertyId}/daily-prices/bulk`,
         payload
       );
       return data;
     },
     onSuccess: (_data, { propertyId }) => {
       queryClient.invalidateQueries({ queryKey: [KEY, propertyId] });
-      queryClient.invalidateQueries({ queryKey: [KEY, propertyId, "prices"] });
+      queryClient.invalidateQueries({ queryKey: [KEY, propertyId, "daily-prices"] });
     },
   });
 }
 
-export function useDeletePropertyPrice() {
+export function useCheckPropertyDailyPrices() {
+  return useMutation({
+    mutationFn: async ({ propertyId, payload }: { propertyId: string; payload: DailyPriceCheckRequest }) => {
+      const { data } = await axiosInstance.post<PropertyApiResponse<DailyPriceCheckData>>(
+        `/api/properties/${propertyId}/daily-prices/check`,
+        payload
+      );
+      return data.data;
+    },
+  });
+}
+
+export function useDeletePropertyDailyPrice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ propertyId, priceId }: { propertyId: string; priceId: string }) => {
+    mutationFn: async ({ propertyId, date }: { propertyId: string; date: string }) => {
       const { data } = await axiosInstance.delete<PropertyApiResponse<boolean>>(
-        `/api/properties/${propertyId}/prices/${priceId}`
+        `/api/properties/${propertyId}/daily-prices/${date}`
       );
       return data;
     },
     onSuccess: (_data, { propertyId }) => {
       queryClient.invalidateQueries({ queryKey: [KEY, propertyId] });
-      queryClient.invalidateQueries({ queryKey: [KEY, propertyId, "prices"] });
+      queryClient.invalidateQueries({ queryKey: [KEY, propertyId, "daily-prices"] });
     },
   });
 }

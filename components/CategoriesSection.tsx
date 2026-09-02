@@ -70,13 +70,13 @@ export default function CategoriesSection() {
             hidden: { opacity: 0 },
             visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
           }}
-          className="relative z-10 mt-[47px] flex w-full snap-x snap-mandatory gap-[15px] overflow-x-auto px-[13px] pb-6 [-ms-overflow-style:none] [scrollbar-width:none] sm:mt-16 sm:gap-[35px] sm:px-10 lg:mt-[78px] lg:grid lg:grid-cols-[repeat(3,minmax(0,305px))] lg:justify-center lg:gap-6 lg:overflow-visible lg:px-20 lg:pb-0 xl:gap-8 [&::-webkit-scrollbar]:hidden"
+          className="relative z-10 mt-[47px] flex w-full snap-x snap-mandatory gap-[15px] overflow-x-auto px-[13px] pb-6 [-ms-overflow-style:none] [scrollbar-width:none] sm:mt-16 sm:gap-[35px] sm:px-10 lg:mt-[78px] lg:flex-wrap lg:justify-center lg:gap-6 lg:overflow-visible lg:px-20 lg:pb-0 xl:gap-8 [&::-webkit-scrollbar]:hidden"
         >
           {baseCategories.map((category) => (
             <CategoryCard
               key={category.name}
               category={category}
-              className="aspect-[305/434] w-[min(285px,calc(100vw-80px))] shrink-0 snap-center sm:w-[305px] lg:w-full lg:snap-align-none"
+              className="aspect-[250/355] w-[min(250px,calc(100vw-80px))] shrink-0 snap-center sm:w-[250px] lg:w-[250px] lg:snap-align-none xl:w-[260px]"
             />
           ))}
         </motion.div>

@@ -9,6 +9,7 @@ import {
   PaymentBookingKind,
   readPaymentBookingContext,
 } from "@/lib/utils/paymentBookingContext";
+import { formatUsd } from "@/lib/utils/currency";
 import Link from "next/link";
 
 type PageState = "loading" | "success" | "error";
@@ -215,7 +216,7 @@ function PaymentSuccessContent() {
       { label: "Booking Number", value: paymentData.bookingNumber || bookingContext?.bookingNumber || "-", mono: true },
       { label: "Booking Type", value: copy.label, strong: true },
       { label: "Payment Status", value: paymentData.paymentStatusName, strong: true },
-      { label: "Amount Paid", value: `${paymentData.amount} ${paymentData.currency}`, strong: true },
+      { label: "Amount Paid", value: formatUsd(paymentData.amount), strong: true },
       { label: "Transaction ID", value: paymentData.transactionId, mono: true },
       ...getContextDetails(bookingKind, paymentData, bookingContext),
     ];

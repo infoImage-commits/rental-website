@@ -68,6 +68,7 @@ export interface PaginatedBookingResponse<T> {
 export interface AdminBookingListQuery {
   Status?: number;
   BookingNumber?: string;
+  PropertyId?: string;
   PropertyNumber?: string;
   CustomerName?: string;
   CustomerEmail?: string;

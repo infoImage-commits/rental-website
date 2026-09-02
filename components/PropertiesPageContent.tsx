@@ -6,6 +6,7 @@ import { slugify } from "@/lib/utils/slugify";
 import { API_BASE_URL } from "@/lib/api/config";
 import { useCategories } from "@/lib/hooks/useCategory";
 import { HOUSE_RENT_PROPERTY_TYPES } from "@/lib/utils/propertyUtils";
+import { formatUsd } from "@/lib/utils/currency";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -316,7 +317,7 @@ function FilterForm({
           </select>
         </label>
         <div>
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Price Range (EGP)</span>
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Price Range (USD)</span>
           <div className="flex items-center gap-2">
             <input type="number" name="minPrice" defaultValue={minPriceVal} placeholder="Min" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
             <span className="shrink-0 text-[#bbb]">-</span>
@@ -464,8 +465,7 @@ function PropertyCard({ property }: { property: NormalizedPropertyCard }) {
           For Rent
         </span>
         <span className="absolute bottom-3 left-3 flex h-9 items-center gap-1.5 rounded-lg bg-[#cfb072] px-3 text-white shadow-lg">
-          <span className="text-[12px] font-semibold">EGP</span>
-          <span className="text-[14px] font-bold lg:text-[17px]">{property.price}<span className="text-[11px] font-normal">/Mo</span></span>
+          <span className="text-[14px] font-bold lg:text-[17px]">{formatUsd(property.price)}<span className="text-[11px] font-normal">/Mo</span></span>
         </span>
       </Link>
       <div className="flex flex-1 flex-col p-4">

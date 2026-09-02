@@ -32,7 +32,7 @@ export default function PropertyBuyingEditContent({ id }: { id: string }) {
         title: property.title || "",
         description: property.description || "",
         price: property.price || 0,
-        currency: property.currency || "USD",
+        currency: "USD",
         propertyTypeId: property.propertyTypeId || 1,
         status: property.status || 1,
         bedrooms: property.bedrooms || 0,
@@ -77,7 +77,7 @@ export default function PropertyBuyingEditContent({ id }: { id: string }) {
     
     if (step === 3 && formData) {
       updateProperty(
-        { id, payload: formData },
+        { id, payload: { ...formData, currency: "USD" } },
         {
           onSuccess: () => {
             router.push("/admin/property-buyings");
@@ -197,7 +197,7 @@ export default function PropertyBuyingEditContent({ id }: { id: string }) {
                 </div>
                 <div>
                   <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Currency</label>
-                  <input type="text" value={formData.currency} onChange={e => updateForm({ currency: e.target.value })} placeholder="e.g. USD, EGP" className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
+                  <input type="text" value="USD" readOnly className="w-full rounded-xl border border-[#dfe8e4] bg-[#f8faf9] px-4 py-2.5 text-[14px] text-[#667c74] outline-none" />
                 </div>
               </div>
 

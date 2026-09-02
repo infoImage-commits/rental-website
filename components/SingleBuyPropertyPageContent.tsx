@@ -8,6 +8,7 @@ import ContactForm from "./ContactForm";
 import { usePublicPropertyBuyingById } from "@/lib/hooks/usePropertyBuying";
 import { API_BASE_URL } from "@/lib/api/config";
 import type { PropertyBuying, PropertyBuyingSection } from "@/lib/types/propertyBuying";
+import { formatUsd } from "@/lib/utils/currency";
 
 
 type QuickFact = {
@@ -33,7 +34,7 @@ export default function SingleBuyPropertyPageContent({ id }: { id: string }) {
   ];
 
   const priceDetails: DetailRow[] = [
-    ["Price:", `${property.price.toLocaleString()} ${property.currency}`],
+    ["Price:", formatUsd(property.price)],
     ["Status:", property.status === 1 ? "Available" : property.status === 2 ? "Reserved" : "Sold"],
   ];
 

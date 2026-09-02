@@ -7,6 +7,7 @@ import { useCreateTransferBooking } from "@/lib/hooks/useBooking";
 import { useCreatePaypalOrder } from "@/lib/hooks/usePayment";
 import { API_BASE_URL } from "@/lib/api/config";
 import { savePaymentBookingContext } from "@/lib/utils/paymentBookingContext";
+import { formatUsd } from "@/lib/utils/currency";
 import { toast } from "sonner";
 
 function resolveImageUrl(url: string): string {
@@ -140,9 +141,9 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
   };
 
   const totals = [
-    ["Ride Fare", `$${journey.basePrice}`],
+    ["Ride Fare", formatUsd(journey.basePrice)],
   ];
-  const dueToday = `$${journey.basePrice}`;
+  const dueToday = formatUsd(journey.basePrice);
 
   return (
     <main className="bg-[#f8f9fa] font-[var(--font-poppins)] text-[#0f172a]">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAdminPropertyBookings } from "@/lib/hooks/useBooking";
 import type { AdminBookingListQuery } from "@/lib/types/booking";
+import { formatUsd } from "@/lib/utils/currency";
 
 type FilterState = {
   SearchTerm: string;
@@ -48,7 +49,7 @@ function formatDate(value: string) {
 }
 
 function money(value: number) {
-  return new Intl.NumberFormat("en", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+  return formatUsd(value);
 }
 
 function statusClass(statusName: string) {

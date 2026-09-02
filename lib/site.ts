@@ -16,7 +16,7 @@ export const siteConfig = {
     label: "Hurghada, El Kawther",
   },
   logo: "/logo-green.png",
-  ogImage: "/homepage/heroSection1/HeroImage.png",
+  ogImage: "/logo-green.png",
 };
 
 export function absoluteUrl(path = "/") {
