@@ -85,7 +85,7 @@ function CategoryFormPanel({
       <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transition-transform duration-300 flex flex-col">
         <div className="flex items-center justify-between border-b border-[#dfe8e4] px-6 py-4">
           <h2 className="text-[18px] font-semibold text-[#183c2f]">
-            {isEditing ? "Edit Properties Location" : "Create Properties Location"}
+            {isEditing ? "Edit Property View" : "Create Property View"}
           </h2>
           <button
             type="button"
@@ -146,7 +146,7 @@ function CategoryFormPanel({
               {isSaving ? (
                 <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
               ) : (
-                "Save Location"
+                "Save View"
               )}
             </button>
           </div>
@@ -201,10 +201,10 @@ export default function PropertiesLocationsContent() {
             Management
           </p>
           <h1 className="mt-1 text-[26px] font-semibold leading-tight text-[#183c2f] lg:text-[32px]">
-            Properties Locations
+            Properties Views
           </h1>
           <p className="mt-1 text-[14px] text-[#667c74]">
-            Manage the locations (categories) for properties displayed on the homepage.
+            Manage the view categories for properties displayed on the homepage.
           </p>
         </div>
         <button
@@ -214,14 +214,14 @@ export default function PropertiesLocationsContent() {
           <svg className="size-4" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
           </svg>
-          Add Location
+          Add View
         </button>
       </header>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {!isLoading && (
           <span className="rounded-full bg-[#f5f7f6] px-3 py-1 text-[12px] font-medium text-[#667c74]">
-            {categories.length} Location{categories.length !== 1 ? "s" : ""}
+            {categories.length} View{categories.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>
@@ -230,11 +230,11 @@ export default function PropertiesLocationsContent() {
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-[#8a9a94] text-[14px]">
             <span className="mr-2 inline-block size-5 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
-            Loading locations...
+            Loading views...
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-[15px] font-medium text-[#183c2f]">Failed to load locations</p>
+            <p className="text-[15px] font-medium text-[#183c2f]">Failed to load views</p>
             <p className="mt-1 text-[13px] text-[#667c74]">Check your connection and try again.</p>
           </div>
         ) : categories.length === 0 ? (
@@ -245,15 +245,15 @@ export default function PropertiesLocationsContent() {
                  <path d="M12 8v8M8 12h8" />
               </svg>
             </div>
-            <p className="text-[16px] font-medium text-[#183c2f]">No locations found</p>
+            <p className="text-[16px] font-medium text-[#183c2f]">No views found</p>
             <p className="mt-1 mb-6 text-[14px] text-[#667c74] max-w-sm">
-              Get started by adding a properties location to display on your homepage.
+              Get started by adding a property view to display on your homepage.
             </p>
              <button
               onClick={openCreatePanel}
               className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#2e6f57] px-4 text-[13px] font-medium text-white transition hover:bg-[#255f49] shadow-sm"
             >
-              Create your first location
+              Create your first view
             </button>
           </div>
         ) : (
@@ -261,7 +261,7 @@ export default function PropertiesLocationsContent() {
             <table className="w-full min-w-[820px] border-collapse text-left">
               <thead className="bg-[#f5f7f6] text-[12px] font-semibold uppercase tracking-[0.08em] text-[#667c74]">
                 <tr>
-                  <th className="px-5 py-3">Property Location</th>
+                  <th className="px-5 py-3">Property View</th>
                   <th className="px-5 py-3">Rent Properties</th>
                   <th className="px-5 py-3">Buy Properties</th>
                   <th className="px-5 py-3">Total</th>
@@ -334,9 +334,9 @@ export default function PropertiesLocationsContent() {
 
       <ConfirmModal
         isOpen={!!categoryToDelete}
-        title="Delete Location"
+        title="Delete View"
         message={`Are you sure you want to delete "${categoryToDelete?.name}"?`}
-        confirmText="Delete Location"
+        confirmText="Delete View"
         onConfirm={() => categoryToDelete && confirmDelete(categoryToDelete.id)}
         onCancel={() => setCategoryToDelete(null)}
         isPending={deletingId === categoryToDelete?.id}

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { useJourneys } from "@/lib/hooks/useJourney";
 import { slugify } from "@/lib/utils/slugify";
 import { API_BASE_URL } from "@/lib/api/config";
@@ -107,28 +108,45 @@ export default function TransferPageContent() {
 
 function TransferHero() {
   return (
-    <section className="relative w-full h-[280px] lg:h-[420px] overflow-hidden">
+    <section className="relative w-full h-[400px] lg:h-[600px] overflow-hidden">
       <Image
-        src="/transfer/heroTransfer.png"
-        alt="Transfer Hero"
+        src="/transfer/heroTransfer2.jpg"
+        alt="Premium Transfer Service in Hurghada"
         fill
         priority
         className="object-cover object-center"
       />
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/70" />
+      {/* Premium Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
 
       {/* Content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center px-5 text-center">
-        <p className="mb-3 text-[13px] font-semibold uppercase tracking-[3px] text-white/70 lg:text-[14px]">
-          Airport · City · Port Transfers
-        </p>
-        <h1 className="max-w-[600px] text-[32px] font-bold leading-tight text-white lg:text-[58px] lg:leading-[1.1]">
+
+        
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="max-w-[700px] text-[36px] font-semibold leading-tight text-white lg:text-[64px] lg:leading-[1.1]"
+        >
           Seamless Airport Transfers
-        </h1>
-        <p className="mt-5 max-w-[520px] text-[15px] leading-relaxed text-white/80 lg:text-[18px]">
+        </motion.h1>
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mx-auto mt-6 h-[4px] w-[100px] rounded-full bg-[#d59e52]"
+        />
+        
+        <motion.p 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="mt-6 max-w-[560px] text-[16px] leading-relaxed text-white/90 lg:text-[20px]"
+        >
           Book your private, comfortable, and reliable transfer across our destinations. Get from A to B with ease.
-        </p>
+        </motion.p>
       </div>
     </section>
   );

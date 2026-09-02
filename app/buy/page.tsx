@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { notFound } from "next/navigation";
+
 export default function BuyPage() {
-  return <PropertiesPageContent type="buy" />;
+  notFound();
 }

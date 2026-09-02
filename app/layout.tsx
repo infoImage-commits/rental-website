@@ -128,7 +128,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col overflow-x-hidden">
+      <body className="min-h-full flex flex-col">
         <Providers>
           <AppChrome>{children}</AppChrome>
         </Providers>

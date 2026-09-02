@@ -16,13 +16,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/", label: "Home" },
-  {
-    label: "Properties",
-    subItems: [
-      { href: "/rent", label: "Rent" },
-      { href: "/buy", label: "Buy" },
-    ],
-  },
+  { href: "/rent", label: "Properties" },
   { href: "/transfer", label: "Transfers" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact Us" },
@@ -114,11 +108,11 @@ export default function Header() {
       variants={headerMotion}
       initial={initialState}
       animate="visible"
-      className="relative z-50 w-full bg-white font-[var(--font-poppins)] shadow-[0_2px_2px_rgba(0,0,0,0.15)] lg:shadow-none"
+      className="sticky top-0 z-[60] w-full bg-white font-[var(--font-poppins)] shadow-[0_2px_2px_rgba(0,0,0,0.15)] lg:shadow-none"
     >
       <motion.div
         variants={headerInnerMotion}
-        className="mx-auto flex h-14 w-full max-w-[1280px] items-center justify-between px-5 sm:px-10 lg:grid lg:h-[104px] lg:grid-cols-[1fr_auto_1fr] lg:px-0"
+        className="mx-auto flex h-14 w-full max-w-[1280px] items-center justify-between px-5 sm:px-10 lg:grid lg:h-[104px] lg:grid-cols-[1fr_auto_1fr] lg:px-6 xl:px-0"
       >
         <motion.div variants={headerItemMotion} whileHover={shouldReduceMotion ? undefined : { y: -2 }}>
           <Link href="/" className="flex shrink-0 items-center" aria-label="Hurghada Vacation Homes home">

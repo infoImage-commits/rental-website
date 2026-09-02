@@ -3,9 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { usePropertyTypes } from "@/lib/hooks/useProperties";
 import { PropertyType } from "@/lib/types/property";
-import { buildRentPropertyTypeHref, HOUSE_RENT_PROPERTY_TYPES } from "@/lib/utils/propertyUtils";
+import { buildRentPropertyTypeHref } from "@/lib/utils/propertyUtils";
 
 const baseCategories = [
   {
@@ -16,17 +15,10 @@ const baseCategories = [
     position: "object-center",
   },
   {
-    name: "Houses",
-    apiName: ["TwinHouse", "TownHouse", "Duplex", "Chalet"], // Maps to sum of these
-    href: buildRentPropertyTypeHref(HOUSE_RENT_PROPERTY_TYPES),
-    image: "/homepage/Categories/Houses.png",
-    position: "object-center",
-  },
-  {
-    name: "Villas",
-    apiName: "Villa", // Maps to backend 'Villa'
-    href: buildRentPropertyTypeHref(PropertyType.Villa),
-    image: "/homepage/Categories/Villas.jpg",
+    name: "Chalet",
+    apiName: "Chalet", // Maps to backend 'Chalet'
+    href: buildRentPropertyTypeHref(PropertyType.Chalet),
+    image: "/homepage/Categories/chalet.jpg",
     position: "object-center",
   },
   {
@@ -39,30 +31,9 @@ const baseCategories = [
 ];
 
 export default function CategoriesSection() {
-  const { data: propertyTypes } = usePropertyTypes();
-
-  const getListingsCount = (apiName: string | string[]) => {
-    if (!propertyTypes) return 0;
-    
-    if (Array.isArray(apiName)) {
-      return apiName.reduce((sum, name) => {
-        const match = propertyTypes.find((pt) => pt.name === name);
-        return sum + (match ? match.count : 0);
-      }, 0);
-    }
-    
-    const match = propertyTypes.find((pt) => pt.name === apiName);
-    return match ? match.count : 0;
-  };
-
-  const categories = baseCategories.map(cat => ({
-    ...cat,
-    listings: `${getListingsCount(cat.apiName)} Listings`
-  }));
-
   return (
-    <section className="relative z-20 -mt-[38px] overflow-hidden bg-transparent px-0 pb-14 font-[var(--font-poppins)] sm:-mt-12 sm:pb-16 xl:-mt-[152px] xl:pb-20">
-      <div className="relative mx-auto w-full max-w-[1440px] px-0 pb-14 pt-8 sm:pb-16 sm:pt-12 lg:pb-20 lg:pt-[60px]">
+    <section className="relative z-20 -mt-6 overflow-hidden bg-transparent px-0 font-[var(--font-poppins)] sm:-mt-8 xl:-mt-[108px]">
+      <div className="relative w-full px-0 pb-8 pt-10 sm:pb-10 sm:pt-14 lg:pb-8 lg:pt-[72px]">
         <svg
           aria-hidden="true"
           className="absolute inset-0 h-full w-full"
@@ -75,7 +46,7 @@ export default function CategoriesSection() {
           />
         </svg>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -91,7 +62,7 @@ export default function CategoriesSection() {
           <div className="mx-auto mt-[13px] h-[7px] w-[170px] rounded-[3px] bg-[#cfb072] lg:mt-[21px]" />
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
@@ -99,13 +70,13 @@ export default function CategoriesSection() {
             hidden: { opacity: 0 },
             visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
           }}
-          className="relative z-10 mx-auto mt-[47px] flex w-full max-w-[1440px] snap-x snap-mandatory gap-[15px] overflow-x-auto px-[13px] pb-6 [-ms-overflow-style:none] [scrollbar-width:none] sm:mt-16 sm:gap-[35px] sm:px-16 lg:mt-[78px] lg:grid lg:max-w-[1280px] lg:grid-cols-4 lg:gap-5 lg:overflow-visible lg:px-20 lg:pb-0 [&::-webkit-scrollbar]:hidden"
+          className="relative z-10 mt-[47px] flex w-full snap-x snap-mandatory gap-[15px] overflow-x-auto px-[13px] pb-6 [-ms-overflow-style:none] [scrollbar-width:none] sm:mt-16 sm:gap-[35px] sm:px-10 lg:mt-[78px] lg:grid lg:grid-cols-[repeat(3,minmax(0,305px))] lg:justify-center lg:gap-6 lg:overflow-visible lg:px-20 lg:pb-0 xl:gap-8 [&::-webkit-scrollbar]:hidden"
         >
-          {categories.map((category) => (
+          {baseCategories.map((category) => (
             <CategoryCard
               key={category.name}
               category={category}
-              className="w-[min(340px,calc(100vw-69px))] shrink-0 snap-center aspect-[340/486] lg:w-full lg:aspect-[305/434] lg:snap-align-none"
+              className="aspect-[305/434] w-[min(285px,calc(100vw-80px))] shrink-0 snap-center sm:w-[305px] lg:w-full lg:snap-align-none"
             />
           ))}
         </motion.div>
@@ -118,11 +89,11 @@ function CategoryCard({
   category,
   className,
 }: {
-  category: { name: string; listings: string; image: string; position: string; href: string };
+  category: { name: string; image: string; position: string; href: string };
   className: string;
 }) {
   return (
-    <motion.article 
+    <motion.article
       variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}
       className={`group relative shrink-0 overflow-hidden rounded-2xl bg-[#f6f5f5] transition focus-within:ring-4 focus-within:ring-[#cfb072]/40 ${className}`}
     >
@@ -147,9 +118,6 @@ function CategoryCard({
       />
       <div className="absolute inset-x-0 bottom-9 text-center lg:bottom-7">
         <h3 className="text-[28px] font-medium leading-none tracking-[-0.02em] text-white transition-transform duration-500 group-hover:-translate-y-1">{category.name}</h3>
-        <p className="mt-5 text-[20px] font-normal leading-none tracking-[-0.02em] text-[#cfb072] transition-transform duration-500 group-hover:-translate-y-1">
-          {category.listings}
-        </p>
       </div>
     </motion.article>
   );

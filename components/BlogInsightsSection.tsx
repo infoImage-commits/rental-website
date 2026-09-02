@@ -71,7 +71,7 @@ export default function BlogInsightsSection() {
             ref={railRef}
             className="-mx-5 mt-16 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-8 lg:mx-0 lg:mt-8 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden"
           >
-            <div className="flex w-max snap-x items-start gap-[21px] px-[calc((100vw-min(84vw,328px))/2)] lg:grid lg:w-full lg:grid-cols-3 lg:px-0">
+            <div className="flex w-max snap-x items-start gap-[21px] px-[calc((100vw-min(84vw,328px))/2)] lg:w-full lg:justify-center lg:px-0">
               {isLoading
                 ? Array.from({ length: 3 }).map((_, index) => <ArticleSkeleton key={index} />)
                 : blogs.map((blog) => (
@@ -120,7 +120,7 @@ function ArticleCard({ blog }: { blog: BlogItem }) {
 
   return (
     <article
-      className="group flex min-h-[440px] w-[min(84vw,328px)] shrink-0 snap-center flex-col overflow-hidden rounded-[18px] bg-[#eeeded] shadow-[0_1.5px_5px_rgba(0,0,0,0.15)] transition duration-300 hover:-translate-y-1.5 sm:min-h-[500px] sm:w-[380px] lg:min-h-[590px] lg:w-full lg:rounded-3xl lg:shadow-[0_2px_7px_rgba(0,0,0,0.15)]"
+      className="group flex min-h-[440px] w-[min(84vw,328px)] shrink-0 snap-center flex-col overflow-hidden rounded-[18px] bg-[#eeeded] shadow-[0_1.5px_5px_rgba(0,0,0,0.15)] transition duration-300 hover:-translate-y-1.5 sm:min-h-[500px] sm:w-[380px] lg:min-h-[590px] lg:w-[390px] lg:rounded-3xl lg:shadow-[0_2px_7px_rgba(0,0,0,0.15)] xl:w-[410px]"
     >
       <div className="relative h-[250px] shrink-0 overflow-hidden rounded-t-[18px] bg-[#e4e0da] sm:h-[285px] lg:h-[335px] lg:rounded-t-3xl">
         <Image
@@ -173,7 +173,7 @@ function ReadArticleLink({ blog }: { blog: BlogItem }) {
 function ArticleSkeleton() {
   return (
     <article
-      className="flex min-h-[440px] w-[min(84vw,328px)] shrink-0 snap-center flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_1.5px_5px_rgba(0,0,0,0.15)] sm:min-h-[500px] sm:w-[380px] lg:min-h-[590px] lg:w-full lg:rounded-3xl lg:shadow-[0_2px_7px_rgba(0,0,0,0.15)]"
+      className="flex min-h-[440px] w-[min(84vw,328px)] shrink-0 snap-center flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_1.5px_5px_rgba(0,0,0,0.15)] sm:min-h-[500px] sm:w-[380px] lg:min-h-[590px] lg:w-[390px] lg:rounded-3xl lg:shadow-[0_2px_7px_rgba(0,0,0,0.15)] xl:w-[410px]"
     >
       <div className="h-[250px] shrink-0 animate-pulse rounded-t-[18px] bg-[#dfe8e4] sm:h-[285px] lg:h-[335px] lg:rounded-t-3xl" />
       <div className="flex flex-1 flex-col gap-3 bg-white px-4 py-4 sm:px-5 sm:py-5">

@@ -6,6 +6,7 @@ export const siteConfig = {
   locale: "en_US",
   phone: "+201273613935",
   displayPhone: "+20 12 73613935",
+  email: "info@hurghadavacationhomes.com",
   whatsappUrl: "https://wa.me/201273613935",
   address: {
     streetAddress: "El Kawther",

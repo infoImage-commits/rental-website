@@ -178,14 +178,14 @@ export default function PropertyCreateContent() {
                 </select>
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Location Category *</label>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">View Category *</label>
                 <select required value={formData.categoryId} onChange={e => updateForm({ categoryId: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]">
-                  <option value="" disabled>Select Location Category</option>
+                  <option value="" disabled>Select View Category</option>
                   {(locationCategories as any[]).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Base Price / Night</label>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Base Price / Night (Banner)</label>
                 <input type="number" min={0} value={formData.basePrice} onChange={e => updateForm({ basePrice: Number(e.target.value) })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
               </div>
             </div>

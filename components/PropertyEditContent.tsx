@@ -202,9 +202,9 @@ function BasicInfoTab({ property, currentItemIds, includeItems }: { property: an
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Location Category</label>
+          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">View Category</label>
           <select value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]">
-            <option value="" disabled>Select Location Category</option>
+            <option value="" disabled>Select View Category</option>
             {(locationCategories as any[]).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
@@ -239,7 +239,7 @@ function BasicInfoTab({ property, currentItemIds, includeItems }: { property: an
           <span className="text-[14px] font-medium text-[#183c2f]">Featured</span>
         </div>
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Base Price / Night</label>
+          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Base Price / Night (Banner)</label>
           <input type="number" min={0} value={form.basePrice} onChange={e => setForm({ ...form, basePrice: Number(e.target.value) })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
         </div>
       </div>

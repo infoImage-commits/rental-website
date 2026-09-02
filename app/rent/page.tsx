@@ -17,5 +17,5 @@ export const metadata: Metadata = {
 };
 
 export default function RentPage() {
-  return <PropertiesPageContent type="rent" />;
+  return <PropertiesPageContent />;
 }

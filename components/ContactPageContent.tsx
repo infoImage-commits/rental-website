@@ -9,20 +9,25 @@ import ContactForm from "./ContactForm";
 
 const contactDetails = [
   {
-    label: "Phone",
-    value: siteConfig.displayPhone,
-    icon: "/contact/icons/phone.svg",
+    label: "Email",
+    value: siteConfig.email,
+    href: `mailto:${siteConfig.email}`,
+    icon: "/contact/icons/email.svg",
     iconSize: "size-[18px]",
   },
   {
     label: "WhatsApp",
     value: siteConfig.displayPhone,
+    href: siteConfig.whatsappUrl,
+    external: true,
     icon: "/contact/icons/phone.svg",
     iconSize: "size-[18px]",
   },
   {
     label: "Office",
     value: siteConfig.address.label,
+    href: "https://www.google.com/maps/search/?api=1&query=Hurghada%20El%20Kawther",
+    external: true,
     icon: "/contact/icons/office.svg",
     iconSize: "h-5 w-4",
   },
@@ -115,8 +120,11 @@ function ContactInfoPanel({ shouldReduceMotion, viewport }: MotionProps) {
 
       <motion.div variants={container} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
         {contactDetails.map((detail) => (
-          <motion.div
+          <motion.a
             key={detail.label}
+            href={detail.href}
+            target={detail.external ? "_blank" : undefined}
+            rel={detail.external ? "noopener noreferrer" : undefined}
             variants={fadeUp}
             whileHover={shouldReduceMotion ? undefined : { y: -4 }}
             className="flex min-w-0 items-start gap-4 rounded-2xl border border-[#e8f0ec] bg-[#f7f9f8] p-4 shadow-[0_6px_18px_rgba(31,77,61,0.04)] transition hover:border-[#2e6f57]/25"
@@ -130,7 +138,7 @@ function ContactInfoPanel({ shouldReduceMotion, viewport }: MotionProps) {
                 {detail.value}
               </p>
             </div>
-          </motion.div>
+          </motion.a>
         ))}
       </motion.div>
     </motion.aside>

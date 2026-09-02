@@ -2,14 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCategories } from "@/lib/hooks/useCategory";
 import { motion } from "framer-motion";
 
 export default function HeroSection() {
   const router = useRouter();
-  const [listingType, setListingType] = useState<"rent" | "buy">("rent");
+  const listingType = "rent";
   const { data: categories } = useCategories();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -95,34 +94,8 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           onSubmit={handleSubmit} 
-          className="relative z-30 mx-auto -mt-[136px] w-[calc(100%-26px)] max-w-[1280px] rounded-[16px] bg-white p-4 shadow-[0_12px_30px_rgba(31,77,61,0.14)] sm:-mt-[188px] sm:rounded-[24px] sm:p-6 xl:-mt-[400px] xl:w-[calc(100%-160px)] xl:rounded-[30px] xl:px-9 xl:pb-[47px] xl:pt-8"
+          className="relative z-30 mx-auto -mt-[136px] w-[calc(100%-26px)] max-w-[1280px] rounded-[16px] bg-white p-4 shadow-[0_12px_30px_rgba(31,77,61,0.14)] sm:-mt-[188px] sm:rounded-[24px] sm:p-6 lg:w-[calc(100%-48px)] xl:-mt-[400px] xl:w-[calc(100%-160px)] xl:rounded-[30px] xl:px-9 xl:pb-[47px] xl:pt-8"
         >
-          <div className="mb-4 flex items-center justify-center gap-[42px] text-[13px] font-medium text-[#1F4D3D] sm:mb-5 sm:gap-24 sm:text-[18px] xl:mb-8 xl:text-[24px]">
-            <label className="inline-flex cursor-pointer items-center gap-2 transition hover:opacity-80">
-              <input 
-                type="radio" 
-                name="listingType" 
-                value="rent"
-                checked={listingType === "rent"}
-                onChange={() => setListingType("rent")}
-                className="h-[7px] w-[7px] accent-[#2e6f57] sm:h-5 sm:w-5 xl:h-6 xl:w-6" 
-              />
-              Rent
-            </label>
-
-            <label className="inline-flex cursor-pointer items-center gap-2 transition hover:opacity-80">
-              <input 
-                type="radio" 
-                name="listingType" 
-                value="buy"
-                checked={listingType === "buy"}
-                onChange={() => setListingType("buy")}
-                className="h-[7px] w-[7px] accent-[#2e6f57] sm:h-5 sm:w-5 xl:h-6 xl:w-6" 
-              />
-              Buy
-            </label>
-          </div>
-
           <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-[minmax(9rem,1fr)_minmax(11rem,1fr)_minmax(12rem,1.2fr)_minmax(9rem,1fr)_minmax(11rem,1fr)] xl:gap-4">
             
             {/* Location (Categories) */}

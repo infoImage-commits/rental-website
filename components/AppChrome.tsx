@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Footer from "./Footer";
+import FloatingWhatsApp from "./FloatingWhatsApp";
 import Header from "./Header";
 
 export default function AppChrome({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
     <>
       <Header />
       {children}
+      <FloatingWhatsApp />
       <Footer />
     </>
   );

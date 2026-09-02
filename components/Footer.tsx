@@ -12,7 +12,6 @@ import { siteConfig } from "@/lib/site";
 const quickLinks = [
   { label: "Home", href: "/" },
   { label: "Rent", href: "/rent" },
-  { label: "Buy", href: "/buy" },
   { label: "About Us", href: "/about" },
   { label: "Contact Us", href: "/contact" },
   { label: "Blogs", href: "/blogs" },
@@ -31,7 +30,8 @@ const socialLinks = [
 ];
 
 const contactItems = [
-  { label: siteConfig.displayPhone, href: `tel:${siteConfig.phone}`, icon: "/footer/icons/phone.svg" },
+  { label: siteConfig.displayPhone, href: siteConfig.whatsappUrl, icon: "/footer/icons/phone.svg", external: true },
+  { label: siteConfig.email, href: `mailto:${siteConfig.email}`, icon: "/contact/icons/email.svg" },
   {
     label: siteConfig.address.label,
     href: "https://www.google.com/maps/search/?api=1&query=Hurghada%20El%20Kawther",
@@ -212,7 +212,7 @@ function ContactColumn({ shouldReduceMotion }: { shouldReduceMotion: boolean }) 
               className="flex min-w-0 items-center gap-2.5 text-[12px] leading-[1.6] transition hover:text-[#cfb072] lg:text-[16px]"
             >
               <span className="grid size-5 shrink-0 place-items-center lg:size-[22px]">
-                <Image src={item.icon} alt="" width={20} height={20} className="max-h-[18px] w-[18px] object-contain lg:max-h-5 lg:w-5" />
+                <Image src={item.icon} alt="" width={20} height={20} className="max-h-[18px] w-[18px] object-contain [filter:brightness(0)_invert(1)] lg:max-h-5 lg:w-5" />
               </span>
               <span className="min-w-0 break-words">{item.label}</span>
             </a>
