@@ -13,6 +13,8 @@ import {
 import { API_BASE_URL } from "@/lib/api/config";
 import { useCreateRentBooking } from "@/lib/hooks/useBooking";
 import { useCreatePaypalOrder } from "@/lib/hooks/usePayment";
+import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
+import { usePropertyCategoryItems } from "@/lib/hooks/usePropertyCategoryItem";
 import type { Property, PropertyCategoryGroup } from "@/lib/types/property";
 import { savePaymentBookingContext } from "@/lib/utils/paymentBookingContext";
 import { formatUsd } from "@/lib/utils/currency";
@@ -90,14 +92,52 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return apiError.response?.data?.errors?.[0] || apiError.response?.data?.message || fallback;
 }
 
+function resolveApiImageUrl(url?: string | null) {
+  if (!url || url.trim() === "") return "";
+  const trimmed = url.trim();
+  if (trimmed.startsWith("http") || trimmed.startsWith("/")) return trimmed;
+  return `${API_BASE_URL}/${trimmed.replace(/^\/+/, "")}`;
+}
+
+function normalizeLookupKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function resolveAmenityIcon(icon?: string | null) {
+  if (!icon || icon.trim() === "") return "/icons/amenities/amenities-title.svg";
+  const trimmed = icon.trim();
+  if (trimmed.startsWith("http") || trimmed.startsWith("/")) return trimmed;
+  return `/icons/amenities/${trimmed}.svg`;
+}
+
 export default function SinglePropertyPageContent({ id }: { id: string }) {
   const { data: property, isLoading } = usePropertyById(id);
+  const { data: includeCategories = [] } = usePropertyCategories();
+  const { data: includeItems = [] } = usePropertyCategoryItems();
 
   if (isLoading) return <div className="p-20 text-center">Loading Property...</div>;
   if (!property) return <div className="p-20 text-center">Property not found</div>;
 
-  const galleryImages = (property.images || []).sort((a,b)=>a.displayOrder - b.displayOrder).map((img, i) => ({ src: `${API_BASE_URL}/${img.imageUrl}`, alt: property.name, className: i === 0 ? "col-span-2 row-span-2" : (i === 3 ? "col-span-2" : "") }));
-  if (galleryImages.length === 0) galleryImages.push({ src: "/rent/property-card.png", alt: "Placeholder", className: "col-span-2 row-span-2" });
+  const propertyWithOptionalCover = property as Property & { coverImageUrl?: string | null };
+  const galleryImages = (property.images || [])
+    .sort((a,b)=>a.displayOrder - b.displayOrder)
+    .map((img, i) => ({ src: resolveApiImageUrl(img.imageUrl), alt: property.name, className: i === 0 ? "col-span-2 row-span-2" : (i === 3 ? "col-span-2" : "") }));
+  const fallbackImage = resolveApiImageUrl(propertyWithOptionalCover.coverImageUrl) || resolveApiImageUrl(property.category?.imageUrl) || "/rent/property-card.png";
+  if (galleryImages.length === 0) galleryImages.push({ src: fallbackImage, alt: property.name, className: "col-span-2 row-span-2" });
+  const categoryNameById = new Map(includeCategories.map(category => [category.id, category.name]));
+  const categoryIconByName = new Map(includeCategories.map(category => [
+    normalizeLookupKey(category.name),
+    category.defaultIcon || category.icon,
+  ]));
+  const itemIconByName = new Map<string, string | null>();
+  const itemIconByCategoryAndName = new Map<string, string | null>();
+  includeItems.forEach(item => {
+    itemIconByName.set(normalizeLookupKey(item.name), item.icon);
+    const categoryName = categoryNameById.get(item.propertyCategoryId);
+    if (categoryName) {
+      itemIconByCategoryAndName.set(`${normalizeLookupKey(categoryName)}::${normalizeLookupKey(item.name)}`, item.icon);
+    }
+  });
   const quickFacts = [
     { label: property.propertyTypeName || "Property", icon: "/homepage/properties/icons/size.svg" },
     { label: `${property.capacity || 2} Guests`, icon: "/billing/icons/tenant.svg" },
@@ -137,7 +177,12 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
           </ScrollAnimation>
           
           <ScrollAnimation delay={0.1}>
-            <AmenitiesSection categories={property.categories || []} />
+            <AmenitiesSection
+              categories={property.categories || []}
+              categoryIconByName={categoryIconByName}
+              itemIconByName={itemIconByName}
+              itemIconByCategoryAndName={itemIconByCategoryAndName}
+            />
           </ScrollAnimation>
           
           <ScrollAnimation delay={0.1}>
@@ -230,7 +275,17 @@ function InfoCard({ title, icon, rows }: { title: string; icon: string; rows: st
   );
 }
 
-function AmenitiesSection({ categories }: { categories: PropertyCategoryGroup[] }) {
+function AmenitiesSection({
+  categories,
+  categoryIconByName,
+  itemIconByName,
+  itemIconByCategoryAndName,
+}: {
+  categories: PropertyCategoryGroup[];
+  categoryIconByName: Map<string, string | null>;
+  itemIconByName: Map<string, string | null>;
+  itemIconByCategoryAndName: Map<string, string | null>;
+}) {
   return (
     <section className="mt-7 rounded-lg border border-[#dfe8e4] bg-white p-[25px] shadow-[0_4px_10px_rgba(175,132,255,0.03)]">
       <div className="flex items-center gap-2">
@@ -240,16 +295,35 @@ function AmenitiesSection({ categories }: { categories: PropertyCategoryGroup[] 
       <div className="mt-6 grid gap-8 lg:gap-10">
         {categories?.map((cat) => (
           <div key={cat.categoryName}>
-            <h3 className="inline-flex min-h-10 items-center rounded bg-[#f5f7f6] px-3 text-[14px] font-medium leading-6 text-[#183c2f] lg:text-[16px]">
+            <h3 className="inline-flex min-h-10 items-center gap-2 rounded bg-[#f5f7f6] px-3 text-[14px] font-medium leading-6 text-[#183c2f] lg:text-[16px]">
+              <Image
+                src={resolveAmenityIcon(categoryIconByName.get(normalizeLookupKey(cat.categoryName)))}
+                alt=""
+                width={20}
+                height={20}
+                className="size-5 object-contain"
+              />
               {cat.categoryName}
             </h3>
             <ul className="mt-4 grid gap-x-4 gap-y-4 text-[14px] leading-5 text-[#656566] lg:grid-cols-4">
-              {cat.items?.map((item) => (
-                <li key={item} className="flex items-center gap-3">
-                  <span className="size-2.5 shrink-0 rounded-full bg-[#cfb072]" />
-                  {item}
-                </li>
-              ))}
+              {cat.items?.map((item) => {
+                const categoryKey = normalizeLookupKey(cat.categoryName);
+                const itemKey = normalizeLookupKey(item);
+                const icon = itemIconByCategoryAndName.get(`${categoryKey}::${itemKey}`) ?? itemIconByName.get(itemKey);
+
+                return (
+                  <li key={item} className="flex items-center gap-3">
+                    <Image
+                      src={resolveAmenityIcon(icon)}
+                      alt=""
+                      width={18}
+                      height={18}
+                      className="size-[18px] shrink-0 object-contain"
+                    />
+                    {item}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
