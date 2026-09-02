@@ -189,9 +189,6 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
             <AvailabilitySection propertyId={property.id} propertyName={property.name} capacity={property.capacity || 1} basePrice={property.basePrice || 0} />
           </ScrollAnimation>
           
-          <ScrollAnimation delay={0.1}>
-            <ReviewsSection />
-          </ScrollAnimation>
         </div>
       </section>
     </main>
