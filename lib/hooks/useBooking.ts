@@ -5,10 +5,14 @@ import type {
   BookingApiResponse,
   RentBookingRequest,
   RentBookingApiResponse,
+  AdminCreatePropertyBookingRequest,
+  AdminCreatePropertyBookingResponse,
   AdminBookingApiResponse,
   AdminBookingDetails,
   AdminBookingListItem,
   AdminBookingListQuery,
+  InHouseBookingsData,
+  InHouseBookingsQuery,
   AdminTransferBooking,
   AdminTransferBookingListQuery,
   BookingExtensionRequest,
@@ -42,6 +46,32 @@ export function useCreateRentBooking() {
   });
 }
 
+export function useCreateAdminPropertyBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: AdminCreatePropertyBookingRequest) => {
+      const { data } = await axiosInstance.post<
+        AdminBookingApiResponse<AdminCreatePropertyBookingResponse> | AdminCreatePropertyBookingResponse
+      >("/api/property-bookings/admin", payload);
+
+      if ("isSuccess" in data) {
+        if (!data.isSuccess || !data.data) {
+          throw new Error(data.errors?.[0] || data.message || "Could not create admin booking.");
+        }
+
+        return data.data;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [BOOKING_KEY, "admin", "property"] });
+      queryClient.invalidateQueries({ queryKey: [BOOKING_KEY, "in-house"] });
+    },
+  });
+}
+
 export function useAdminPropertyBookings(params: AdminBookingListQuery = {}) {
   return useQuery({
     queryKey: [BOOKING_KEY, "admin", "property", params],
@@ -53,6 +83,26 @@ export function useAdminPropertyBookings(params: AdminBookingListQuery = {}) {
       });
       return data.data;
     },
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useInHouseBookings(params: InHouseBookingsQuery = {}) {
+  return useQuery({
+    queryKey: [BOOKING_KEY, "in-house", params],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get<AdminBookingApiResponse<InHouseBookingsData>>(
+        "/api/bookings/in-house",
+        {
+          params: {
+            from: params.from || undefined,
+            to: params.to || undefined,
+          },
+        }
+      );
+      return data.data;
+    },
+    enabled: Boolean(params.from && params.to),
     staleTime: 30 * 1000,
   });
 }

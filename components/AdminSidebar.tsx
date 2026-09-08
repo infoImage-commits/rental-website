@@ -8,6 +8,8 @@ import { useProfile, useLogout } from "@/lib/hooks/useAuth";
 const mainNavItems = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
   { label: "Bookings", href: "/admin/bookings", icon: "clipboard" },
+  { label: "Reports", href: "/admin/reports", icon: "report" },
+  { label: "In-House", href: "/admin/in-house", icon: "bed" },
   { label: "Transfer Bookings", href: "/admin/transfer-bookings", icon: "route" },
   { label: "Properties Views", href: "/admin/properties-locations", icon: "globe" },
   { label: "Rent Properties", href: "/admin/properties", icon: "home" },
@@ -151,6 +153,20 @@ function SidebarIcon({ name }: { name: string }) {
         <svg {...common}>
           <path d="M9 4h6l1 2h3v14H5V6h3l1-2Z" />
           <path d="M9 11h6M9 15h4" />
+        </svg>
+      );
+    case "report":
+      return (
+        <svg {...common}>
+          <path d="M7 3h7l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+          <path d="M14 3v5h4M9 13h6M9 17h4" />
+        </svg>
+      );
+    case "bed":
+      return (
+        <svg {...common}>
+          <path d="M4 11V5M20 19v-7a2 2 0 0 0-2-2H9v9M4 19v-8h5" />
+          <path d="M4 15h16M7 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
         </svg>
       );
     case "cleaning":

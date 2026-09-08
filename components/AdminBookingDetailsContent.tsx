@@ -223,6 +223,7 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Detail label="Booking Number" value={booking.bookingNumber} mono />
               <Detail label="Booking Status" value={booking.statusName} strong />
+              <Detail label="Booking Source" value={booking.bookingSourceName || booking.bookingSource || "-"} />
               <Detail label="Payment Status" value={booking.paymentStatusName} strong />
               <Detail label="Created" value={formatDateTime(booking.createdAtUtc)} />
               <Detail label="Confirmed" value={formatDateTime(booking.confirmedAt)} />
@@ -266,7 +267,9 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
         </aside>
       </div>
 
-      <PaymentsSection payments={payments} isLoading={isLoadingPayments} isError={isPaymentsError} />
+      {(isLoadingPayments || isPaymentsError || payments.length > 0) && (
+        <PaymentsSection payments={payments} isLoading={isLoadingPayments} isError={isPaymentsError} />
+      )}
 
       {isExtensionOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -392,8 +395,6 @@ function PaymentsSection({
         <p className="text-[14px] text-[#8a9a94]">Loading payments...</p>
       ) : isError ? (
         <p className="text-[14px] text-red-600">Could not load booking payments.</p>
-      ) : payments.length === 0 ? (
-        <p className="text-[14px] text-[#667c74]">No payments found for this booking yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[920px] border-collapse text-left">

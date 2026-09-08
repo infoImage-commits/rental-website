@@ -5,9 +5,10 @@ import { useProfile } from "@/lib/hooks/useAuth";
 
 const quickActions = [
   { label: "Bookings", href: "/admin/bookings", helper: "Review rental bookings" },
+  { label: "Reports", href: "/admin/reports", helper: "Download arrival, departure, and in-house reports" },
+  { label: "In-House", href: "/admin/in-house", helper: "View unit status and current guests" },
   { label: "Transfer Bookings", href: "/admin/transfer-bookings", helper: "Track transfer reservations" },
   { label: "Rent Properties", href: "/admin/properties", helper: "Manage rental listings" },
-  { label: "Buy Properties", href: "/admin/property-buyings", helper: "Manage sale listings" },
   { label: "Messages", href: "/admin/messages", helper: "Read customer messages" },
 ];
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import PropertyImageGallery from "./PropertyImageGallery";
 import ScrollAnimation from "./ScrollAnimation";
@@ -348,6 +349,7 @@ function AvailabilitySection({
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [formError, setFormError] = useState("");
+  const [hasAcceptedRules, setHasAcceptedRules] = useState(false);
   const [bookingForm, setBookingForm] = useState({
     fullName: "",
     email: "",
@@ -528,6 +530,7 @@ function AvailabilitySection({
         person: bookingForm.person,
         checkIn,
         checkOut,
+        bookingSource: "Website",
       },
       {
         onSuccess: (res) => {
@@ -647,7 +650,7 @@ function AvailabilitySection({
             <input
               type="tel"
               value={bookingForm.phone}
-              onChange={(e) => setBookingForm({ ...bookingForm, phone: e.target.value })}
+              onChange={(e) => setBookingForm({ ...bookingForm, phone: e.target.value.replace(/[^\d+]/g, '') })}
               className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] outline-none focus:border-[#2e6f57]"
             />
           </label>
@@ -702,9 +705,36 @@ function AvailabilitySection({
             </p>
           )}
 
+          <label className="mt-4 flex items-start gap-2 text-[13px] leading-5 text-[#656566] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hasAcceptedRules}
+              onChange={(e) => setHasAcceptedRules(e.target.checked)}
+              className="mt-0.5 accent-[#2e6f57]"
+            />
+            <span>
+              I have read and accepted the{" "}
+              <Link href="/house-rules" className="text-[#2e6f57] underline hover:no-underline">
+                House Rules
+              </Link>
+              .
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={isPending || isPriceUnavailable}
+            disabled={
+              isPending ||
+              isPriceUnavailable ||
+              !bookingForm.fullName.trim() ||
+              !bookingForm.email.trim() ||
+              !bookingForm.phone.trim() ||
+              !checkIn ||
+              !checkOut ||
+              checkOut <= checkIn ||
+              bookingForm.person > capacity ||
+              !hasAcceptedRules
+            }
             className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[#2e6f57] text-[15px] font-semibold text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isPending ? "Processing..." : "Book & Pay Now"}
@@ -775,7 +805,7 @@ function CalendarDayButton({
   const stateClass = isRangeEdge
     ? "border-[#2e6f57] bg-[#2e6f57] font-bold text-white shadow-[0_4px_12px_rgba(46,111,87,0.18)]"
     : isInRange
-      ? "border-[#a7cabb] bg-[#eef7f3] font-bold text-[#2e6f57]"
+      ? "border-[#2e6f57] bg-[#2e6f57] font-bold text-white"
       : day.status === "available"
         ? "border-[#2e6f57] bg-[#f5f7f6] font-bold text-[#2e6f57] shadow-[0_1px_0_rgba(46,111,87,0.08)] hover:bg-[#eef7f3]"
         : day.status === "booked"

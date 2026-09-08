@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAdminPropertyBookings } from "@/lib/hooks/useBooking";
-import type { AdminBookingListQuery } from "@/lib/types/booking";
+import { BOOKING_SOURCES } from "@/lib/types/booking";
+import type { AdminBookingListQuery, BookingSource } from "@/lib/types/booking";
 import { formatUsd } from "@/lib/utils/currency";
 
 type FilterState = {
@@ -12,6 +13,7 @@ type FilterState = {
   PropertyNumber: string;
   CustomerName: string;
   CustomerEmail: string;
+  BookingSource: string;
   Status: string;
   SortBy: string;
   IsDescending: boolean;
@@ -23,6 +25,7 @@ const defaultFilters: FilterState = {
   PropertyNumber: "",
   CustomerName: "",
   CustomerEmail: "",
+  BookingSource: "",
   Status: "",
   SortBy: "createdAtUtc",
   IsDescending: true,
@@ -35,6 +38,7 @@ function compactQuery(filters: FilterState, page: number): AdminBookingListQuery
     PropertyNumber: filters.PropertyNumber || undefined,
     CustomerName: filters.CustomerName || undefined,
     CustomerEmail: filters.CustomerEmail || undefined,
+    BookingSource: filters.BookingSource ? (filters.BookingSource as BookingSource) : undefined,
     Status: filters.Status ? Number(filters.Status) : undefined,
     SortBy: filters.SortBy || undefined,
     IsDescending: filters.IsDescending,
@@ -96,11 +100,17 @@ export default function AdminBookingsContent() {
             View property bookings, payment status, and extension eligibility.
           </p>
         </div>
+        <Link
+          href="/admin/bookings/create"
+          className="inline-flex h-10 items-center justify-center rounded-full bg-[#2e6f57] px-5 text-[14px] font-medium text-white shadow-sm transition hover:bg-[#255f49]"
+        >
+          Create Booking
+        </Link>
       </header>
 
       <form
         onSubmit={applyFilters}
-        className="mb-6 grid gap-3 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)] lg:grid-cols-6"
+        className="mb-6 grid gap-3 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)] lg:grid-cols-7"
       >
         <FilterInput
           label="Search"
@@ -147,8 +157,23 @@ export default function AdminBookingsContent() {
             <option value="4">Cancelled</option>
           </select>
         </label>
+        <label className="block">
+          <span className="mb-1.5 block text-[12px] font-medium text-[#667c74]">Source</span>
+          <select
+            value={draftFilters.BookingSource}
+            onChange={(event) => updateFilter("BookingSource", event.target.value)}
+            className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3 text-[13px] text-[#183c2f] outline-none focus:border-[#2e6f57]"
+          >
+            <option value="">All</option>
+            {BOOKING_SOURCES.map((source) => (
+              <option key={source} value={source}>
+                {source}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <div className="flex items-end gap-2 lg:col-span-6">
+        <div className="flex items-end gap-2 lg:col-span-7">
           <label className="block w-full max-w-[180px]">
             <span className="mb-1.5 block text-[12px] font-medium text-[#667c74]">Sort By</span>
             <select
@@ -195,6 +220,7 @@ export default function AdminBookingsContent() {
               <tr>
                 <th className="px-6 py-4">Booking</th>
                 <th className="px-6 py-4">Guest</th>
+                <th className="px-6 py-4">Source</th>
                 <th className="px-6 py-4">Stay</th>
                 <th className="px-6 py-4 text-right">Total</th>
                 <th className="px-6 py-4 text-center">Status</th>
@@ -205,20 +231,20 @@ export default function AdminBookingsContent() {
             <tbody className="divide-y divide-[#f0f4f2]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-20 text-center text-[14px] text-[#8a9a94]">
+                  <td colSpan={8} className="py-20 text-center text-[14px] text-[#8a9a94]">
                     <span className="mr-2 inline-block size-5 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
                     Loading bookings...
                   </td>
                 </tr>
               ) : isError ? (
                 <tr>
-                  <td colSpan={7} className="py-20 text-center text-[#183c2f]">
+                  <td colSpan={8} className="py-20 text-center text-[#183c2f]">
                     Failed to load bookings.
                   </td>
                 </tr>
               ) : bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-24 text-center">
+                  <td colSpan={8} className="py-24 text-center">
                     <p className="text-[16px] font-medium text-[#183c2f]">No bookings found</p>
                     <p className="mt-1 text-[14px] text-[#667c74]">Try adjusting your filters.</p>
                   </td>
@@ -233,6 +259,9 @@ export default function AdminBookingsContent() {
                       <p className="mt-0.5 text-[12px] text-[#8a9a94]">{booking.bookingTypeName}</p>
                     </td>
                     <td className="px-6 py-4 text-[#414847]">{booking.fullName}</td>
+                    <td className="px-6 py-4 text-[13px] text-[#667c74]">
+                      {booking.bookingSourceName || booking.bookingSource || "-"}
+                    </td>
                     <td className="px-6 py-4 text-[13px] text-[#667c74]">
                       {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
                     </td>

@@ -91,10 +91,25 @@ export function useBookingPayments(bookingId: string) {
   return useQuery({
     queryKey: ["payments", "booking", bookingId],
     queryFn: async () => {
-      const { data } = await axiosInstance.get<PaymentApiResponse<BookingPayment[]>>(
-        `/api/payments/booking/${bookingId}`
-      );
-      return data.data || [];
+      try {
+        const { data } = await axiosInstance.get<PaymentApiResponse<BookingPayment[]>>(
+          `/api/payments/booking/${bookingId}`
+        );
+        return data.data || [];
+      } catch (error) {
+        const apiError = error as {
+          response?: { status?: number; data?: PaymentApiResponse<BookingPayment[]> };
+        };
+
+        if (
+          apiError.response?.status === 404 &&
+          apiError.response.data?.message?.toLowerCase().includes("no payments found")
+        ) {
+          return [];
+        }
+
+        throw error;
+      }
     },
     enabled: !!bookingId,
     staleTime: 30 * 1000,

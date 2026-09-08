@@ -258,13 +258,11 @@ export default function PropertiesLocationsContent() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] border-collapse text-left">
+            <table className="w-full min-w-[640px] border-collapse text-left">
               <thead className="bg-[#f5f7f6] text-[12px] font-semibold uppercase tracking-[0.08em] text-[#667c74]">
                 <tr>
                   <th className="px-5 py-3">Property View</th>
                   <th className="px-5 py-3">Rent Properties</th>
-                  <th className="px-5 py-3">Buy Properties</th>
-                  <th className="px-5 py-3">Total</th>
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -295,8 +293,6 @@ export default function PropertiesLocationsContent() {
                         </div>
                       </td>
                       <td className="px-5 py-4 text-[#667c74]">{category.propertiesCount}</td>
-                      <td className="px-5 py-4 text-[#667c74]">{category.propertyBuyingsCount}</td>
-                      <td className="px-5 py-4 font-semibold text-[#183c2f]">{category.totalCount}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button

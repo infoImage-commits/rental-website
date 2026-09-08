@@ -14,6 +14,10 @@ export interface TransferBookingRequest {
   phone: string;
 }
 
+export const BOOKING_SOURCES = ["Website", "PMP", "Booking", "Other"] as const;
+
+export type BookingSource = (typeof BOOKING_SOURCES)[number];
+
 export interface RentBookingRequest {
   propertyId: string;
   fullName: string;
@@ -22,6 +26,26 @@ export interface RentBookingRequest {
   person: number;
   checkIn: string;
   checkOut: string;
+  bookingSource: BookingSource;
+}
+
+export interface AdminCreatePropertyBookingRequest {
+  unitId: string;
+  propertyId: string;
+  checkIn: string;
+  checkOut: string;
+  bookingSource: BookingSource;
+  fullName: string;
+  email: string;
+  phone: string;
+  person: number;
+}
+
+export interface AdminCreatePropertyBookingResponse {
+  bookingId: string;
+  bookingNumber: string;
+  status: string;
+  totalPrice: number;
 }
 
 export interface BookingResponseData {
@@ -72,6 +96,7 @@ export interface AdminBookingListQuery {
   PropertyNumber?: string;
   CustomerName?: string;
   CustomerEmail?: string;
+  BookingSource?: BookingSource;
   SearchTerm?: string;
   PageNumber?: number;
   PageSize?: number;
@@ -84,6 +109,8 @@ export interface AdminBookingListItem {
   bookingNumber: string;
   bookingType: number;
   bookingTypeName: string;
+  bookingSource?: string;
+  bookingSourceName?: string;
   fullName: string;
   checkIn: string;
   checkOut: string;
@@ -98,6 +125,8 @@ export interface AdminBookingDetails {
   bookingNumber: string;
   status: number;
   statusName: string;
+  bookingSource?: string;
+  bookingSourceName?: string;
   paymentStatus: number;
   paymentStatusName: string;
   createdAtUtc: string;
@@ -150,6 +179,41 @@ export interface AdminBookingApiResponse<T> {
   message: string | null;
   errors: string[];
   type: number;
+}
+
+export interface InHouseBooking {
+  bookingId: string;
+  bookingNumber: string;
+  checkIn: string;
+  checkOut: string;
+  status: string;
+  guestName: string;
+  bookingSource: string;
+  bookingSourceName: string;
+}
+
+export interface InHouseUnit {
+  unitId: string;
+  unitName: string;
+  unitNumber: string;
+  status: string;
+  statusName: string;
+  bookings: InHouseBooking[];
+}
+
+export interface InHouseBookingsData {
+  from: string;
+  to: string;
+  totalUnits: number;
+  inHouseCount: number;
+  bookedCount: number;
+  availableCount: number;
+  units: InHouseUnit[];
+}
+
+export interface InHouseBookingsQuery {
+  from?: string;
+  to?: string;
 }
 
 export interface AdminTransferBookingListQuery {
