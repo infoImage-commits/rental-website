@@ -14,6 +14,7 @@ type FilterState = {
   CustomerName: string;
   CustomerEmail: string;
   BookingSource: string;
+  PaymentStatus: string;
   Status: string;
   SortBy: string;
   IsDescending: boolean;
@@ -26,6 +27,7 @@ const defaultFilters: FilterState = {
   CustomerName: "",
   CustomerEmail: "",
   BookingSource: "",
+  PaymentStatus: "",
   Status: "",
   SortBy: "createdAtUtc",
   IsDescending: true,
@@ -39,6 +41,7 @@ function compactQuery(filters: FilterState, page: number): AdminBookingListQuery
     CustomerName: filters.CustomerName || undefined,
     CustomerEmail: filters.CustomerEmail || undefined,
     BookingSource: filters.BookingSource ? (filters.BookingSource as BookingSource) : undefined,
+    PaymentStatus: filters.PaymentStatus ? Number(filters.PaymentStatus) : undefined,
     Status: filters.Status ? Number(filters.Status) : undefined,
     SortBy: filters.SortBy || undefined,
     IsDescending: filters.IsDescending,
@@ -61,6 +64,15 @@ function statusClass(statusName: string) {
   if (normalized.includes("confirm")) return "bg-emerald-50 text-emerald-700";
   if (normalized.includes("pending")) return "bg-amber-50 text-amber-700";
   if (normalized.includes("cancel")) return "bg-red-50 text-red-700";
+  return "bg-[#f5f7f6] text-[#667c74]";
+}
+
+function paymentStatusClass(statusName = "") {
+  const normalized = statusName.toLowerCase();
+  if (normalized.includes("paid") && !normalized.includes("partial")) return "bg-emerald-50 text-emerald-700";
+  if (normalized.includes("partial")) return "bg-[#e8f1ff] text-[#2c5a96]";
+  if (normalized.includes("pending") || normalized.includes("processing")) return "bg-amber-50 text-amber-700";
+  if (normalized.includes("failed") || normalized.includes("cancel")) return "bg-red-50 text-red-700";
   return "bg-[#f5f7f6] text-[#667c74]";
 }
 
@@ -97,7 +109,7 @@ export default function AdminBookingsContent() {
             Bookings
           </h1>
           <p className="mt-1 text-[14px] text-[#667c74]">
-            View property bookings, payment status, and extension eligibility.
+            View property bookings, payment status, and remaining balances.
           </p>
         </div>
         <Link
@@ -110,7 +122,7 @@ export default function AdminBookingsContent() {
 
       <form
         onSubmit={applyFilters}
-        className="mb-6 grid gap-3 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)] lg:grid-cols-7"
+        className="mb-6 grid gap-3 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)] lg:grid-cols-8"
       >
         <FilterInput
           label="Search"
@@ -172,8 +184,21 @@ export default function AdminBookingsContent() {
             ))}
           </select>
         </label>
+        <label className="block">
+          <span className="mb-1.5 block text-[12px] font-medium text-[#667c74]">Payment</span>
+          <select
+            value={draftFilters.PaymentStatus}
+            onChange={(event) => updateFilter("PaymentStatus", event.target.value)}
+            className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3 text-[13px] text-[#183c2f] outline-none focus:border-[#2e6f57]"
+          >
+            <option value="">All</option>
+            <option value="1">Pending</option>
+            <option value="2">Partially Paid</option>
+            <option value="3">Paid</option>
+          </select>
+        </label>
 
-        <div className="flex items-end gap-2 lg:col-span-7">
+        <div className="flex items-end gap-2 lg:col-span-8">
           <label className="block w-full max-w-[180px]">
             <span className="mb-1.5 block text-[12px] font-medium text-[#667c74]">Sort By</span>
             <select
@@ -215,7 +240,7 @@ export default function AdminBookingsContent() {
 
       <div className="w-full overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[14px]">
+          <table className="w-full min-w-[1180px] text-left text-[14px]">
             <thead className="bg-[#f5f7f6] text-[12px] font-medium uppercase tracking-wider text-[#8a9a94]">
               <tr>
                 <th className="px-6 py-4">Booking</th>
@@ -223,7 +248,10 @@ export default function AdminBookingsContent() {
                 <th className="px-6 py-4">Source</th>
                 <th className="px-6 py-4">Stay</th>
                 <th className="px-6 py-4 text-right">Total</th>
+                <th className="px-6 py-4 text-right">Paid</th>
+                <th className="px-6 py-4 text-right">Remaining</th>
                 <th className="px-6 py-4 text-center">Status</th>
+                <th className="px-6 py-4 text-center">Payment</th>
                 <th className="px-6 py-4">Created</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -231,20 +259,20 @@ export default function AdminBookingsContent() {
             <tbody className="divide-y divide-[#f0f4f2]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-20 text-center text-[14px] text-[#8a9a94]">
+                  <td colSpan={11} className="py-20 text-center text-[14px] text-[#8a9a94]">
                     <span className="mr-2 inline-block size-5 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
                     Loading bookings...
                   </td>
                 </tr>
               ) : isError ? (
                 <tr>
-                  <td colSpan={8} className="py-20 text-center text-[#183c2f]">
+                  <td colSpan={11} className="py-20 text-center text-[#183c2f]">
                     Failed to load bookings.
                   </td>
                 </tr>
               ) : bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-24 text-center">
+                  <td colSpan={11} className="py-24 text-center">
                     <p className="text-[16px] font-medium text-[#183c2f]">No bookings found</p>
                     <p className="mt-1 text-[14px] text-[#667c74]">Try adjusting your filters.</p>
                   </td>
@@ -266,9 +294,16 @@ export default function AdminBookingsContent() {
                       {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
                     </td>
                     <td className="px-6 py-4 text-right font-semibold text-[#183c2f]">{money(booking.totalPrice)}</td>
+                    <td className="px-6 py-4 text-right font-semibold text-[#183c2f]">{money(booking.paidAmount ?? 0)}</td>
+                    <td className="px-6 py-4 text-right font-semibold text-[#183c2f]">{money(booking.remainingAmount ?? 0)}</td>
                     <td className="px-6 py-4 text-center">
                       <span className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${statusClass(booking.statusName)}`}>
                         {booking.statusName}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${paymentStatusClass(booking.paymentStatusName)}`}>
+                        {booking.paymentStatusName || "-"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-[13px] text-[#667c74]">{formatDate(booking.createdAtUtc)}</td>

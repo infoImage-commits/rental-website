@@ -448,14 +448,14 @@ function AvailabilitySection({
   const bookings = (availabilityData?.bookingCalendar || []) as BookingCalendarItem[];
 
   const isDateBooked = (dateString: string) => {
-    const overlappingBooking = bookings.find((booking) => dateString >= booking.from && dateString <= booking.to);
+    const overlappingBooking = bookings.find((booking) => dateString >= booking.from && dateString < booking.to);
     return Boolean(overlappingBooking && overlappingBooking.isBookable === false);
   };
 
   const rangeHasBookedDate = (from: string, to: string, calendar = bookings) => {
     let cursor = from;
-    while (cursor <= to) {
-      const overlappingBooking = calendar.find((booking) => cursor >= booking.from && cursor <= booking.to);
+    while (cursor < to) {
+      const overlappingBooking = calendar.find((booking) => cursor >= booking.from && cursor < booking.to);
       if (overlappingBooking && overlappingBooking.isBookable === false) return true;
       cursor = addDays(cursor, 1);
     }
@@ -616,7 +616,7 @@ function AvailabilitySection({
           }
 
           createPaypalOrder(
-            { bookingId: res.data.bookingId, bookingExtensionId: null },
+            { bookingId: res.data.bookingId },
             {
               onSuccess: (orderRes) => {
                 localStorage.setItem("paypal_order_id", orderRes.orderId);

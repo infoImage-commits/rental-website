@@ -121,6 +121,30 @@ export function useAdminPropertyBooking(id: string) {
   });
 }
 
+export function useMarkPropertyBookingAsPaidAll() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { data } = await axiosInstance.post<AdminBookingApiResponse<AdminBookingDetails>>(
+        `/api/property-bookings/${bookingId}/mark-as-paid-all`,
+        ""
+      );
+
+      if (!data.isSuccess || !data.data) {
+        throw new Error(data.errors?.[0] || data.message || "Could not mark this booking as fully paid.");
+      }
+
+      return data;
+    },
+    onSuccess: (_data, bookingId) => {
+      queryClient.invalidateQueries({ queryKey: [BOOKING_KEY, "admin", "property"] });
+      queryClient.invalidateQueries({ queryKey: [BOOKING_KEY, "admin", "property", bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["payments", "booking", bookingId] });
+    },
+  });
+}
+
 export function useCreateBookingExtension() {
   const queryClient = useQueryClient();
 

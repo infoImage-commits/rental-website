@@ -5,7 +5,6 @@ import axiosInstance from "@/lib/api/axiosInstance";
 
 export interface CreatePaypalOrderRequest {
   bookingId: string;
-  bookingExtensionId: string | null;
 }
 
 export interface CreatePaypalOrderResponse {

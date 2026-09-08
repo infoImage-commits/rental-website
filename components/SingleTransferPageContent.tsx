@@ -109,7 +109,7 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
         onSuccess: (res) => {
           const bookingId = res.data.bookingId;
           createPaypalOrder(
-            { bookingId, bookingExtensionId: null },
+            { bookingId },
             {
               onSuccess: (orderRes) => {
                 localStorage.setItem("paypal_order_id", orderRes.orderId);

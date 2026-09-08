@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useDownloadReport } from "@/lib/hooks/useReports";
+import { useDownloadReport, useReportPreview } from "@/lib/hooks/useReports";
+import { formatUsd } from "@/lib/utils/currency";
 import type { FormEvent } from "react";
 import type {
   ReportDownloadRequest,
   ReportFormat,
   ReportOption,
+  ReportPreviewRequest,
   ReportType,
 } from "@/lib/types/report";
+
+const PAGE_SIZE = 50;
 
 const reportOptions: ReportOption[] = [
   {
@@ -39,6 +43,15 @@ function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "2-digit" }).format(new Date(value));
+}
+
+function money(value: number) {
+  return formatUsd(value);
+}
+
 export default function ReportsContent() {
   const today = useMemo(() => getTodayDate(), []);
   const [reportType, setReportType] = useState<ReportType>("arrival");
@@ -47,8 +60,10 @@ export default function ReportsContent() {
   const [from, setFrom] = useState(today);
   const [to, setTo] = useState(today);
   const [message, setMessage] = useState("");
+  const [previewRequest, setPreviewRequest] = useState<ReportPreviewRequest | null>(null);
 
-  const { mutate: downloadReport, isPending, reset } = useDownloadReport();
+  const { mutate: downloadReport, isPending: isDownloading, reset } = useDownloadReport();
+  const { data: preview, isLoading: isLoadingPreview, isError: isPreviewError } = useReportPreview(previewRequest);
 
   useEffect(() => {
     if (!message || !message.includes("downloading")) return;
@@ -62,11 +77,10 @@ export default function ReportsContent() {
 
   const selectedReport = reportOptions.find((option) => option.value === reportType) ?? reportOptions[0];
   const isRangeReport = reportType === "in-house";
+  const rows = preview?.items ?? [];
 
   function validateForm() {
     if (!reportType) return "Choose a report type.";
-    if (!format) return "Choose a file format.";
-
     if (isRangeReport) {
       if (!from) return "Choose a from date.";
       if (!to) return "Choose a to date.";
@@ -78,8 +92,36 @@ export default function ReportsContent() {
     return "";
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function buildPreviewRequest(pageNumber = 1): ReportPreviewRequest {
+    if (isRangeReport) {
+      return { type: "in-house", from, to, pageNumber, pageSize: PAGE_SIZE };
+    }
+
+    return { type: reportType, date, pageNumber, pageSize: PAGE_SIZE };
+  }
+
+  function buildDownloadRequest(): ReportDownloadRequest {
+    if (isRangeReport) {
+      return { type: "in-house", format, from, to };
+    }
+
+    return { type: reportType, format, date };
+  }
+
+  function handlePreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setMessage("");
+
+    const validationMessage = validateForm();
+    if (validationMessage) {
+      setMessage(validationMessage);
+      return;
+    }
+
+    setPreviewRequest(buildPreviewRequest(1));
+  }
+
+  function handleDownload() {
     reset();
     setMessage("");
 
@@ -89,17 +131,20 @@ export default function ReportsContent() {
       return;
     }
 
-    const request: ReportDownloadRequest = isRangeReport
-      ? { type: "in-house", format, from, to }
-      : { type: reportType, format, date };
-
-    downloadReport(request, {
+    downloadReport(buildDownloadRequest(), {
       onSuccess: ({ filename }) => {
         setMessage(`${filename} is downloading.`);
       },
       onError: (error) => {
         setMessage(error.message);
       },
+    });
+  }
+
+  function goToPage(pageNumber: number) {
+    setPreviewRequest((current) => {
+      const nextBase = current ?? buildPreviewRequest(pageNumber);
+      return { ...nextBase, pageNumber };
     });
   }
 
@@ -113,26 +158,29 @@ export default function ReportsContent() {
           Reports
         </h1>
         <p className="mt-1 max-w-2xl text-[14px] leading-6 text-[#667c74]">
-          Download arrival, departure, and in-house booking reports.
+          Preview arrival, departure, and in-house booking reports, then download files when needed.
         </p>
       </header>
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handlePreview}
         className="w-full rounded-2xl border border-[#dfe8e4] bg-white p-5 shadow-[0_8px_24px_rgba(31,77,61,0.05)] lg:p-7"
       >
         <div className="grid gap-4 lg:grid-cols-2">
           <SelectField
             label="Report Type"
             value={reportType}
-            onChange={(value) => setReportType(value as ReportType)}
+            onChange={(value) => {
+              setReportType(value as ReportType);
+              setPreviewRequest(null);
+            }}
             options={reportOptions.map((option) => ({
               value: option.value,
               label: option.label,
             }))}
           />
           <SelectField
-            label="Format"
+            label="Download Format"
             value={format}
             onChange={(value) => setFormat(value as ReportFormat)}
             options={formatOptions}
@@ -156,18 +204,28 @@ export default function ReportsContent() {
 
         <div className="mt-6 flex flex-col gap-4 rounded-xl bg-[#f5f7f6] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] leading-5 text-[#667c74]">{selectedReport.helper}</p>
-          <button
-            type="submit"
-            disabled={isPending}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#2e6f57] px-5 text-[14px] font-medium text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isPending ? (
-              <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            ) : (
-              <DownloadIcon />
-            )}
-            {isPending ? "Preparing..." : "Download Report"}
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="submit"
+              disabled={isLoadingPreview}
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[#2e6f57] px-5 text-[14px] font-medium text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isLoadingPreview ? "Generating..." : "Generate Preview"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-[#dfe8e4] bg-white px-5 text-[14px] font-medium text-[#183c2f] shadow-sm transition hover:border-[#2e6f57] hover:bg-[#f8faf9] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isDownloading ? (
+                <span className="size-4 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
+              ) : (
+                <DownloadIcon />
+              )}
+              {isDownloading ? "Preparing..." : "Download"}
+            </button>
+          </div>
         </div>
 
         {message && (
@@ -182,6 +240,102 @@ export default function ReportsContent() {
           </p>
         )}
       </form>
+
+      {previewRequest && (
+        <section className="mt-6">
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            <Metric label="Total Records" value={String(preview?.summary.totalRecords ?? 0)} />
+            <Metric label="Total Nights" value={String(preview?.summary.totalNights ?? 0)} />
+            <Metric label="Total Price" value={money(preview?.summary.totalPrice ?? 0)} />
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
+            <div className="border-b border-[#dfe8e4] bg-[#f8faf9] px-5 py-4">
+              <h2 className="text-[18px] font-semibold text-[#183c2f]">{selectedReport.label} Preview</h2>
+              <p className="mt-1 text-[13px] text-[#667c74]">
+                {preview?.date
+                  ? formatDate(preview.date)
+                  : `${formatDate(preview?.from)} - ${formatDate(preview?.to)}`}
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[960px] text-left text-[14px]">
+                <thead className="bg-[#f5f7f6] text-[12px] font-semibold uppercase tracking-[0.08em] text-[#667c74]">
+                  <tr>
+                    <th className="px-5 py-3">Customer</th>
+                    <th className="px-5 py-3">Apartment</th>
+                    <th className="px-5 py-3">Area</th>
+                    <th className="px-5 py-3">Stay</th>
+                    <th className="px-5 py-3 text-right">Nights</th>
+                    <th className="px-5 py-3 text-right">Price</th>
+                    <th className="px-5 py-3">Source</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#edf2ef]">
+                  {isLoadingPreview ? (
+                    <tr>
+                      <td colSpan={7} className="py-20 text-center text-[14px] text-[#8a9a94]">
+                        Loading report preview...
+                      </td>
+                    </tr>
+                  ) : isPreviewError ? (
+                    <tr>
+                      <td colSpan={7} className="py-20 text-center text-[#183c2f]">
+                        Failed to load report preview.
+                      </td>
+                    </tr>
+                  ) : rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-24 text-center">
+                        <p className="text-[16px] font-medium text-[#183c2f]">No records found</p>
+                        <p className="mt-1 text-[14px] text-[#667c74]">Try a different date or range.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((item) => (
+                      <tr key={item.bookingId} className="transition hover:bg-[#f8faf9]">
+                        <td className="px-5 py-4 font-semibold text-[#183c2f]">{item.customerName}</td>
+                        <td className="px-5 py-4 font-mono text-[12px] text-[#414847]">{item.apartmentCode}</td>
+                        <td className="px-5 py-4 text-[#667c74]">{item.area || "-"}</td>
+                        <td className="px-5 py-4 text-[13px] text-[#667c74]">
+                          {formatDate(item.checkIn)} - {formatDate(item.checkOut)}
+                        </td>
+                        <td className="px-5 py-4 text-right font-semibold text-[#183c2f]">{item.nights}</td>
+                        <td className="px-5 py-4 text-right font-semibold text-[#183c2f]">{money(item.price)}</td>
+                        <td className="px-5 py-4 text-[#667c74]">{item.source || "-"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {preview && preview.totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => goToPage(Math.max(1, preview.pageNumber ?? 1) - 1)}
+                disabled={!preview.hasPreviousPage}
+                className="flex h-8 items-center justify-center rounded-lg border border-[#dfe8e4] bg-white px-3 text-[13px] font-medium text-[#667c74] transition hover:bg-[#f5f7f6] disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-[13px] font-medium text-[#667c74]">
+                Page {preview.pageNumber ?? 1} of {preview.totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => goToPage((preview.pageNumber ?? 1) + 1)}
+                disabled={!preview.hasNextPage}
+                className="flex h-8 items-center justify-center rounded-lg border border-[#dfe8e4] bg-white px-3 text-[13px] font-medium text-[#667c74] transition hover:bg-[#f5f7f6] disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
@@ -234,6 +388,15 @@ function DateField({
         className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
       />
     </label>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-[#dfe8e4] bg-white p-5 shadow-[0_8px_24px_rgba(31,77,61,0.04)]">
+      <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#8a9a94]">{label}</p>
+      <p className="mt-2 text-[24px] font-semibold text-[#183c2f]">{value}</p>
+    </div>
   );
 }
 

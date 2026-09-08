@@ -97,6 +97,7 @@ export interface AdminBookingListQuery {
   CustomerName?: string;
   CustomerEmail?: string;
   BookingSource?: BookingSource;
+  PaymentStatus?: number;
   SearchTerm?: string;
   PageNumber?: number;
   PageSize?: number;
@@ -115,13 +116,19 @@ export interface AdminBookingListItem {
   checkIn: string;
   checkOut: string;
   totalPrice: number;
+  requiredPaymentAmount?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
   status: number;
   statusName: string;
+  paymentStatus?: number;
+  paymentStatusName?: string;
   createdAtUtc: string;
 }
 
 export interface AdminBookingDetails {
   id: string;
+  bookingId?: string;
   bookingNumber: string;
   status: number;
   statusName: string;
@@ -129,6 +136,10 @@ export interface AdminBookingDetails {
   bookingSourceName?: string;
   paymentStatus: number;
   paymentStatusName: string;
+  totalPrice?: number;
+  requiredPaymentAmount?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
   createdAtUtc: string;
   confirmedAt: string | null;
   completedAt: string | null;

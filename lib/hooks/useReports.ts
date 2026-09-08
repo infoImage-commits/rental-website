@@ -1,9 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/api/axiosInstance";
 import type {
   ReportDownloadRequest,
   ReportDownloadResult,
   ReportFormat,
+  ReportPreviewData,
+  ReportPreviewRequest,
   ReportType,
 } from "@/lib/types/report";
 
@@ -145,5 +147,44 @@ export function useDownloadReport() {
         throw new Error(await getDownloadErrorMessage(error));
       }
     },
+  });
+}
+
+export function useReportPreview(request: ReportPreviewRequest | null) {
+  return useQuery({
+    queryKey: ["reports", "preview", request],
+    queryFn: async () => {
+      if (!request) return null;
+
+      const params =
+        request.type === "in-house"
+          ? {
+              from: request.from,
+              to: request.to,
+              pageNumber: request.pageNumber,
+              pageSize: request.pageSize,
+            }
+          : {
+              date: request.date,
+              pageNumber: request.pageNumber,
+              pageSize: request.pageSize,
+            };
+
+      const { data } = await axiosInstance.get<{
+        data: ReportPreviewData | null;
+        isSuccess: boolean;
+        message: string | null;
+        errors: string[];
+        type: number;
+      }>(`/api/reports/${request.type}`, { params });
+
+      if (!data.isSuccess || !data.data) {
+        throw new Error(data.errors?.[0] || data.message || "Could not load report preview.");
+      }
+
+      return data.data;
+    },
+    enabled: Boolean(request),
+    staleTime: 30 * 1000,
   });
 }
