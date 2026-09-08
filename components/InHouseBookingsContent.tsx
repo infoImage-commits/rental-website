@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useInHouseBookings } from "@/lib/hooks/useBooking";
+import { useDownloadReport } from "@/lib/hooks/useReports";
 
 function getDateOffset(days: number) {
   const date = new Date();
@@ -28,9 +30,24 @@ export default function InHouseBookingsContent() {
   const [to, setTo] = useState(getDateOffset(1));
   const [appliedRange, setAppliedRange] = useState<{ from: string; to: string } | null>(null);
   const [formError, setFormError] = useState("");
+  const [downloadingFormat, setDownloadingFormat] = useState<"excel" | "pdf" | null>(null);
 
   const { data, isLoading, isFetching, isError } = useInHouseBookings(appliedRange ?? {});
+  const { mutate: downloadReport, isPending: isDownloadingReport } = useDownloadReport();
   const units = data?.units ?? [];
+
+  const isTodayActive =
+    appliedRange?.from === getDateOffset(0) &&
+    appliedRange?.to === getDateOffset(1);
+
+  function handleTodayInHouse() {
+    setFormError("");
+    const today = getDateOffset(0);
+    const tomorrow = getDateOffset(1);
+    setFrom(today);
+    setTo(tomorrow);
+    setAppliedRange({ from: today, to: tomorrow });
+  }
 
   function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,6 +71,31 @@ export default function InHouseBookingsContent() {
     setAppliedRange({ from, to });
   }
 
+  function handleDownload(format: "excel" | "pdf") {
+    const reportFrom = appliedRange?.from || from;
+    const reportTo = appliedRange?.to || to;
+
+    if (!reportFrom || !reportTo || reportTo <= reportFrom) {
+      toast.error("Please choose a valid date range to download the report.");
+      return;
+    }
+
+    setDownloadingFormat(format);
+    downloadReport(
+      { type: "in-house", format, from: reportFrom, to: reportTo },
+      {
+        onSuccess: ({ filename }) => {
+          setDownloadingFormat(null);
+          toast.success(`${filename} downloaded.`);
+        },
+        onError: (err) => {
+          setDownloadingFormat(null);
+          toast.error(err.message || "Failed to download the report.");
+        },
+      }
+    );
+  }
+
   return (
     <div className="w-full min-w-0">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -74,32 +116,65 @@ export default function InHouseBookingsContent() {
         </Link>
       </header>
 
-      <form
-        onSubmit={handleGenerate}
-        className="mb-6 grid gap-4 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-      >
-        <DateField label="From Date" value={from} onChange={setFrom} />
-        <DateField label="To Date" value={to} onChange={setTo} />
-        <div className="flex items-end">
-          <button
-            type="submit"
-            disabled={isFetching}
-            className="inline-flex h-11 w-full min-w-[120px] items-center justify-center rounded-full bg-[#2e6f57] px-5 text-[14px] font-semibold text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isFetching ? "Loading..." : "Generate"}
-          </button>
-        </div>
-        {formError && (
-          <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600 sm:col-span-3">
-            {formError}
-          </p>
-        )}
-      </form>
+      <div className="mb-6 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)] sm:p-5">
+        <form
+          onSubmit={handleGenerate}
+          className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]"
+        >
+          <DateField label="From Date" value={from} onChange={setFrom} />
+          <DateField label="To Date" value={to} onChange={setTo} />
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleTodayInHouse}
+              disabled={isFetching}
+              className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-[14px] font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                isTodayActive
+                  ? "bg-[#183c2f] text-white hover:bg-[#133025]"
+                  : "border border-[#2e6f57] bg-[#eff8f3] text-[#2e6f57] hover:bg-[#e2f3eb]"
+              }`}
+              title="Quickly set From: Today, To: Tomorrow and generate the in-house list"
+            >
+              <CalendarTodayIcon />
+              In-House Today
+            </button>
+          </div>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              disabled={isFetching}
+              className="inline-flex h-11 w-full min-w-[110px] items-center justify-center rounded-full bg-[#2e6f57] px-5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isFetching ? "Loading..." : "Generate"}
+            </button>
+          </div>
+          {formError && (
+            <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600 sm:col-span-4">
+              {formError}
+            </p>
+          )}
+        </form>
+      </div>
 
       {!appliedRange ? (
-        <div className="rounded-2xl border border-[#dfe8e4] bg-white p-10 text-center shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
-          <p className="text-[16px] font-semibold text-[#183c2f]">Choose dates to generate the in-house list.</p>
-          <p className="mt-1 text-[14px] text-[#667c74]">The to date is an exclusive boundary.</p>
+        <div className="rounded-2xl border border-[#dfe8e4] bg-white p-10 text-center shadow-[0_8px_24px_rgba(31,77,61,0.05)] sm:p-14">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#eff8f3] text-[#2e6f57]">
+            <CalendarTodayIcon className="size-7" />
+          </div>
+          <p className="mt-4 text-[18px] font-semibold text-[#183c2f]">Choose dates to generate the in-house list.</p>
+          <p className="mx-auto mt-1 max-w-md text-[14px] text-[#667c74]">
+            Select dates above or click below to view currently checked-in guests for today (today to tomorrow).
+          </p>
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={handleTodayInHouse}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#2e6f57] px-6 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#255f49]"
+            >
+              <CalendarTodayIcon />
+              View Today&apos;s In-House
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -111,10 +186,50 @@ export default function InHouseBookingsContent() {
           </div>
 
           <div className="w-full overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
-            <div className="border-b border-[#dfe8e4] bg-[#f8faf9] px-5 py-4">
-              <p className="text-[14px] font-semibold text-[#183c2f]">
-                {formatDate(appliedRange.from)} - {formatDate(appliedRange.to)}
-              </p>
+            <div className="flex flex-col gap-3 border-b border-[#dfe8e4] bg-[#f8faf9] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2.5">
+                <p className="text-[14px] font-semibold text-[#183c2f]">
+                  {formatDate(appliedRange.from)} - {formatDate(appliedRange.to)}
+                </p>
+                {isTodayActive && (
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                    Today Only
+                  </span>
+                )}
+              </div>
+
+              {/* Quick Report Downloads */}
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] font-medium text-[#667c74]">Download Report:</span>
+                <button
+                  type="button"
+                  onClick={() => handleDownload("excel")}
+                  disabled={isDownloadingReport}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#dfe8e4] bg-white px-3 text-[12px] font-medium text-[#183c2f] transition hover:border-[#2e6f57] hover:bg-[#eff8f3] disabled:opacity-60"
+                  title="Download In-House Report as Excel"
+                >
+                  {downloadingFormat === "excel" ? (
+                    <span className="size-3.5 animate-spin rounded-full border-2 border-[#2e6f57]/30 border-t-[#2e6f57]" />
+                  ) : (
+                    <FileSpreadsheetIcon className="size-3.5 text-[#2e6f57]" />
+                  )}
+                  Excel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDownload("pdf")}
+                  disabled={isDownloadingReport}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#dfe8e4] bg-white px-3 text-[12px] font-medium text-[#183c2f] transition hover:border-[#2e6f57] hover:bg-[#eff8f3] disabled:opacity-60"
+                  title="Download In-House Report as PDF"
+                >
+                  {downloadingFormat === "pdf" ? (
+                    <span className="size-3.5 animate-spin rounded-full border-2 border-[#2e6f57]/30 border-t-[#2e6f57]" />
+                  ) : (
+                    <FilePdfIcon className="size-3.5 text-rose-600" />
+                  )}
+                  PDF
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[920px] text-left text-[14px]">
@@ -228,5 +343,67 @@ function Metric({ label, value }: { label: string; value: number }) {
       <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#8a9a94]">{label}</p>
       <p className="mt-2 text-[28px] font-semibold text-[#183c2f]">{value}</p>
     </div>
+  );
+}
+
+function CalendarTodayIcon({ className = "size-4" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+      <line x1="16" x2="16" y1="2" y2="6" />
+      <line x1="8" x2="8" y1="2" y2="6" />
+      <line x1="3" x2="21" y1="10" y2="10" />
+      <path d="m9 16 2 2 4-4" />
+    </svg>
+  );
+}
+
+function FileSpreadsheetIcon({ className = "size-4" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" />
+      <path d="M8 13h2" />
+      <path d="M8 17h2" />
+      <path d="M14 13h2" />
+      <path d="M14 17h2" />
+    </svg>
+  );
+}
+
+function FilePdfIcon({ className = "size-4" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" />
+      <path d="M9 15v-4h1.5a1.5 1.5 0 0 1 0 3H9" />
+    </svg>
   );
 }

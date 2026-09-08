@@ -109,8 +109,21 @@ export interface DailyPriceCheckData {
   missingDates: string[];
 }
 
+export interface PropertyBookingCalendarItem {
+  bookingId?: string;
+  bookingNumber?: string;
+  status?: number;
+  statusName?: string;
+  from: string;
+  to: string;
+  isBookable?: boolean;
+}
+
 export interface PropertyAvailabilityData {
-  bookingCalendar?: unknown[];
+  propertyId?: string;
+  propertyNumber?: string;
+  propertyName?: string;
+  bookingCalendar?: PropertyBookingCalendarItem[];
   [key: string]: unknown;
 }
 

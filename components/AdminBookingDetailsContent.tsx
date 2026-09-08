@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAdminPropertyBooking, useCreateBookingExtension } from "@/lib/hooks/useBooking";
 import { useBookingPayments, useCreatePaypalOrder } from "@/lib/hooks/usePayment";
+import { useCheckPropertyAvailabilityRange, usePropertyAvailability } from "@/lib/hooks/useProperties";
 import type { AdminBookingDetails, BookingExtensionResponseData } from "@/lib/types/booking";
 import type { BookingPayment, CreatePaypalOrderResponse } from "@/lib/hooks/usePayment";
+import type { PropertyBookingCalendarItem } from "@/lib/types/property";
 import { formatUsd } from "@/lib/utils/currency";
 
 function formatDate(value?: string | null) {
@@ -38,6 +40,32 @@ function addDays(dateString: string, days: number) {
   return `${year}-${month}-${day}`;
 }
 
+function getNights(checkIn: string, checkOut: string) {
+  if (!checkIn || !checkOut || checkOut <= checkIn) return 0;
+  const start = new Date(`${checkIn}T00:00:00`).getTime();
+  const end = new Date(`${checkOut}T00:00:00`).getTime();
+  return Math.max(0, Math.round((end - start) / 86400000));
+}
+
+function getExtensionConflict(
+  checkOut: string,
+  newCheckOut: string,
+  bookings: PropertyBookingCalendarItem[]
+): PropertyBookingCalendarItem | null {
+  if (!newCheckOut || newCheckOut <= checkOut) return null;
+
+  let cursor = checkOut;
+  while (cursor < newCheckOut) {
+    const conflict = bookings.find(
+      (b) => b.isBookable === false && b.from <= cursor && cursor < b.to
+    );
+    if (conflict) return conflict;
+    cursor = addDays(cursor, 1);
+  }
+
+  return null;
+}
+
 function getApiErrorMessage(error: unknown, fallback: string) {
   const apiError = error as {
     response?: { data?: { errors?: string[]; message?: string } };
@@ -65,6 +93,72 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
   const [extensionForm, setExtensionForm] = useState({ newCheckOut: "", notes: "" });
   const [formError, setFormError] = useState("");
 
+  const propertyId = booking?.property?.propertyId ?? "";
+  const currentCheckOut = booking?.stay?.checkOut ?? "";
+  const minimumCheckout = currentCheckOut ? addDays(currentCheckOut, 1) : "";
+  const availabilityStart = currentCheckOut;
+  const availabilityEnd = currentCheckOut ? addDays(currentCheckOut, 90) : "";
+
+  const {
+    data: availabilityData,
+    isLoading: isLoadingAvailability,
+    refetch: refetchAvailability,
+  } = usePropertyAvailability(propertyId, availabilityStart, availabilityEnd);
+
+  const { mutateAsync: checkAvailabilityRange, isPending: isCheckingAvailability } =
+    useCheckPropertyAvailabilityRange();
+
+  const calendarBookings = useMemo(() => {
+    const raw = (availabilityData?.bookingCalendar || []) as PropertyBookingCalendarItem[];
+    if (!booking) return raw;
+    return raw.filter((item) => {
+      const isCurrent =
+        (item.bookingId && item.bookingId.toLowerCase() === booking.id.toLowerCase()) ||
+        (item.bookingNumber && item.bookingNumber.toLowerCase() === booking.bookingNumber.toLowerCase());
+      return !isCurrent;
+    });
+  }, [availabilityData, booking]);
+
+  const bookedReservations = useMemo(() => {
+    return calendarBookings.filter((item) => item.isBookable === false);
+  }, [calendarBookings]);
+
+  const initialConflict = useMemo(() => {
+    if (!currentCheckOut) return null;
+    return (
+      bookedReservations.find(
+        (b) => b.from <= currentCheckOut && currentCheckOut < b.to
+      ) || null
+    );
+  }, [bookedReservations, currentCheckOut]);
+
+  const isExtensionPossible = !initialConflict;
+
+  const nextBooking = useMemo(() => {
+    if (!currentCheckOut) return null;
+    const upcoming = bookedReservations
+      .filter((b) => b.to > currentCheckOut)
+      .sort((a, b) => a.from.localeCompare(b.from));
+    return upcoming[0] || null;
+  }, [bookedReservations, currentCheckOut]);
+
+  const maxCheckoutDate = useMemo(() => {
+    if (!isExtensionPossible) return undefined;
+    if (nextBooking && nextBooking.from > currentCheckOut) {
+      return nextBooking.from;
+    }
+    return undefined;
+  }, [isExtensionPossible, nextBooking, currentCheckOut]);
+
+  const selectedConflict = useMemo(() => {
+    if (!booking || !extensionForm.newCheckOut) return null;
+    return getExtensionConflict(
+      booking.stay.checkOut,
+      extensionForm.newCheckOut,
+      calendarBookings
+    );
+  }, [booking, extensionForm.newCheckOut, calendarBookings]);
+
   if (isLoading) {
     return (
       <div className="py-20 text-center text-[14px] text-[#8a9a94]">
@@ -86,7 +180,6 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
   }
 
   const extensionAllowed = canExtendBooking(booking);
-  const minimumCheckout = addDays(booking.stay.checkOut, 1);
 
   function createPaymentLink(extension: BookingExtensionResponseData) {
     setPaymentLinkError("");
@@ -123,7 +216,7 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
     }
   }
 
-  function submitExtension(event: React.FormEvent<HTMLFormElement>) {
+  async function submitExtension(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!booking) return;
 
@@ -134,9 +227,60 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
       return;
     }
 
+    if (!isExtensionPossible) {
+      setFormError("Property is already booked starting on the checkout date. No extension is possible.");
+      return;
+    }
+
     if (!extensionForm.newCheckOut || extensionForm.newCheckOut <= booking.stay.checkOut) {
       setFormError("New checkout must be after the current checkout date.");
       return;
+    }
+
+    // 1. Client-side conflict check from loaded calendar
+    const conflict = getExtensionConflict(
+      booking.stay.checkOut,
+      extensionForm.newCheckOut,
+      calendarBookings
+    );
+
+    if (conflict) {
+      const conflictMsg = `Property is already booked for some of the requested extension dates (${conflict.bookingNumber ? `Booking ${conflict.bookingNumber}: ` : ""}${formatDate(conflict.from)} to ${formatDate(conflict.to)}). Please select an available date.`;
+      setFormError(conflictMsg);
+      toast.error("Requested extension dates are already booked.");
+      return;
+    }
+
+    // 2. Real-time availability verification with backend
+    try {
+      const freshData = await checkAvailabilityRange({
+        propertyId: booking.property.propertyId,
+        startDate: booking.stay.checkOut,
+        endDate: extensionForm.newCheckOut,
+      });
+
+      const freshBookings = (freshData?.bookingCalendar || []) as PropertyBookingCalendarItem[];
+      const freshOtherBookings = freshBookings.filter((item) => {
+        const isCurrent =
+          (item.bookingId && item.bookingId.toLowerCase() === booking.id.toLowerCase()) ||
+          (item.bookingNumber && item.bookingNumber.toLowerCase() === booking.bookingNumber.toLowerCase());
+        return !isCurrent;
+      });
+
+      const freshConflict = getExtensionConflict(
+        booking.stay.checkOut,
+        extensionForm.newCheckOut,
+        freshOtherBookings
+      );
+
+      if (freshConflict) {
+        const conflictMsg = `Property is already booked for some of the requested extension dates (${freshConflict.bookingNumber ? `Booking ${freshConflict.bookingNumber}: ` : ""}${formatDate(freshConflict.from)} to ${formatDate(freshConflict.to)}).`;
+        setFormError(conflictMsg);
+        toast.error(conflictMsg);
+        return;
+      }
+    } catch (verifyErr) {
+      console.warn("Could not pre-verify fresh availability range:", verifyErr);
     }
 
     createExtension(
@@ -191,6 +335,8 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
           type="button"
           onClick={() => {
             setFormError("");
+            setExtensionForm({ newCheckOut: "", notes: "" });
+            refetchAvailability();
             setIsExtensionOpen(true);
           }}
           disabled={!extensionAllowed}
@@ -272,75 +418,445 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
       )}
 
       {isExtensionOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <button
             type="button"
             aria-label="Close extension dialog"
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => {
-              if (!isCreatingExtension) setIsExtensionOpen(false);
+              if (!isCreatingExtension && !isCheckingAvailability) setIsExtensionOpen(false);
             }}
           />
           <form
             onSubmit={submitExtension}
-            className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+            className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-7"
           >
-            <h2 className="text-[20px] font-semibold text-[#183c2f]">Extend Booking</h2>
-            <p className="mt-1 text-[13px] leading-5 text-[#667c74]">
-              Create the extension, then the admin will get a PayPal link to send to the client.
-            </p>
-
-            <div className="mt-5 grid gap-4">
-              <div className="rounded-xl border border-[#dfe8e4] bg-[#f5f7f6] p-4 text-[13px] text-[#667c74]">
-                Current checkout: <span className="font-semibold text-[#183c2f]">{formatDate(booking.stay.checkOut)}</span>
+            <div className="flex items-start justify-between gap-4 border-b border-[#dfe8e4] pb-4">
+              <div>
+                <h2 className="text-[20px] font-semibold text-[#183c2f]">Extend Booking</h2>
+                <p className="mt-1 text-[13px] leading-5 text-[#667c74]">
+                  Check property availability calendar and choose an available new checkout date.
+                </p>
               </div>
-              <label className="block">
-                <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">New Checkout</span>
-                <input
-                  type="date"
-                  min={minimumCheckout}
-                  value={extensionForm.newCheckOut}
-                  onChange={(event) => setExtensionForm((current) => ({ ...current, newCheckOut: event.target.value }))}
-                  className="h-11 w-full rounded-xl border border-[#dfe8e4] px-4 text-[14px] text-[#183c2f] outline-none focus:border-[#2e6f57]"
+              <button
+                type="button"
+                onClick={() => setIsExtensionOpen(false)}
+                disabled={isCreatingExtension || isCheckingAvailability}
+                className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#dfe8e4] text-[16px] text-[#667c74] transition hover:bg-[#f5f7f6] disabled:opacity-50"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-5">
+              {/* Current Stay & Property Context */}
+              <div className="grid gap-3 rounded-2xl border border-[#dfe8e4] bg-[#f8faf9] p-4 text-[13px] sm:grid-cols-3">
+                <div>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#8a9a94]">
+                    Property
+                  </span>
+                  <span className="mt-0.5 block font-semibold text-[#183c2f] truncate">
+                    {booking.property.propertyName}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#8a9a94]">
+                    Current Stay
+                  </span>
+                  <span className="mt-0.5 block font-medium text-[#183c2f]">
+                    {formatDate(booking.stay.checkIn)} → <strong className="font-semibold text-[#2e6f57]">{formatDate(booking.stay.checkOut)}</strong>
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#8a9a94]">
+                    Rate Per Night
+                  </span>
+                  <span className="mt-0.5 block font-semibold text-[#183c2f]">
+                    {money(booking.price.pricePerNight)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Status / Notice Banner */}
+              {!isExtensionPossible ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-[13px] leading-5 text-rose-800">
+                  <p className="font-semibold text-rose-900">⚠️ Cannot Extend Booking</p>
+                  <p className="mt-1">
+                    This property already has another confirmed booking starting on {formatDate(booking.stay.checkOut)}
+                    {initialConflict?.bookingNumber ? ` (${initialConflict.bookingNumber})` : ""}. No extension nights are available.
+                  </p>
+                </div>
+              ) : nextBooking && nextBooking.from > currentCheckOut ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-[13px] text-emerald-900">
+                  <span className="font-semibold">Available for extension:</span> You can extend up to{" "}
+                  <strong className="underline decoration-emerald-500 font-semibold">{formatDate(nextBooking.from)}</strong> (maximum{" "}
+                  {getNights(currentCheckOut, nextBooking.from)}{" "}
+                  {getNights(currentCheckOut, nextBooking.from) === 1 ? "night" : "nights"}). Next booking
+                  {nextBooking.bookingNumber ? ` (${nextBooking.bookingNumber})` : ""} arrives on {formatDate(nextBooking.from)}.
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-[13px] text-emerald-900">
+                  <span className="font-semibold">All upcoming dates available:</span> No conflicting bookings in the next 90 days. Select any date to extend.
+                </div>
+              )}
+
+              {/* Availability Calendar */}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[13px] font-semibold text-[#183c2f]">
+                    Availability Calendar
+                  </span>
+                  <span className="text-[12px] text-[#667c74]">
+                    Click an available date to select checkout
+                  </span>
+                </div>
+                <ExtendAvailabilityCalendar
+                  checkOutDate={currentCheckOut}
+                  selectedDate={extensionForm.newCheckOut}
+                  onSelectDate={(newDate) => {
+                    setFormError("");
+                    setExtensionForm((curr) => ({ ...curr, newCheckOut: newDate }));
+                  }}
+                  bookedReservations={bookedReservations}
+                  isLoading={isLoadingAvailability}
+                  isExtensionPossible={isExtensionPossible}
                 />
-              </label>
+              </div>
+
+              {/* Manual Date Input and Selection Summary */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
+                    New Checkout Date
+                  </span>
+                  <input
+                    type="date"
+                    min={minimumCheckout}
+                    max={maxCheckoutDate}
+                    disabled={!isExtensionPossible}
+                    value={extensionForm.newCheckOut}
+                    onChange={(event) => {
+                      setFormError("");
+                      setExtensionForm((current) => ({ ...current, newCheckOut: event.target.value }));
+                    }}
+                    className="h-11 w-full rounded-xl border border-[#dfe8e4] px-4 text-[14px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57] disabled:cursor-not-allowed disabled:bg-gray-100"
+                  />
+                  {maxCheckoutDate && (
+                    <span className="mt-1 block text-[11px] text-[#8a9a94]">
+                      Max available checkout: {formatDate(maxCheckoutDate)}
+                    </span>
+                  )}
+                </label>
+
+                {/* Live Extension Calculation Card */}
+                {extensionForm.newCheckOut && !selectedConflict && isExtensionPossible ? (
+                  <div className="flex flex-col justify-center rounded-xl border border-[#dfe8e4] bg-[#f8faf9] p-3.5 text-[13px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#667c74]">Additional Duration</span>
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                        {getNights(currentCheckOut, extensionForm.newCheckOut)}{" "}
+                        {getNights(currentCheckOut, extensionForm.newCheckOut) === 1 ? "Night" : "Nights"}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between border-t border-[#dfe8e4] pt-2">
+                      <span className="text-[12px] text-[#667c74]">Est. Additional Cost</span>
+                      <span className="text-[15px] font-bold text-[#183c2f]">
+                        {money(
+                          getNights(currentCheckOut, extensionForm.newCheckOut) * booking.price.pricePerNight
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center rounded-xl border border-dashed border-[#dfe8e4] bg-[#fcfdfd] p-3.5 text-center text-[12px] text-[#8a9a94]">
+                    Select a checkout date on the calendar to see duration and cost.
+                  </div>
+                )}
+              </div>
+
+              {/* Conflict Alert if admin manually typed or selected an invalid date */}
+              {selectedConflict && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-[13px] text-rose-700">
+                  <p className="font-semibold">⚠️ Selected Date Conflicts with Existing Booking</p>
+                  <p className="mt-1 text-[12px]">
+                    Property is already booked from {formatDate(selectedConflict.from)} to{" "}
+                    {formatDate(selectedConflict.to)}
+                    {selectedConflict.bookingNumber ? ` (${selectedConflict.bookingNumber})` : ""}. Please select an available date on or before {formatDate(selectedConflict.from)}.
+                  </p>
+                </div>
+              )}
+
+              {/* Notes */}
               <label className="block">
                 <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Notes</span>
                 <textarea
                   value={extensionForm.notes}
-                  onChange={(event) => setExtensionForm((current) => ({ ...current, notes: event.target.value }))}
-                  rows={4}
+                  onChange={(event) =>
+                    setExtensionForm((current) => ({ ...current, notes: event.target.value }))
+                  }
+                  rows={3}
                   placeholder="Optional admin note"
-                  className="w-full resize-none rounded-xl border border-[#dfe8e4] px-4 py-3 text-[14px] text-[#183c2f] outline-none placeholder:text-[#b8c8de] focus:border-[#2e6f57]"
+                  className="w-full resize-none rounded-xl border border-[#dfe8e4] px-4 py-3 text-[14px] text-[#183c2f] outline-none placeholder:text-[#b8c8de] transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
                 />
               </label>
             </div>
 
             {formError && (
-              <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-[12px] leading-5 text-red-600">
+              <p className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
                 {formError}
               </p>
             )}
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex justify-end gap-3 border-t border-[#dfe8e4] pt-4">
               <button
                 type="button"
-                disabled={isCreatingExtension}
+                disabled={isCreatingExtension || isCheckingAvailability}
                 onClick={() => setIsExtensionOpen(false)}
-                className="h-10 rounded-full px-4 text-[14px] font-medium text-[#667c74] transition hover:bg-[#f5f7f6] disabled:opacity-50"
+                className="h-10 rounded-full px-5 text-[14px] font-medium text-[#667c74] transition hover:bg-[#f5f7f6] disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={isCreatingExtension}
-                className="inline-flex h-10 min-w-[140px] items-center justify-center rounded-full bg-[#2e6f57] px-5 text-[14px] font-semibold text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={
+                  isCreatingExtension ||
+                  isCheckingAvailability ||
+                  !isExtensionPossible ||
+                  !extensionForm.newCheckOut ||
+                  Boolean(selectedConflict) ||
+                  !extensionAllowed
+                }
+                className="inline-flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-full bg-[#2e6f57] px-6 text-[14px] font-semibold text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:bg-[#b9c6cf]"
               >
-                {isCreatingExtension ? "Creating..." : "Create Extension"}
+                {isCheckingAvailability ? (
+                  <>
+                    <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Checking dates...
+                  </>
+                ) : isCreatingExtension ? (
+                  <>
+                    <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Extension"
+                )}
               </button>
             </div>
           </form>
         </div>
+      )}
+    </div>
+  );
+}
+
+function ExtendAvailabilityCalendar({
+  checkOutDate,
+  selectedDate,
+  onSelectDate,
+  bookedReservations,
+  isLoading,
+  isExtensionPossible,
+}: {
+  checkOutDate: string;
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
+  bookedReservations: PropertyBookingCalendarItem[];
+  isLoading: boolean;
+  isExtensionPossible: boolean;
+}) {
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  const viewDate = useMemo(() => {
+    const base = checkOutDate ? new Date(`${checkOutDate}T00:00:00`) : new Date();
+    return new Date(base.getFullYear(), base.getMonth() + monthOffset, 1);
+  }, [checkOutDate, monthOffset]);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const monthTitle = viewDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const isEarliestMonth = monthOffset <= 0;
+
+  function handlePrev() {
+    if (isEarliestMonth) return;
+    setMonthOffset((current) => Math.max(0, current - 1));
+  }
+
+  function handleNext() {
+    setMonthOffset((current) => current + 1);
+  }
+
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+  return (
+    <div className="rounded-2xl border border-[#dfe8e4] bg-[#fcfdfd] p-4 shadow-sm">
+      <div className="flex items-center justify-between pb-3">
+        <h4 className="text-[14px] font-semibold text-[#183c2f]">{monthTitle}</h4>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handlePrev}
+            disabled={isEarliestMonth}
+            className="flex size-7 items-center justify-center rounded-lg border border-[#dfe8e4] bg-white text-[13px] font-semibold text-[#183c2f] transition hover:bg-[#f5f7f6] disabled:cursor-not-allowed disabled:opacity-30"
+            title="Previous month"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            className="flex size-7 items-center justify-center rounded-lg border border-[#dfe8e4] bg-white text-[13px] font-semibold text-[#183c2f] transition hover:bg-[#f5f7f6]"
+            title="Next month"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="py-10 text-center text-[13px] text-[#8a9a94]">
+          <span className="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
+          Loading property availability...
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wider text-[#8a9a94]">
+            {weekdays.map((w) => (
+              <div key={w} className="py-1">
+                {w}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-1 grid grid-cols-7 gap-1.5">
+            {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+              <div key={`empty-${i}`} className="min-h-[46px]" />
+            ))}
+
+            {Array.from({ length: totalDaysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const dayDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+              const isPast = dayDate < checkOutDate;
+              const isCurrentCheckout = dayDate === checkOutDate;
+              const isSelected = dayDate === selectedDate;
+              const isInRange = selectedDate && dayDate > checkOutDate && dayDate < selectedDate;
+
+              const conflict =
+                dayDate > checkOutDate
+                  ? getExtensionConflict(checkOutDate, dayDate, bookedReservations)
+                  : null;
+              const isBooked = Boolean(conflict) || (!isExtensionPossible && dayDate > checkOutDate);
+
+              if (isPast) {
+                return (
+                  <div
+                    key={dayDate}
+                    className="flex min-h-[46px] flex-col items-center justify-center rounded-xl p-1 text-[12px] text-gray-300"
+                  >
+                    <span>{day}</span>
+                  </div>
+                );
+              }
+
+              if (isCurrentCheckout) {
+                return (
+                  <div
+                    key={dayDate}
+                    className="flex min-h-[46px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-100 p-1 text-[12px] font-semibold text-gray-700"
+                    title="Current Checkout Date"
+                  >
+                    <span>{day}</span>
+                    <span className="text-[9px] font-medium leading-none text-gray-500">Current</span>
+                  </div>
+                );
+              }
+
+              if (isSelected) {
+                return (
+                  <button
+                    key={dayDate}
+                    type="button"
+                    onClick={() => onSelectDate(dayDate)}
+                    className="flex min-h-[46px] flex-col items-center justify-center rounded-xl bg-[#2e6f57] p-1 text-[12px] font-bold text-white shadow-sm ring-2 ring-[#2e6f57] ring-offset-1 transition"
+                  >
+                    <span>{day}</span>
+                    <span className="text-[9px] font-semibold leading-none">✓ Checkout</span>
+                  </button>
+                );
+              }
+
+              if (isInRange) {
+                return (
+                  <button
+                    key={dayDate}
+                    type="button"
+                    onClick={() => onSelectDate(dayDate)}
+                    className="flex min-h-[46px] flex-col items-center justify-center rounded-xl bg-emerald-100/90 p-1 text-[12px] font-semibold text-emerald-900 transition hover:bg-emerald-200"
+                    title="Click to set as checkout"
+                  >
+                    <span>{day}</span>
+                    <span className="text-[9px] font-medium leading-none text-emerald-700">Extended</span>
+                  </button>
+                );
+              }
+
+              if (isBooked) {
+                return (
+                  <div
+                    key={dayDate}
+                    className="flex min-h-[46px] flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50/70 p-1 text-[12px] font-medium text-rose-500 opacity-80 cursor-not-allowed"
+                    title={
+                      conflict
+                        ? `Booked (${conflict.bookingNumber || "Confirmed"}) ${conflict.from} to ${conflict.to}`
+                        : "Booked / Unavailable"
+                    }
+                  >
+                    <span className="line-through">{day}</span>
+                    <span className="text-[9px] font-normal leading-none text-rose-600">Booked</span>
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={dayDate}
+                  type="button"
+                  onClick={() => onSelectDate(dayDate)}
+                  className="flex min-h-[46px] flex-col items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50/60 p-1 text-[12px] font-semibold text-[#183c2f] transition hover:scale-[1.03] hover:border-emerald-500 hover:bg-emerald-100 shadow-sm"
+                  title="Click to select this checkout date"
+                >
+                  <span>{day}</span>
+                  <span className="text-[9px] font-normal leading-none text-emerald-700">Available</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-[#dfe8e4] pt-3 text-[11px] text-[#667c74]">
+            <div className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-full border border-emerald-400 bg-emerald-100" />
+              <span>Available to Extend</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-full border border-rose-400 bg-rose-100" />
+              <span>Booked / Blocked</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-full border-2 border-dashed border-gray-400 bg-gray-200" />
+              <span>Current Checkout</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-full bg-[#2e6f57]" />
+              <span>Selected Checkout</span>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

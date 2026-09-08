@@ -356,6 +356,80 @@ function AvailabilitySection({
     phone: "",
     person: Math.min(1, capacity),
   });
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+
+  // Restore saved booking draft on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = localStorage.getItem(`rent_booking_draft_${propertyId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") {
+            setBookingForm((prev) => ({
+              fullName: typeof parsed.fullName === "string" ? parsed.fullName : prev.fullName,
+              email: typeof parsed.email === "string" ? parsed.email : prev.email,
+              phone: typeof parsed.phone === "string" ? parsed.phone : prev.phone,
+              person: typeof parsed.person === "number" ? Math.min(Math.max(1, parsed.person), capacity) : prev.person,
+            }));
+
+            if (typeof parsed.checkIn === "string" && parsed.checkIn >= todayString) {
+              setCheckIn(parsed.checkIn);
+            }
+            if (typeof parsed.checkOut === "string" && parsed.checkOut > todayString) {
+              setCheckOut(parsed.checkOut);
+            }
+            if (typeof parsed.hasAcceptedRules === "boolean") {
+              setHasAcceptedRules(parsed.hasAcceptedRules);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not restore booking draft", err);
+      } finally {
+        setHasRestoredDraft(true);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [propertyId, capacity, todayString]);
+
+  // Persist booking draft whenever user changes data
+  useEffect(() => {
+    if (typeof window === "undefined" || !hasRestoredDraft) return;
+
+    const storageKey = `rent_booking_draft_${propertyId}`;
+    const hasData =
+      bookingForm.fullName.trim() !== "" ||
+      bookingForm.email.trim() !== "" ||
+      bookingForm.phone.trim() !== "" ||
+      checkIn !== "" ||
+      checkOut !== "" ||
+      hasAcceptedRules;
+
+    try {
+      if (hasData) {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            fullName: bookingForm.fullName,
+            email: bookingForm.email,
+            phone: bookingForm.phone,
+            person: bookingForm.person,
+            checkIn,
+            checkOut,
+            hasAcceptedRules,
+          })
+        );
+      } else {
+        localStorage.removeItem(storageKey);
+      }
+    } catch (err) {
+      console.warn("Could not save booking draft", err);
+    }
+  }, [bookingForm, checkIn, checkOut, hasAcceptedRules, hasRestoredDraft, propertyId]);
 
   const { mutate: createRentBooking, isPending: isCreatingBooking } = useCreateRentBooking();
   const { mutate: createPaypalOrder, isPending: isCreatingOrder } = useCreatePaypalOrder();
@@ -546,6 +620,11 @@ function AvailabilitySection({
             {
               onSuccess: (orderRes) => {
                 localStorage.setItem("paypal_order_id", orderRes.orderId);
+                try {
+                  localStorage.removeItem(`rent_booking_draft_${propertyId}`);
+                } catch {
+                  // Ignore
+                }
                 savePaymentBookingContext({
                   kind: "rent",
                   bookingId: res.data.bookingId,
@@ -714,7 +793,12 @@ function AvailabilitySection({
             />
             <span>
               I have read and accepted the{" "}
-              <Link href="/house-rules" className="text-[#2e6f57] underline hover:no-underline">
+              <Link
+                href="/house-rules"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#2e6f57] underline hover:no-underline"
+              >
                 House Rules
               </Link>
               .

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDownloadReport } from "@/lib/hooks/useReports";
 import type { FormEvent } from "react";
 import type {
@@ -49,6 +49,16 @@ export default function ReportsContent() {
   const [message, setMessage] = useState("");
 
   const { mutate: downloadReport, isPending, reset } = useDownloadReport();
+
+  useEffect(() => {
+    if (!message || !message.includes("downloading")) return;
+
+    const timer = window.setTimeout(() => {
+      setMessage("");
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [message]);
 
   const selectedReport = reportOptions.find((option) => option.value === reportType) ?? reportOptions[0];
   const isRangeReport = reportType === "in-house";
@@ -162,7 +172,7 @@ export default function ReportsContent() {
 
         {message && (
           <p
-            className={`mt-4 rounded-xl px-4 py-3 text-[13px] ${
+            className={`mt-4 rounded-xl px-4 py-3 text-[13px] transition-all duration-300 ${
               message.includes("downloading")
                 ? "bg-[#eff8f3] text-[#2e6f57]"
                 : "bg-red-50 text-red-600"
