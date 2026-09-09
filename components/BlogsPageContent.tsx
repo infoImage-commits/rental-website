@@ -214,7 +214,7 @@ function PageHeader({ initialState }: { initialState: false | "hidden" }) {
       </nav>
 
       <h1 className="text-[28px] font-semibold leading-tight text-[#2e6f57] lg:text-[42px]">
-        Real Estate Insights
+        Hurghada Vacation & Travel Guides
       </h1>
     </motion.div>
   );
@@ -458,12 +458,11 @@ function PropertyCta({ initialState }: { initialState: false | "hidden" }) {
         className="relative mx-auto flex min-h-[320px] max-w-[1050px] flex-col items-center justify-center px-5 py-14 text-center text-white sm:px-8 lg:min-h-[432px] lg:py-20"
       >
         <motion.h2 variants={ctaItemMotion} className="text-[30px] font-semibold leading-[1.12] sm:text-[38px] lg:text-[48px]">
-          Find Your Perfect Property
+          Find Your Perfect Vacation Home
         </motion.h2>
         <motion.p variants={ctaItemMotion} className="mt-4 max-w-[1001px] text-[14px] leading-[1.45] sm:text-[17px] lg:text-[20px]">
-          Whether you&apos;re looking for a short stay, a long-term rental, or a property to buy, we&apos;re here to
-          make your search simple and seamless. Explore our carefully selected properties across Egypt and find a space
-          that fits your lifestyle, needs, and plans.
+          Whether you&apos;re planning a weekend beach break, a family holiday, or an extended stay in the sun, we&apos;re here to
+          make your Hurghada holiday effortless. Explore our handpicked vacation rentals and book your relaxing getaway today.
         </motion.p>
         <motion.div
           variants={ctaItemMotion}
@@ -475,7 +474,7 @@ function PropertyCta({ initialState }: { initialState: false | "hidden" }) {
             href="/rent"
             className="inline-flex h-12 w-full items-center justify-center rounded-full bg-white px-8 text-[16px] font-medium tracking-[-0.05em] text-[#2e6f57] transition hover:bg-[#f5f5f5] lg:h-[52px] lg:text-[20px]"
           >
-            Explore Properties
+            Explore Vacation Homes
           </Link>
         </motion.div>
       </motion.div>

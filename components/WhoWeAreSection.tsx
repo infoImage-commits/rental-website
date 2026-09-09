@@ -3,23 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 
 const benefits = [
   {
-    title: "Verified Listings",
-    description: "Every property is reviewed for accuracy and quality.",
+    title: "Verified Vacation Homes",
+    description: "Every property is personally inspected for quality, cleanliness, and comfort.",
   },
   {
-    title: "Prime Locations",
-    description: "Homes in the most desirable communities.",
+    title: "Prime Hurghada Locations",
+    description: "Chalets, apartments, and studios in Hurghada's top resort and coastal areas.",
   },
   {
-    title: "Expert Guidance",
-    description: "Professional support at every step.",
+    title: "Dedicated Local Hosts",
+    description: "Friendly guest support and assistance throughout your holiday stay.",
   },
 ];
 
-const containerVariants: any = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -30,7 +31,7 @@ const containerVariants: any = {
   },
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, x: 20 },
   visible: { 
     opacity: 1, 
@@ -59,13 +60,13 @@ export default function WhoWeAreSection() {
             className="order-first flex flex-col items-start gap-5 lg:order-none lg:gap-[30px]"
           >
             <div className="flex flex-col gap-6">
-              <motion.div variants={itemVariants} className="flex max-w-[34rem] flex-col gap-4 capitalize">
+              <motion.div variants={itemVariants} className="flex max-w-[34rem] flex-col gap-4">
                 <h3 className="text-[16px] font-medium leading-normal tracking-[-0.02em] text-[#183c2f] lg:text-[24px]">
-                  Your Trusted Partner in Finding the Perfect Rental Home
+                  Your Trusted Host for Memorable Hurghada Vacations
                 </h3>
                 <p className="text-[12px] leading-[1.6] tracking-[-0.02em] text-[#656566] lg:text-[16px]">
-                  Whether you&apos;re looking for your dream home or your next rental, we help you discover carefully
-                  selected properties that match your lifestyle, budget, and future aspirations.
+                  Whether you&apos;re visiting Hurghada for a sunny beach getaway or a relaxing holiday, we help you discover carefully
+                  selected vacation apartments, chalets, and studios with genuine local hospitality.
                 </p>
               </motion.div>
 

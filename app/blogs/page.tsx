@@ -3,15 +3,15 @@ import BlogsPageContent from "../../components/BlogsPageContent";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Hurghada Travel & Property Blog",
+  title: "Hurghada Travel & Vacation Rental Guides",
   description:
-    "Read Hurghada travel, vacation rental, property, and transfer guides from Hurghada Vacation Homes.",
+    "Read Hurghada travel tips, vacation rental advice, neighbourhood guides, and transfer information from Hurghada Vacation Homes.",
   alternates: {
     canonical: "/blogs",
   },
   openGraph: {
-    title: `Hurghada Travel & Property Blog | ${siteConfig.name}`,
-    description: "Guides for planning better Hurghada stays, rentals, property decisions, and transfers.",
+    title: `Hurghada Travel & Vacation Rental Guides | ${siteConfig.name}`,
+    description: "Guides and local tips for planning better Hurghada holidays, vacation stays, and private transfers.",
     url: "/blogs",
   },
 };

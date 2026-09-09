@@ -11,7 +11,7 @@ import { siteConfig } from "@/lib/site";
 
 const quickLinks = [
   { label: "Home", href: "/" },
-  { label: "Rent", href: "/rent" },
+  { label: "Vacation Rentals", href: "/rent" },
   { label: "About Us", href: "/about" },
   { label: "Contact Us", href: "/contact" },
   { label: "Blogs", href: "/blogs" },
@@ -99,8 +99,8 @@ export default function Footer() {
           className="grid gap-8 lg:grid-cols-[305px_197px_196px_371px] lg:gap-5"
         >
           <BrandColumn shouldReduceMotion={!!shouldReduceMotion} />
-          <FooterLinkColumn title="Quick action" links={quickLinks} shouldReduceMotion={!!shouldReduceMotion} />
-          <FooterLinkColumn title="Properties Type" links={propertyTypes} shouldReduceMotion={!!shouldReduceMotion} />
+          <FooterLinkColumn title="Quick Links" links={quickLinks} shouldReduceMotion={!!shouldReduceMotion} />
+          <FooterLinkColumn title="Rental Types" links={propertyTypes} shouldReduceMotion={!!shouldReduceMotion} />
           <ContactColumn shouldReduceMotion={!!shouldReduceMotion} />
         </motion.div>
 
@@ -142,8 +142,7 @@ function BrandColumn({ shouldReduceMotion }: { shouldReduceMotion: boolean }) {
         variants={footerItemMotion}
         className="max-w-[325px] text-[12px] leading-[1.6] lg:max-w-[284px] lg:text-[14px]"
       >
-        Every journey is a chance to find your perfect home, enjoy comfort, and create lasting memories guided by care,
-        quality, and local expertise.
+        Handpicked vacation homes, beachside chalets, and private airport transfers in Hurghada. Enjoy verified quality, transparent booking, and dedicated local host care.
       </motion.p>
       <motion.div variants={footerItemMotion} className="flex items-center gap-6">
         {socialLinks.map((item) => (

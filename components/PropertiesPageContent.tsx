@@ -5,13 +5,13 @@ import type { PropertyListItem } from "@/lib/types/property";
 import { slugify } from "@/lib/utils/slugify";
 import { API_BASE_URL } from "@/lib/api/config";
 import { useCategories } from "@/lib/hooks/useCategory";
-import { HOUSE_RENT_PROPERTY_TYPES } from "@/lib/utils/propertyUtils";
 import { formatUsd } from "@/lib/utils/currency";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useInHouseBookings } from "@/lib/hooks/useBooking";
 
 type RentGridItem = PropertyListItem & {
   size?: number | null;
@@ -28,6 +28,7 @@ type NormalizedPropertyCard = {
   price: number;
   image: string;
   url: string;
+  isFeatured: boolean;
 };
 
 export default function PropertiesPageContent() {
@@ -59,36 +60,24 @@ function PropertiesPageInner() {
     const newParams = new URLSearchParams();
 
     const city = formData.get("city") as string;
-    const propertyType = formData.get("propertyType") as string;
     const minPrice = formData.get("minPrice") as string;
     const maxPrice = formData.get("maxPrice") as string;
+    const from = (formData.get("from") as string)?.trim();
+    const to = (formData.get("to") as string)?.trim();
+
+    if (from && to) {
+      newParams.append("from", from);
+      newParams.append("to", to);
+    } else if (from && !to) {
+      const d = new Date(from);
+      d.setDate(d.getDate() + 1);
+      newParams.append("from", from);
+      newParams.append("to", d.toISOString().split("T")[0]);
+    }
 
     if (city) newParams.append("CategoryId", city);
-    if (propertyType) {
-      if (propertyType === "house-group") {
-        newParams.append("PropertyTypeGroup", "houses");
-        newParams.append("PropertyTypes", HOUSE_RENT_PROPERTY_TYPES.join(","));
-      } else {
-        newParams.append("PropertyType", propertyType);
-      }
-    }
     if (minPrice) newParams.append("MinPrice", minPrice);
     if (maxPrice) newParams.append("MaxPrice", maxPrice);
-
-    const minBeds = formData.get("minBedrooms") as string;
-    const maxBeds = formData.get("maxBedrooms") as string;
-    if (minBeds) newParams.append("MinBedrooms", minBeds);
-    if (maxBeds) newParams.append("MaxBedrooms", maxBeds);
-
-    const minBaths = formData.get("minBathrooms") as string;
-    const maxBaths = formData.get("maxBathrooms") as string;
-    if (minBaths) newParams.append("MinBathrooms", minBaths);
-    if (maxBaths) newParams.append("MaxBathrooms", maxBaths);
-
-    const minRooms = formData.get("minRooms") as string;
-    const maxRooms = formData.get("maxRooms") as string;
-    if (minRooms) newParams.append("MinRooms", minRooms);
-    if (maxRooms) newParams.append("MaxRooms", maxRooms);
 
     const minCapacity = formData.get("minCapacity") as string;
     if (minCapacity) newParams.append("MinCapacity", minCapacity);
@@ -228,7 +217,7 @@ function PropertiesHero() {
             transition={{ duration: 0.6 }}
             className="text-[24px] font-bold leading-[1.2] text-white sm:text-3xl lg:text-[44px]"
           >
-            Find a Place That Feels Like Home
+            Find Your Next Vacation Rental Home
           </motion.h1>
           <motion.p
             initial={{ y: 20, opacity: 0 }}
@@ -236,7 +225,7 @@ function PropertiesHero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mt-2 text-[12px] leading-[1.6] text-white/90 sm:text-sm lg:mt-4 lg:text-[16px]"
           >
-            Discover apartments, villas, and homes for rent across Egypt. Find a property that fits your lifestyle, budget, and plans all in one place.
+            Discover comfortable holiday apartments, beachside chalets, and studios for rent in Hurghada. Enjoy verified amenities, prime coastal locations, and a relaxing stay.
           </motion.p>
         </motion.div>
       </div>
@@ -257,18 +246,8 @@ function FilterForm({
 
   const categoryIdParam = paramsObj.CategoryId || paramsObj.categoryId || "";
   const cityVal = categoryIdParam;
-  const isHouseGroupVal =
-    paramsObj.PropertyTypeGroup === "houses" ||
-    paramsObj.PropertyTypes === HOUSE_RENT_PROPERTY_TYPES.join(",");
-  const propertyTypeVal = isHouseGroupVal ? "house-group" : paramsObj.PropertyType || "";
   const minPriceVal = paramsObj.MinPrice || "";
   const maxPriceVal = paramsObj.MaxPrice || "";
-  const minBedsVal = paramsObj.MinBedrooms || "";
-  const maxBedsVal = paramsObj.MaxBedrooms || "";
-  const minBathsVal = paramsObj.MinBathrooms || "";
-  const maxBathsVal = paramsObj.MaxBathrooms || "";
-  const minRoomsVal = paramsObj.MinRooms || "";
-  const maxRoomsVal = paramsObj.MaxRooms || "";
   const minCapacityVal = paramsObj.MinCapacity || "";
   const isAvailableVal = paramsObj.IsAvailable === "true";
   const hasSeaViewVal = paramsObj.HasSeaView === "true";
@@ -276,6 +255,44 @@ function FilterForm({
   const hasGardenViewVal = paramsObj.HasGardenView === "true";
   const hasMountainViewVal = paramsObj.HasMountainView === "true";
   const hasCityViewVal = paramsObj.HasCityView === "true";
+
+  const fromVal = paramsObj.from || "";
+  const toVal = paramsObj.to || "";
+  const [fromDate, setFromDate] = useState(fromVal);
+  const [toDate, setToDate] = useState(toVal);
+  const [prevFrom, setPrevFrom] = useState(fromVal);
+  const [prevTo, setPrevTo] = useState(toVal);
+
+  if (prevFrom !== fromVal || prevTo !== toVal) {
+    setPrevFrom(fromVal);
+    setPrevTo(toVal);
+    setFromDate(fromVal);
+    setToDate(toVal);
+  }
+
+  const todayString = new Date().toISOString().split("T")[0];
+  const minCheckOutDate = fromDate
+    ? (() => {
+        const next = new Date(fromDate);
+        next.setDate(next.getDate() + 1);
+        return next.toISOString().split("T")[0];
+      })()
+    : todayString;
+
+  const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFromDate(val);
+    if (val && toDate && toDate <= val) {
+      const next = new Date(val);
+      next.setDate(next.getDate() + 1);
+      setToDate(next.toISOString().split("T")[0]);
+    }
+  };
+
+  const handleClearFormDates = () => {
+    setFromDate("");
+    setToDate("");
+  };
 
   const checkboxes = [
     { name: "isAvailable", label: "Available Now", defaultChecked: isAvailableVal },
@@ -290,6 +307,48 @@ function FilterForm({
     <form onSubmit={onSubmit} className="rounded-[20px] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)] lg:p-6">
       <h3 className="mb-4 text-[15px] font-bold text-[#183c2f]">Filter Properties</h3>
       <div className="flex flex-col gap-4">
+        {/* Check-in & Check-out Dates */}
+        <div className="rounded-xl border border-[#e6ece9] bg-[#f8faf9] p-3.5">
+          <div className="mb-2.5 flex items-center justify-between">
+            <span className="text-[12px] font-semibold uppercase tracking-wide text-[#2e6f57]">
+              Dates of Stay
+            </span>
+            {(fromDate || toDate) && (
+              <button
+                type="button"
+                onClick={handleClearFormDates}
+                className="text-[11px] font-medium text-[#c94a4a] hover:underline"
+              >
+                Clear Dates
+              </button>
+            )}
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-medium text-[#656566]">Check-in Date</span>
+              <input
+                type="date"
+                name="from"
+                value={fromDate}
+                min={todayString}
+                onChange={handleFromChange}
+                className={inputCls}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-medium text-[#656566]">Check-out Date</span>
+              <input
+                type="date"
+                name="to"
+                value={toDate}
+                min={minCheckOutDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className={inputCls}
+              />
+            </label>
+          </div>
+        </div>
+
         <label className="block">
           <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Location</span>
           <select name="city" defaultValue={cityVal} className={inputCls}>
@@ -299,57 +358,16 @@ function FilterForm({
             ))}
           </select>
         </label>
-        <label className="block">
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Property Type</span>
-          <select name="propertyType" defaultValue={propertyTypeVal} className={inputCls}>
-            <option value="">Any Type</option>
-            <option value="house-group">House Types</option>
-            <option value="1">Apartment</option>
-            <option value="2">Villa</option>
-            <option value="3">Studio</option>
-            <option value="4">Chalet</option>
-            <option value="5">TwinHouse</option>
-            <option value="6">TownHouse</option>
-            <option value="7">Duplex</option>
-            <option value="8">Penthouse</option>
-            <option value="9">Cabin</option>
-            <option value="10">Hotel</option>
-          </select>
-        </label>
         <div>
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Price Range (USD)</span>
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Price / Night (USD)</span>
           <div className="flex items-center gap-2">
             <input type="number" name="minPrice" defaultValue={minPriceVal} placeholder="Min" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
             <span className="shrink-0 text-[#bbb]">-</span>
             <input type="number" name="maxPrice" defaultValue={maxPriceVal} placeholder="Max" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
           </div>
         </div>
-        <div>
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Bedrooms</span>
-          <div className="flex items-center gap-2">
-            <input type="number" name="minBedrooms" defaultValue={minBedsVal} placeholder="Min" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-            <span className="shrink-0 text-[#bbb]">-</span>
-            <input type="number" name="maxBedrooms" defaultValue={maxBedsVal} placeholder="Max" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-          </div>
-        </div>
-        <div>
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Bathrooms</span>
-          <div className="flex items-center gap-2">
-            <input type="number" name="minBathrooms" defaultValue={minBathsVal} placeholder="Min" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-            <span className="shrink-0 text-[#bbb]">-</span>
-            <input type="number" name="maxBathrooms" defaultValue={maxBathsVal} placeholder="Max" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-          </div>
-        </div>
-        <div>
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Rooms</span>
-          <div className="flex items-center gap-2">
-            <input type="number" name="minRooms" defaultValue={minRoomsVal} placeholder="Min" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-            <span className="shrink-0 text-[#bbb]">-</span>
-            <input type="number" name="maxRooms" defaultValue={maxRoomsVal} placeholder="Max" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-          </div>
-        </div>
         <label className="block">
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Min Capacity</span>
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">No.Adults</span>
           <input type="number" name="minCapacity" defaultValue={minCapacityVal} placeholder="Any" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
         </label>
         <div className="flex flex-col gap-2.5 border-t border-[#f0f0f0] pt-4">
@@ -381,26 +399,107 @@ function ListingHeading() {
   return (
     <section className="pt-6 lg:pt-8">
       <p className="text-[13px] font-medium leading-6 text-[#656566] lg:text-[15px]">
-        Home &gt; Properties List
+        Home &gt; Vacation Rentals
       </p>
       <h2 className="mt-1 text-[22px] font-semibold text-[#183c2f] lg:mt-2 lg:text-[32px]">
-        Properties List
+        Hurghada Vacation Homes & Holiday Rentals
       </h2>
     </section>
   );
 }
 
 function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const pageNumber = Number(paramsObj.page) || 1;
   const pageSize = 50;
   const { data, isLoading } = usePublicRentProperties({ ...paramsObj, pageNumber, pageSize });
 
-  const rawItems = data?.items || [];
+  const hasDateFilter = Boolean(paramsObj.from && paramsObj.to);
+  const {
+    data: inHouseData,
+    isLoading: inHouseLoading,
+  } = useInHouseBookings(
+    hasDateFilter ? { from: paramsObj.from, to: paramsObj.to } : {}
+  );
+
+  const items = data?.items;
   const totalPages = data?.totalPages || 1;
   const currentPage = data?.pageNumber || pageNumber;
 
-  const properties: NormalizedPropertyCard[] = rawItems.map((item) => {
+  const handleClearDates = () => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.delete("from");
+    newParams.delete("to");
+    router.push(`/rent?${newParams.toString()}`);
+  };
+
+  // Filter items by inHouseData if date filter is active
+  const filteredRawItems = useMemo(() => {
+    const rawItems = items || [];
+    if (!hasDateFilter) return rawItems;
+    if (!inHouseData?.units) return [];
+
+    const availableUnitIds = new Set(
+      inHouseData.units
+        .filter((u) => u.status?.toLowerCase() === "available")
+        .map((u) => u.unitId.toLowerCase())
+    );
+    const availableUnitNumbers = new Set(
+      inHouseData.units
+        .filter((u) => u.status?.toLowerCase() === "available")
+        .map((u) => (u.unitNumber || "").toLowerCase())
+        .filter(Boolean)
+    );
+
+    const unavailableUnitIds = new Set(
+      inHouseData.units
+        .filter((u) => u.status?.toLowerCase() !== "available")
+        .map((u) => u.unitId.toLowerCase())
+    );
+    const unavailableUnitNumbers = new Set(
+      inHouseData.units
+        .filter((u) => u.status?.toLowerCase() !== "available")
+        .map((u) => (u.unitNumber || "").toLowerCase())
+        .filter(Boolean)
+    );
+
+    return rawItems.filter((item) => {
+      const idLower = item.id.toLowerCase();
+      const propNumLower = (item.propertyNumber || "").toLowerCase();
+
+      // Rule: If unit has InHouse or Booked or anything other than Available, do not show it
+      if (
+        unavailableUnitIds.has(idLower) ||
+        (propNumLower && unavailableUnitNumbers.has(propNumLower))
+      ) {
+        return false;
+      }
+
+      // Unit must be explicitly marked Available
+      const isAvailable =
+        availableUnitIds.has(idLower) ||
+        (propNumLower && availableUnitNumbers.has(propNumLower));
+
+      return isAvailable;
+    });
+  }, [hasDateFilter, inHouseData, items]);
+
+  // Sort properties so featured properties appear first
+  const sortedRawItems = useMemo(() => {
+    return [...filteredRawItems].sort((a, b) => {
+      const aFeatured = a.isFeatured ? 1 : 0;
+      const bFeatured = b.isFeatured ? 1 : 0;
+      return bFeatured - aFeatured;
+    });
+  }, [filteredRawItems]);
+
+  const properties: NormalizedPropertyCard[] = sortedRawItems.map((item) => {
     const rentItem = item as RentGridItem;
+    const url = hasDateFilter
+      ? `/rent/${slugify(rentItem.name)}?checkIn=${encodeURIComponent(paramsObj.from)}&checkOut=${encodeURIComponent(paramsObj.to)}`
+      : `/rent/${slugify(rentItem.name)}`;
+
     return {
       id: rentItem.id,
       title: rentItem.name,
@@ -410,16 +509,48 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
       size: `${rentItem.size || rentItem.capacity || 0} sqm`,
       price: rentItem.basePrice,
       image: rentItem.coverImageUrl ? `${API_BASE_URL}/${rentItem.coverImageUrl}` : "/rent/property-card.png",
-      url: `/rent/${slugify(rentItem.name)}`,
+      url,
+      isFeatured: Boolean(rentItem.isFeatured),
     };
   });
+
+  const isGridLoading = isLoading || (hasDateFilter && inHouseLoading);
 
   return (
     <>
       <section id="properties" className="w-full">
-        {isLoading ? (
-          <div className="flex justify-center py-20">
+        {/* Active Dates Filter Banner */}
+        {hasDateFilter && !isGridLoading && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#2e6f57]/20 bg-[#2e6f57]/5 px-4 py-3 text-[14px] text-[#183c2f]">
+            <div className="flex items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#2e6f57]">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span>
+                Showing available vacation homes for <strong>{paramsObj.from}</strong> to <strong>{paramsObj.to}</strong> ({properties.length} available)
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearDates}
+              className="text-[13px] font-semibold text-[#2e6f57] underline hover:text-[#183c2f]"
+            >
+              Clear dates
+            </button>
+          </div>
+        )}
+
+        {isGridLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2e6f57] border-t-transparent" />
+            {hasDateFilter && inHouseLoading && (
+              <p className="text-[14px] text-[#656566]">
+                Checking availability for {paramsObj.from} to {paramsObj.to}...
+              </p>
+            )}
           </div>
         ) : (
           <motion.div
@@ -429,8 +560,22 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
             className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
           >
             {properties.length === 0 ? (
-              <div className="col-span-full py-20 text-center text-[16px] text-[#656566]">
-                No properties found matching your criteria. Try adjusting your filters.
+              <div className="col-span-full py-20 text-center">
+                <p className="text-[18px] font-semibold text-[#183c2f]">No vacation rentals available</p>
+                <p className="mt-2 text-[14px] text-[#656566]">
+                  {hasDateFilter
+                    ? `None of our vacation homes are available from ${paramsObj.from} to ${paramsObj.to}. Try selecting different dates or clear your date filter.`
+                    : "No vacation rentals found matching your criteria. Try adjusting your filters."}
+                </p>
+                {hasDateFilter && (
+                  <button
+                    type="button"
+                    onClick={handleClearDates}
+                    className="mt-4 inline-flex items-center justify-center rounded-full bg-[#2e6f57] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#245b46]"
+                  >
+                    View All Available Homes
+                  </button>
+                )}
               </div>
             ) : (
               properties.map((property) => (
@@ -440,7 +585,7 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
           </motion.div>
         )}
       </section>
-      {!isLoading && totalPages > 1 && (
+      {!isGridLoading && totalPages > 1 && (
         <Pagination currentPage={currentPage} totalPages={totalPages} paramsObj={paramsObj} />
       )}
     </>
@@ -461,11 +606,17 @@ function PropertyCard({ property }: { property: NormalizedPropertyCard }) {
           sizes="(min-width: 1280px) 380px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           className="object-cover transition-transform duration-500 hover:scale-105"
         />
-        <span className="absolute left-3 top-3 flex h-7 items-center rounded-full border border-white/20 bg-black/40 px-3 text-[12px] font-medium text-white backdrop-blur-sm">
-          For Rent
-        </span>
+        {property.isFeatured ? (
+          <span className="absolute left-3 top-3 flex h-7 items-center gap-1 rounded-full border border-[#d59e52]/40 bg-[#d59e52] px-3 text-[12px] font-semibold text-white shadow-md backdrop-blur-sm">
+            ★ Featured
+          </span>
+        ) : (
+          <span className="absolute left-3 top-3 flex h-7 items-center rounded-full border border-white/20 bg-black/40 px-3 text-[12px] font-medium text-white backdrop-blur-sm">
+            Holiday Rental
+          </span>
+        )}
         <span className="absolute bottom-3 left-3 flex h-9 items-center gap-1.5 rounded-lg bg-[#cfb072] px-3 text-white shadow-lg">
-          <span className="text-[14px] font-bold lg:text-[17px]">{formatUsd(property.price)}<span className="text-[11px] font-normal">/Mo</span></span>
+          <span className="text-[14px] font-bold lg:text-[17px]">{formatUsd(property.price)}<span className="text-[11px] font-normal">/night</span></span>
         </span>
       </Link>
       <div className="flex flex-1 flex-col p-4">
@@ -487,7 +638,7 @@ function PropertyCard({ property }: { property: NormalizedPropertyCard }) {
           href={property.url}
           className="mt-4 flex h-10 w-full items-center justify-center rounded-xl bg-[#2e6f57] text-[13px] font-semibold text-white transition hover:bg-[#255f49] lg:h-11 lg:text-[14px]"
         >
-          View Details
+          Book Now
         </Link>
       </div>
     </motion.article>

@@ -93,10 +93,10 @@ function SectionHeading() {
   return (
     <div className="mx-auto flex max-w-[730px] flex-col items-center gap-2 text-center lg:gap-[21px]">
       <p className="text-[14px] font-medium uppercase leading-normal tracking-[0.36em] text-[#d59e52] lg:text-[18px]">
-        Blogs Articles
+        Travel & Stay Guides
       </p>
       <h2 className="text-[20px] font-medium leading-normal tracking-[-0.02em] text-[#2e6f57] lg:text-[36px]">
-        Real Estate Insights
+        Hurghada Holiday & Travel Guides
       </h2>
       <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
     </div>
@@ -116,7 +116,7 @@ function ViewMoreButton({ className = "" }: { className?: string }) {
 
 function ArticleCard({ blog }: { blog: BlogItem }) {
   const imageSrc = resolveApiImageUrl(blog.featuredImageUrl) || fallbackImage;
-  const excerpt = blog.summary || blog.content || "Explore the latest rental insights and local property guidance.";
+  const excerpt = blog.summary || blog.content || "Explore the latest vacation rental tips and local Hurghada travel guides.";
 
   return (
     <article

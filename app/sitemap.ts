@@ -5,11 +5,11 @@ const routes = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/rent", priority: 0.95, changeFrequency: "daily" },
   { path: "/transfer", priority: 0.85, changeFrequency: "weekly" },
-  { path: "/buy", priority: 0.8, changeFrequency: "weekly" },
-  { path: "/blogs", priority: 0.7, changeFrequency: "weekly" },
-  { path: "/about", priority: 0.65, changeFrequency: "monthly" },
-  { path: "/contact", priority: 0.75, changeFrequency: "monthly" },
-  { path: "/faq", priority: 0.6, changeFrequency: "monthly" },
+  { path: "/blogs", priority: 0.75, changeFrequency: "weekly" },
+  { path: "/about", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/contact", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/faq", priority: 0.65, changeFrequency: "monthly" },
+  { path: "/house-rules", priority: 0.6, changeFrequency: "monthly" },
 ] satisfies Array<{
   path: string;
   priority: number;

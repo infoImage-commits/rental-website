@@ -17,33 +17,11 @@ import { useCreatePaypalOrder } from "@/lib/hooks/usePayment";
 import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
 import { usePropertyCategoryItems } from "@/lib/hooks/usePropertyCategoryItem";
 import type { Property, PropertyCategoryGroup } from "@/lib/types/property";
+import { useReviews, usePropertyAverageRating, useCreateReview } from "@/lib/hooks/useReview";
 import { savePaymentBookingContext } from "@/lib/utils/paymentBookingContext";
 import { formatUsd } from "@/lib/utils/currency";
 import { toast } from "sonner";
 
-
-const ratingBars = [
-  { score: 5, width: "100%" },
-  { score: 4, width: "65%" },
-  { score: 3, width: "53%" },
-  { score: 2, width: "31%" },
-  { score: 1, width: "14%" },
-];
-
-const reviews = [
-  {
-    name: "Cameron Williamson",
-    role: "Designer",
-    rating: "4.75",
-    text: "Searches for properties, comparisons, and booking details were simple and clear. The villa matched the photos and the location was exactly what we needed.",
-  },
-  {
-    name: "Mariam Nabil",
-    role: "Guest",
-    rating: "4.5",
-    text: "The stay was quiet, clean, and close to the water. Check-in was easy, and the property felt comfortable for a short family break.",
-  },
-];
 
 const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -188,6 +166,10 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
           
           <ScrollAnimation delay={0.1}>
             <AvailabilitySection propertyId={property.id} propertyName={property.name} capacity={property.capacity || 1} basePrice={property.basePrice || 0} />
+          </ScrollAnimation>
+
+          <ScrollAnimation delay={0.1}>
+            <ReviewsSection propertyId={property.id} propertyName={property.name} />
           </ScrollAnimation>
           
         </div>
@@ -364,6 +346,10 @@ function AvailabilitySection({
 
     const timer = window.setTimeout(() => {
       try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlCheckIn = urlParams.get("checkIn") || urlParams.get("from");
+        const urlCheckOut = urlParams.get("checkOut") || urlParams.get("to");
+
         const saved = localStorage.getItem(`rent_booking_draft_${propertyId}`);
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -385,6 +371,14 @@ function AvailabilitySection({
               setHasAcceptedRules(parsed.hasAcceptedRules);
             }
           }
+        }
+
+        // If URL search params provided dates from vacation homes filter, use them
+        if (urlCheckIn && urlCheckIn >= todayString) {
+          setCheckIn(urlCheckIn);
+        }
+        if (urlCheckOut && (!urlCheckIn || urlCheckOut > urlCheckIn)) {
+          setCheckOut(urlCheckOut);
         }
       } catch (err) {
         console.warn("Could not restore booking draft", err);
@@ -928,87 +922,324 @@ function Legend({ label, className }: { label: string; className: string }) {
   );
 }
 
-function ReviewsSection() {
+function ReviewsSection({ propertyId, propertyName }: { propertyId: string; propertyName: string }) {
+  const { data: averageData } = usePropertyAverageRating(propertyId);
+  const { data: reviewsData, isLoading: isLoadingReviews } = useReviews({
+    SearchTerm: propertyName,
+    PageSize: 10,
+    SortBy: "createdAtUtc",
+    IsDescending: true,
+  });
+
+  const reviews = reviewsData?.items ?? [];
+  const average = averageData?.averageRating ?? 0;
+  const totalReviews = averageData?.totalReviews ?? reviews.length;
+
+  const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  reviews.forEach((r) => {
+    const score = Math.min(5, Math.max(1, Math.round(r.rate)));
+    counts[score] = (counts[score] || 0) + 1;
+  });
+
+  const ratingBars = [5, 4, 3, 2, 1].map((score) => {
+    const count = counts[score] || 0;
+    const pct = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+    return { score, pct: `${pct.toFixed(0)}%`, count };
+  });
+
   return (
     <section className="mt-9 lg:mt-12">
-      <div className="rounded-lg border border-[#dfe8e4] bg-white p-5 shadow-[0_4px_10px_rgba(175,132,255,0.03)] lg:p-[30px]">
-        <div className="grid gap-6 lg:grid-cols-[minmax(12rem,0.4fr)_minmax(16rem,0.6fr)] lg:items-center">
+      <div className="rounded-2xl border border-[#dfe8e4] bg-white p-6 shadow-[0_4px_20px_rgba(31,77,61,0.04)] sm:p-8 lg:p-10">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-[22px] font-bold text-[#183c2f] sm:text-[26px]">Guest Reviews & Ratings</h2>
+          <a
+            href="#add-review-section"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#1F4D3D] px-6 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[#183c2f] hover:shadow sm:w-auto"
+          >
+            <span>★</span>
+            <span>Write a Review</span>
+          </a>
+        </div>
+        
+        <div className="mt-6 grid gap-6 border-b border-[#edf2ef] pb-8 lg:grid-cols-[minmax(12rem,0.35fr)_minmax(16rem,0.65fr)] lg:items-center">
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center gap-3">
-              <span className="text-[56px] font-semibold leading-none text-[#183c2f] lg:text-[72px]">4.5</span>
+              <span className="text-[52px] font-bold leading-none text-[#183c2f] lg:text-[68px]">
+                {totalReviews > 0 ? average.toFixed(1) : "New"}
+              </span>
               <span className="text-[34px] leading-none text-[#cfb072]">★</span>
             </div>
-            <p className="mt-2 inline-flex rounded-full bg-[#f5f7f6] px-6 py-2 text-[12px] leading-4 text-[#656566]">
-              653 reviews
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#f4f7f5] px-5 py-2 text-[13px] font-medium text-[#40544c]">
+              {totalReviews > 0
+                ? `${totalReviews} verified ${totalReviews === 1 ? "review" : "reviews"}`
+                : "No reviews yet"}
             </p>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-2.5">
             {ratingBars.map((bar) => (
-              <div key={bar.score} className="grid grid-cols-[2rem_1fr] items-center gap-2">
-                <span className="text-[12px] text-[#656566]">{bar.score} ★</span>
-                <span className="h-1.5 overflow-hidden rounded-full bg-[#e7edf3]">
-                  <span className="block h-full rounded-full bg-[#cfb072]" style={{ width: bar.width }} />
+              <div key={bar.score} className="grid grid-cols-[2.5rem_1fr_2rem] items-center gap-3 text-[12px] text-[#656566]">
+                <span className="font-medium">{bar.score} ★</span>
+                <span className="h-2 overflow-hidden rounded-full bg-[#eef2f0]">
+                  <span
+                    className="block h-full rounded-full bg-[#cfb072] transition-all duration-500"
+                    style={{ width: bar.pct }}
+                  />
                 </span>
+                <span className="text-right text-[11px] text-[#8a9a94]">{bar.count}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
-          {reviews.map((review) => (
-            <article key={review.name} className="rounded-lg border border-[#dfe8e4] bg-[#fbfdfc] p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-[16px] font-semibold leading-6 text-[#183c2f]">{review.name}</h3>
-                  <p className="text-[13px] leading-5 text-[#656566]">{review.role}</p>
-                </div>
-                <span className="whitespace-nowrap text-[14px] font-medium text-[#cfb072]">★ {review.rating}</span>
-              </div>
-              <p className="mt-4 text-[14px] leading-7 text-[#656566]">{review.text}</p>
-            </article>
-          ))}
+        {/* Reviews List */}
+        <div className="mt-8">
+          {isLoadingReviews ? (
+            <div className="flex h-32 items-center justify-center">
+              <span className="size-6 animate-spin rounded-full border-2 border-[#183c2f] border-t-transparent" />
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="rounded-xl bg-[#f8faf9] p-8 text-center">
+              <p className="text-[15px] font-medium text-[#183c2f]">
+                No reviews yet for this vacation home
+              </p>
+              <p className="mt-1 text-[13px] text-[#667c74]">
+                Be the first guest to share your feedback after completing your stay!
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {reviews.map((review) => (
+                <article
+                  key={review.id}
+                  className="flex flex-col justify-between rounded-xl border border-[#dfe8e4] bg-[#fbfdfc] p-5 shadow-sm transition hover:border-[#cfb072]/60 hover:shadow"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-[15px] font-semibold text-[#183c2f]">
+                          {review.customerName || "Verified Guest"}
+                        </h3>
+                        <p className="text-[12px] text-[#8a9a94]">
+                          {new Date(review.createdAtUtc).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#fef9ec] px-2.5 py-1 text-[13px] font-bold text-[#cfb072]">
+                        ★ {review.rate}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-[14px] leading-relaxed text-[#40544c] whitespace-pre-wrap">
+                      {review.comment}
+                    </p>
+                  </div>
+                  {review.bookingNumber && (
+                    <p className="mt-4 border-t border-[#edf2ef] pt-2.5 text-[11px] font-medium text-[#8a9a94]">
+                      Stay verified • Booking {review.bookingNumber}
+                    </p>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <AddReviewForm />
+      <AddReviewForm propertyName={propertyName} />
     </section>
   );
 }
 
-function AddReviewForm() {
+function AddReviewForm({ propertyName }: { propertyName: string }) {
+  const [bookingNumber, setBookingNumber] = useState("");
+  const [rate, setRate] = useState(5);
+  const [hoverRate, setHoverRate] = useState<number | null>(null);
+  const [comment, setComment] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const { mutate: submitReview, isPending } = useCreateReview();
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const trimmedBooking = bookingNumber.trim();
+    if (!trimmedBooking) {
+      setErrorMessage("Please enter your booking confirmation number.");
+      return;
+    }
+    if (!comment.trim()) {
+      setErrorMessage("Please write a short comment about your stay.");
+      return;
+    }
+
+    submitReview(
+      {
+        bookingNumber: trimmedBooking,
+        rate,
+        comment: comment.trim(),
+      },
+      {
+        onSuccess: () => {
+          setSuccessMessage("Thank you! Your review has been submitted successfully.");
+          toast.success("Review submitted successfully!");
+          setBookingNumber("");
+          setComment("");
+          setRate(5);
+        },
+        onError: (err: unknown) => {
+          const errorData = err as { response?: { data?: { errors?: string[]; message?: string } } };
+          const rawError =
+            errorData?.response?.data?.errors?.[0] ||
+            errorData?.response?.data?.message ||
+            "";
+
+          let friendlyError =
+            "Unable to submit review. Please verify your booking number and ensure your stay has concluded.";
+
+          if (rawError.toLowerCase().includes("completed")) {
+            friendlyError =
+              "Reviews can only be created for completed bookings. Please leave your review on or after your checkout date once your stay has concluded. We look forward to hearing your thoughts then!";
+          } else if (rawError.toLowerCase().includes("already") || rawError.toLowerCase().includes("unique")) {
+            friendlyError =
+              "A review has already been submitted for this booking number. Thank you for sharing your experience!";
+          } else if (rawError.toLowerCase().includes("not found")) {
+            friendlyError =
+              "We couldn't find a booking matching this confirmation number. Please check your booking confirmation email.";
+          } else if (rawError) {
+            friendlyError = rawError;
+          }
+
+          setErrorMessage(friendlyError);
+          toast.error(friendlyError);
+        },
+      }
+    );
+  }
+
+  const ratingDescriptions: Record<number, string> = {
+    5: "5 Stars - Excellent stay",
+    4: "4 Stars - Very good",
+    3: "3 Stars - Average",
+    2: "2 Stars - Poor",
+    1: "1 Star - Terrible",
+  };
+
   return (
-    <section className="mt-8">
-      <h2 className="text-[24px] font-semibold leading-9 text-[#183c2f]">Add Review</h2>
-      <p className="mt-3 text-[14px] leading-6 text-[#656566]">
-        Your email address will not be published. Required fields are marked *
+    <section id="add-review-section" className="mt-8 scroll-mt-24 rounded-2xl border border-[#dfe8e4] bg-white p-6 shadow-sm sm:p-8">
+      <h2 className="text-[22px] font-semibold leading-snug text-[#183c2f]">Leave a Review</h2>
+      <p className="mt-2 text-[14px] leading-relaxed text-[#656566]">
+        Completed your stay at <span className="font-semibold text-[#183c2f]">{propertyName}</span>? We&apos;d love to hear how your trip went! Please enter your booking confirmation number below. Reviews can only be submitted on or after your checkout date once your booking is completed. Your verified name and stay details will be automatically linked — no profile photo or sign-up needed.
       </p>
 
-      <form className="mt-5 grid gap-4">
-        <label className="block">
-          <span className="text-[16px] leading-6 text-[#183c2f]">Review</span>
-          <select className="mt-2 h-12 w-full rounded-lg border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#656566] outline-none focus:border-[#2e6f57]">
-            <option>Rate this property</option>
-            <option>5 Stars</option>
-            <option>4 Stars</option>
-            <option>3 Stars</option>
-          </select>
-        </label>
+      {errorMessage && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-[14px] text-amber-900">
+          <div className="flex items-start gap-3">
+            <svg className="mt-0.5 size-5 shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              <p className="font-semibold">Review Notice</p>
+              <p className="mt-0.5 text-[13px] leading-relaxed text-amber-800">{errorMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
-        <label className="block">
-          <span className="text-[16px] leading-6 text-[#183c2f]">Comment</span>
-          <textarea
-            placeholder="Text..."
-            className="mt-2 min-h-[94px] w-full resize-none rounded-lg border border-[#dfe8e4] bg-white p-3 text-[14px] text-[#183c2f] outline-none placeholder:text-[#b3b3b3] focus:border-[#2e6f57]"
+      {successMessage && (
+        <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 text-[14px] text-green-800">
+          <p className="font-semibold">Review Received</p>
+          <p className="mt-0.5 text-[13px]">{successMessage}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="mt-6 grid gap-5">
+        <div>
+          <label className="block text-[14px] font-medium text-[#183c2f]">
+            Booking Confirmation Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={bookingNumber}
+            onChange={(e) => setBookingNumber(e.target.value)}
+            placeholder="e.g. BK-XXXXXX"
+            required
+            className="mt-2 h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none transition placeholder:text-[#aab4b0] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10 sm:max-w-md"
           />
-        </label>
+          <p className="mt-1 text-[12px] text-[#8a9a94]">
+            Found in your confirmation email. Reviews can only be submitted on or after your checkout date once your booking is completed.
+          </p>
+        </div>
 
-        <button
-          type="submit"
-          className="flex h-12 w-full items-center justify-center rounded-full bg-[#2e6f57] text-[16px] font-semibold text-white transition hover:bg-[#255f49] lg:ml-auto lg:w-[299px]"
-        >
-          Submit Review
-        </button>
+        <div>
+          <label className="block text-[14px] font-medium text-[#183c2f]">
+            Your Rating <span className="text-red-500">*</span>
+          </label>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRate(star)}
+                  onMouseEnter={() => setHoverRate(star)}
+                  onMouseLeave={() => setHoverRate(null)}
+                  className="p-1 text-[26px] leading-none transition hover:scale-110 focus:outline-none"
+                  aria-label={`Rate ${star} star`}
+                >
+                  <span
+                    className={
+                      star <= (hoverRate ?? rate) ? "text-[#cfb072]" : "text-[#d1dcd6]"
+                    }
+                  >
+                    ★
+                  </span>
+                </button>
+              ))}
+            </div>
+            <span className="text-[13px] font-medium text-[#656566]">
+              {ratingDescriptions[hoverRate ?? rate]}
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[14px] font-medium text-[#183c2f]">
+            Your Feedback <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Share details about the cleanliness, location, check-in process, and comfort..."
+            required
+            rows={4}
+            className="mt-2 w-full rounded-xl border border-[#dfe8e4] bg-white p-3.5 text-[14px] text-[#183c2f] outline-none transition placeholder:text-[#aab4b0] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10"
+          />
+        </div>
+
+        <div className="flex items-center justify-end pt-2">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#1F4D3D] px-8 text-[15px] font-semibold text-white shadow-md transition hover:bg-[#183c2f] hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto"
+          >
+            {isPending ? (
+              <>
+                <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Submitting...
+              </>
+            ) : (
+              "Submit Review"
+            )}
+          </button>
+        </div>
       </form>
     </section>
   );

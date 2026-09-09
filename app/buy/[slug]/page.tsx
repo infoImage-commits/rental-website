@@ -59,5 +59,7 @@ export default async function SingleBuyPropertyPage({ params }: { params: Promis
     notFound();
   }
   
-  return <SingleBuyPropertyPageContent id={id} />;
+  // Buy page is disabled on the vacation rental platform
+  notFound();
+  return <SingleBuyPropertyPageContent id={id as string} />;
 }

@@ -9,33 +9,33 @@ const summaryPoints = ["Verified Properties", "Expert Local Knowledge", "Dedicat
 
 const stats = [
   { value: "10+", label: "Years Experience", icon: "/about/icons/experience.svg", iconClassName: "h-7 w-[21px]" },
-  { value: "2,500+", label: "Happy Clients", icon: "/about/icons/clients.svg", iconClassName: "h-[21px] w-[29px]" },
-  { value: "1,200+", label: "Properties", icon: "/about/icons/properties.svg", iconClassName: "size-6" },
-  { value: "20+", label: "Expert Agents", icon: "/about/icons/agents.svg", iconClassName: "h-6 w-[27px]" },
+  { value: "2,500+", label: "Happy Guests", icon: "/about/icons/clients.svg", iconClassName: "h-[21px] w-[29px]" },
+  { value: "1,200+", label: "Holiday Homes", icon: "/about/icons/properties.svg", iconClassName: "size-6" },
+  { value: "20+", label: "Dedicated Hosts", icon: "/about/icons/agents.svg", iconClassName: "h-6 w-[27px]" },
 ];
 
 const reasons = [
   {
-    title: "Wide Range of Properties",
-    description: "Apartments, villas, studios, and short-stay homes selected for different plans and budgets.",
+    title: "Wide Range of Vacation Homes",
+    description: "Chalets, resort apartments, and studios handpicked for every travel style and budget.",
     icon: "/about/icons/wide-range.svg",
     iconClassName: "size-7",
   },
   {
-    title: "Prime Locations",
-    description: "We focus on places that make daily life, travel, and investment decisions easier.",
+    title: "Prime Coastal Locations",
+    description: "We focus on prime Hurghada spots that make beach access, dining, and holiday relaxation effortless.",
     icon: "/about/icons/prime-location.svg",
     iconClassName: "h-[27px] w-[21px]",
   },
   {
-    title: "Transparent Process",
-    description: "Clear details, reliable information, and booking steps that are easy to follow.",
+    title: "Transparent Booking",
+    description: "Clear nightly pricing, accurate photos, verified amenities, and a simple 10% online deposit.",
     icon: "/about/icons/transparent.svg",
     iconClassName: "h-[27px] w-[29px]",
   },
   {
-    title: "Customer Support",
-    description: "A responsive team that helps before, during, and after your property search.",
+    title: "Local Host Care",
+    description: "A friendly, responsive local team ready to help before, during, and after your holiday stay.",
     icon: "/about/icons/agents.svg",
     iconClassName: "h-6 w-[27px]",
   },
@@ -120,10 +120,10 @@ function AboutCopy({ shouldReduceMotion, viewport }: MotionProps) {
       <motion.div variants={fadeUp} className="flex flex-col gap-4">
         <p className="text-[13px] font-semibold uppercase text-[#cfb072]">Who we are</p>
         <h2 className="max-w-[670px] text-[28px] font-semibold leading-[1.18] text-[#183c2f] sm:text-[34px] lg:text-[48px]">
-          A simpler way to find a place that feels right.
+          Your home away from home on the Red Sea.
         </h2>
         <p className="max-w-[614px] text-[14px] leading-7 text-[#5d6965] lg:text-[18px] lg:leading-8">
-          We help people rent, buy, and plan stays across Egypt with clear property details, local knowledge, and a team that keeps the process calm from search to confirmation.
+          We help travelers and holidaymakers discover comfortable, handpicked vacation homes and private airport transfers across Hurghada with verified details and dedicated local host care.
         </p>
       </motion.div>
 
@@ -144,11 +144,11 @@ function AboutCopy({ shouldReduceMotion, viewport }: MotionProps) {
       <motion.div variants={container} className="grid gap-5">
         <TextBlock
           title="Our Mission"
-          body="To guide every client with honesty, useful information, and reliable service so choosing a property feels less stressful and more confident."
+          body="To provide every guest with reliable, transparent, and welcoming hospitality so booking a vacation stay in Hurghada is completely stress-free."
         />
         <TextBlock
           title="What We Help With"
-          body="From modern apartments and villas to investment opportunities and transfer planning, our team brings the details together so you can make decisions faster."
+          body="From beachside apartments and resort chalets to private airport transfers and local recommendations, our team brings the details together so you can relax and enjoy your holiday."
         />
       </motion.div>
     </motion.div>
@@ -292,17 +292,17 @@ function AboutCta({ shouldReduceMotion, viewport }: MotionProps) {
       >
         <div className="flex max-w-[760px] flex-col items-start gap-4">
           <motion.h2 variants={fadeUp} className="max-w-[680px] text-[32px] font-semibold leading-tight text-white lg:text-[56px]">
-            Ready to start your next property move?
+            Ready to plan your Hurghada holiday?
           </motion.h2>
           <motion.p variants={fadeUp} className="max-w-[560px] text-[14px] leading-7 text-white/90 lg:text-[18px] lg:leading-8">
-            Tell us what you are looking for and our team will help you compare options, understand the details, and take the next step with confidence.
+            Tell us your travel dates and preferences, and our local team will help you find the ideal vacation home with effortless check-in and private airport transfers.
           </motion.p>
           <motion.div variants={fadeUp}>
             <Link
               href="/contact"
               className="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-[15px] font-semibold text-[#2e6f57] shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:bg-[#f5f7f6]"
             >
-              Talk to our team
+              Contact Our Host Team
             </Link>
           </motion.div>
         </div>

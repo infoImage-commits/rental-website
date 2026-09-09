@@ -8,6 +8,7 @@ import { useCategories } from "@/lib/hooks/useCategory";
 import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
 import { usePropertyCategoryItems } from "@/lib/hooks/usePropertyCategoryItem";
 import { PropertyRequest, PropertyType, PropertyStatus, BedType } from "@/lib/types/property";
+import axiosInstance from "@/lib/api/axiosInstance";
 
 const defaultPayload: PropertyRequest = {
   categoryId: "",
@@ -99,14 +100,26 @@ export default function PropertyCreateContent() {
 
     createProperty({
       ...formData,
+      isFeatured: Boolean(formData.isFeatured),
       listingDetails: {
         ...formData.listingDetails!,
         ...hiddenListingDefaults,
       },
     }, {
-      onSuccess: (data) => {
-        if (data.data) {
-          router.push(`/admin/properties/${data.data.id}?created=true`);
+      onSuccess: async (data) => {
+        if (data.data?.id) {
+          const newId = data.data.id;
+          // If admin left isFeatured unchecked, ensure backend doesn't default it to true
+          if (!formData.isFeatured) {
+            try {
+              await axiosInstance.put(`/api/properties/${newId}/featured`, false, {
+                headers: { "Content-Type": "application/json" },
+              });
+            } catch (err) {
+              console.warn("Could not enforce isFeatured false", err);
+            }
+          }
+          router.push(`/admin/properties/${newId}?created=true`);
         } else {
           router.push("/admin/properties");
         }
@@ -181,7 +194,7 @@ export default function PropertyCreateContent() {
                 <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">View Category *</label>
                 <select required value={formData.categoryId} onChange={e => updateForm({ categoryId: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]">
                   <option value="" disabled>Select View Category</option>
-                  {(locationCategories as any[]).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {locationCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
@@ -203,9 +216,22 @@ export default function PropertyCreateContent() {
                 <input type="checkbox" checked={formData.isAvailable} onChange={e => updateForm({ isAvailable: e.target.checked })} className="size-5 rounded border-gray-300 text-[#2e6f57] focus:ring-[#2e6f57]" />
                 <span className="text-[14px] font-medium text-[#183c2f]">Available</span>
               </div>
-              <div className="flex items-center gap-3 pt-6">
-                <input type="checkbox" checked={formData.isFeatured} onChange={e => updateForm({ isFeatured: e.target.checked })} className="size-5 rounded border-gray-300 text-[#2e6f57] focus:ring-[#2e6f57]" />
-                <span className="text-[14px] font-medium text-[#183c2f]">Featured Property</span>
+              <div className="flex items-start gap-3 pt-6">
+                <input
+                  type="checkbox"
+                  id="featured-checkbox"
+                  checked={formData.isFeatured}
+                  onChange={(e) => updateForm({ isFeatured: e.target.checked })}
+                  className="mt-0.5 size-5 rounded border-gray-300 text-[#2e6f57] focus:ring-[#2e6f57]"
+                />
+                <div>
+                  <label htmlFor="featured-checkbox" className="block cursor-pointer text-[14px] font-medium text-[#183c2f]">
+                    Featured Property
+                  </label>
+                  <span className="block text-[11px] text-[#667c74]">
+                    Off by default. Check this only if you want this property highlighted in Hot Deals on the homepage and prioritized at the top of listings.
+                  </span>
+                </div>
               </div>
             </div>
             

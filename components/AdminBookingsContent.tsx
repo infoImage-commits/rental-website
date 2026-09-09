@@ -134,7 +134,7 @@ export default function AdminBookingsContent() {
           label="Booking No."
           value={draftFilters.BookingNumber}
           onChange={(value) => updateFilter("BookingNumber", value)}
-          placeholder="BK-000003"
+          placeholder="BK-XXXXXX"
         />
         <FilterInput
           label="Property No."

@@ -92,6 +92,151 @@ function buildSinglePageResponse(items: PropertyListItem[], pageSize: number) {
 }
 
 // ── 1. List & Fetch ──────────────────────────────────────────────────────────
+export interface AdminPropertiesQueryParams {
+  searchTerm?: string;
+  propertyType?: string | number;
+  propertyStatus?: string | number;
+  city?: string;
+  isAvailable?: boolean | string;
+  isFeatured?: boolean | string;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export function useSearchProperties(params: { SearchTerm: string; PageNumber?: number; PageSize?: number }) {
+  return useQuery({
+    queryKey: [KEY, "search", params],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get<PropertyApiResponse<PaginatedResponse<PropertyListItem>>>(
+        "/api/properties/search",
+        { params: { PageNumber: 1, PageSize: 10, ...params } }
+      );
+      return data.data;
+    },
+    enabled: Boolean(params.SearchTerm?.trim()),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAdminProperties(params: AdminPropertiesQueryParams = {}) {
+  return useQuery({
+    queryKey: [KEY, "admin-list", params],
+    queryFn: async () => {
+      const pageNumber = params.pageNumber || 1;
+      const pageSize = params.pageSize || 10;
+      const searchTerm = params.searchTerm?.trim();
+
+      if (searchTerm) {
+        const { data } = await axiosInstance.get<PropertyApiResponse<PaginatedResponse<PropertyListItem>>>(
+          "/api/properties/search",
+          {
+            params: {
+              SearchTerm: searchTerm,
+              PageNumber: pageNumber,
+              PageSize: pageSize,
+            },
+          }
+        );
+
+        let result = data.data;
+        if (!result) return result;
+
+        const hasExtraFilters =
+          Boolean(params.propertyType) ||
+          Boolean(params.propertyStatus) ||
+          Boolean(params.city) ||
+          (params.isAvailable !== undefined && params.isAvailable !== "") ||
+          (params.isFeatured !== undefined && params.isFeatured !== "");
+
+        if (hasExtraFilters && result.items) {
+          let filteredItems = [...result.items];
+
+          if (params.propertyType) {
+            filteredItems = filteredItems.filter(
+              (p) => String(p.propertyType) === String(params.propertyType)
+            );
+          }
+
+          if (params.propertyStatus) {
+            filteredItems = filteredItems.filter(
+              (p) =>
+                "propertyStatus" in p &&
+                String((p as unknown as { propertyStatus: unknown }).propertyStatus) === String(params.propertyStatus)
+            );
+          }
+
+          if (params.city) {
+            filteredItems = filteredItems.filter(
+              (p) => p.city?.toLowerCase() === String(params.city).toLowerCase()
+            );
+          }
+
+          if (params.isAvailable !== undefined && params.isAvailable !== "") {
+            const availBool = params.isAvailable === true || params.isAvailable === "true";
+            filteredItems = filteredItems.filter((p) => p.isAvailable === availBool);
+          }
+
+          if (params.isFeatured !== undefined && params.isFeatured !== "") {
+            const featBool = params.isFeatured === true || params.isFeatured === "true";
+            filteredItems = filteredItems.filter((p) => p.isFeatured === featBool);
+          }
+
+          result = {
+            ...result,
+            items: filteredItems,
+            totalCount: filteredItems.length,
+            totalPages: Math.max(1, Math.ceil(filteredItems.length / pageSize)),
+          };
+        }
+
+        return result;
+      }
+
+      const filterParams: Record<string, unknown> = {
+        PageNumber: pageNumber,
+        PageSize: pageSize,
+      };
+
+      let isFiltering = false;
+      if (params.propertyType) {
+        filterParams.PropertyType = Number(params.propertyType);
+        isFiltering = true;
+      }
+      if (params.propertyStatus) {
+        filterParams.PropertyStatus = Number(params.propertyStatus);
+        isFiltering = true;
+      }
+      if (params.city) {
+        filterParams.City = params.city;
+        isFiltering = true;
+      }
+      if (params.isAvailable !== undefined && params.isAvailable !== "") {
+        filterParams.IsAvailable = params.isAvailable === true || params.isAvailable === "true";
+        isFiltering = true;
+      }
+      if (params.isFeatured !== undefined && params.isFeatured !== "") {
+        filterParams.IsFeatured = params.isFeatured === true || params.isFeatured === "true";
+        isFiltering = true;
+      }
+
+      if (isFiltering) {
+        const { data } = await axiosInstance.get<PropertyApiResponse<PaginatedResponse<PropertyListItem>>>(
+          "/api/properties/filter",
+          { params: filterParams }
+        );
+        return data.data;
+      }
+
+      const { data } = await axiosInstance.get<PropertyApiResponse<PaginatedResponse<PropertyListItem>>>(
+        "/api/properties",
+        { params: { pageNumber, pageSize } }
+      );
+      return data.data;
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useProperties(params: PropertyQueryParams = {}) {
   return useQuery({
     queryKey: [KEY, "list", params],

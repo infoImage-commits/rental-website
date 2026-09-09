@@ -20,7 +20,7 @@ export default function FeaturedPropertiesSection() {
   const [activeTab, setActiveTab] = useState("hot");
 
   const { data: response, isLoading } = usePublicRentProperties({ IsFeatured: true, pageSize: 50 });
-  const allProperties: PropertyListItem[] = response?.items || [];
+  const allProperties: PropertyListItem[] = (response?.items || []).filter((p) => p.isFeatured);
 
   let properties: PropertyListItem[] = [];
   if (activeTab === "hot") {
@@ -79,8 +79,9 @@ export default function FeaturedPropertiesSection() {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2e6f57] border-t-transparent"></div>
             </div>
           ) : properties.length === 0 ? (
-            <div className="flex h-[420px] w-full items-center justify-center text-[16px] text-[#737373]">
-              No properties found matching this criteria.
+            <div className="flex h-[420px] w-full flex-col items-center justify-center gap-2 text-center text-[16px] text-[#737373]">
+              <p className="font-medium text-[#183c2f]">No featured vacation deals available right now.</p>
+              <p className="text-[14px] text-[#8a9a94]">Check back soon or explore all our vacation homes below.</p>
             </div>
           ) : (
             <motion.div 
@@ -106,7 +107,7 @@ export default function FeaturedPropertiesSection() {
             href="/rent"
             className="inline-flex h-12 w-full max-w-[320px] items-center justify-center rounded-full border-2 border-[#2e6f57] bg-white px-10 text-[16px] font-semibold text-[#2e6f57] transition hover:bg-[#2e6f57] hover:text-white sm:h-14 sm:max-w-[400px] sm:text-[18px]"
           >
-            View More Properties
+            View More Vacation Homes
           </Link>
         </div>
 
@@ -125,10 +126,10 @@ function SectionHeading() {
       className="mx-auto flex max-w-[740px] flex-col items-center gap-4 text-center lg:gap-[21px]"
     >
       <p className="text-[14px] font-medium uppercase leading-normal tracking-[0.36em] text-[#d59e52] lg:text-[18px]">
-        Featured Properties
+        Featured Stays
       </p>
       <h2 className="text-[20px] font-medium leading-normal tracking-[-0.02em] text-[#2e6f57] sm:text-[28px] lg:text-[36px]">
-        Featured Rental Properties
+        Featured Vacation Rentals
       </h2>
       <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
     </motion.div>
@@ -153,12 +154,12 @@ function PropertyCard({ property }: { property: PropertyListItem }) {
           className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
         />
 
-        <div className="absolute left-5 top-4 inline-flex h-[27px] min-w-[113px] items-center justify-center rounded-full border-t border-[#d59e52] bg-white px-4 text-[16px] font-semibold text-[#d59e52]">
-          For Rent
+        <div className="absolute left-5 top-4 inline-flex h-[27px] min-w-[113px] items-center justify-center rounded-full border-t border-[#d59e52] bg-white px-4 text-[14px] font-semibold text-[#d59e52] shadow-sm">
+          ★ Featured Deal
         </div>
 
         <div className="absolute left-0 top-[68%] inline-flex h-[37px] items-center gap-2 rounded-r-lg bg-[#d59e52] px-3 text-[16px] font-semibold text-white">
-          <span>{formatUsd(property.basePrice)} /Month</span>
+          <span>{formatUsd(property.basePrice)} /night</span>
         </div>
       </div>
 
@@ -178,7 +179,7 @@ function PropertyCard({ property }: { property: PropertyListItem }) {
         </div>
 
         <Link href={`/rent/${slugify(property.name)}`} className="mt-auto flex h-12 items-center justify-center rounded-full bg-[#2e6f57] text-[16px] font-semibold text-white transition hover:bg-[#245f49]">
-          View Details
+          Book Now
         </Link>
       </div>
     </motion.article>

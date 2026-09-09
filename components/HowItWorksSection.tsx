@@ -2,26 +2,27 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 
 const steps = [
   {
     title: "Search",
-    description: "Use our smart search filters to browse properties by location, property type, budget, and amenities.",
+    description: "Browse vacation homes by location, property type, price per night, and amenities.",
     icon: "/homepage/how-it-works/icons/search.svg",
   },
   {
     title: "Explore",
-    description: "View detailed property information, browse high-quality photos, compare listings, and save your favourites.",
+    description: "View high-quality photos, check live calendar availability, and review house rules.",
     icon: "/homepage/how-it-works/icons/building.svg",
   },
   {
-    title: "Schedule",
-    description: "Book a property tour at a time that works for you and experience the property in person.",
+    title: "Book & Relax",
+    description: "Reserve your dates online with a 10% deposit, add airport transfers, and enjoy your holiday stay in Hurghada.",
     icon: "/homepage/how-it-works/icons/calendar.svg",
   },
 ];
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -32,7 +33,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 40 },
   visible: { 
     opacity: 1, 
@@ -80,7 +81,7 @@ function SectionHeading() {
         How It Works
       </p>
       <h2 className="max-w-[500px] text-[20px] font-medium leading-normal tracking-[-0.02em] text-white lg:text-[36px]">
-        Find Your Perfect Property in 3 Simple Steps
+        Book Your Hurghada Holiday in 3 Simple Steps
       </h2>
       <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
     </motion.div>

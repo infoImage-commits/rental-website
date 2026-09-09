@@ -2,14 +2,14 @@ import Link from "next/link";
 
 const bookingDetails = [
   { label: "Booking ID", value: "RB-2026-1045" },
-  { label: "Move-in Date", value: "15 September 2026", strong: true },
+  { label: "Check-in Date", value: "15 September 2026", strong: true },
   {
-    label: "Property",
-    value: "Luxury Apartment 2 Bedrooms",
-    helper: "New Cairo, 5th Settlement",
+    label: "Vacation Home",
+    value: "Luxury Beachfront Apartment",
+    helper: "Hurghada, El Kawther",
     smallMobile: true,
   },
-  { label: "Lease Duration", value: "12 Months" },
+  { label: "Check-out Date", value: "22 September 2026" },
 ];
 
 export default function BookingConfirmationPageContent() {
@@ -25,7 +25,7 @@ export default function BookingConfirmationPageContent() {
 
           <div className="flex h-[87px] items-center justify-center lg:mt-2 lg:h-6">
             <p className="max-w-[228px] text-center text-[12px] leading-6 lg:max-w-none lg:text-[16px]">
-              Your rental booking has been successfully completed.
+              Your vacation rental reservation has been successfully completed.
             </p>
           </div>
 
@@ -75,7 +75,7 @@ function DetailsCard() {
         <div className="min-w-0">
           <h2 className="text-[14px] font-bold leading-5 text-[#0b1c30]">What&apos;s Next?</h2>
           <p className="mt-2 text-[12px] leading-5 text-[#404944] lg:text-[14px]">
-            Our agent will contact you within 24 hours to confirm your booking and provide further details.
+            Our local host team will contact you with check-in instructions, key collection, and arrival details.
           </p>
         </div>
       </div>

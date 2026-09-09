@@ -25,6 +25,41 @@ function statusClass(status: string) {
   return "bg-[#f5f7f6] text-[#667c74]";
 }
 
+function formatBookingStatus(status: string) {
+  if (!status) return "Unknown";
+  return status.replace(/([A-Z])/g, " $1").trim();
+}
+
+function BookingStatusBadge({ status }: { status: string }) {
+  const norm = (status || "").toLowerCase();
+  let badgeStyle = "bg-[#f5f7f6] text-[#556961] border-[#dfe8e4]";
+  let dotColor = "bg-[#8a9a94]";
+  const label = formatBookingStatus(status);
+
+  if (norm.includes("confirmed") || norm.includes("paid") || norm.includes("approved")) {
+    badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-200/80";
+    dotColor = "bg-emerald-600";
+  } else if (norm.includes("pending")) {
+    badgeStyle = "bg-amber-50 text-amber-800 border-amber-200/80";
+    dotColor = "bg-amber-600";
+  } else if (norm.includes("cancel") || norm.includes("rejected")) {
+    badgeStyle = "bg-rose-50 text-rose-700 border-rose-200/80";
+    dotColor = "bg-rose-600";
+  } else if (norm.includes("completed")) {
+    badgeStyle = "bg-blue-50 text-blue-700 border-blue-200/80";
+    dotColor = "bg-blue-600";
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold ${badgeStyle}`}
+    >
+      <span className={`size-1.5 rounded-full ${dotColor}`} />
+      {label}
+    </span>
+  );
+}
+
 export default function InHouseBookingsContent() {
   const [from, setFrom] = useState(getDateOffset(0));
   const [to, setTo] = useState(getDateOffset(1));
@@ -35,19 +70,6 @@ export default function InHouseBookingsContent() {
   const { data, isLoading, isFetching, isError } = useInHouseBookings(appliedRange ?? {});
   const { mutate: downloadReport, isPending: isDownloadingReport } = useDownloadReport();
   const units = data?.units ?? [];
-
-  const isTodayActive =
-    appliedRange?.from === getDateOffset(0) &&
-    appliedRange?.to === getDateOffset(1);
-
-  function handleTodayInHouse() {
-    setFormError("");
-    const today = getDateOffset(0);
-    const tomorrow = getDateOffset(1);
-    setFrom(today);
-    setTo(tomorrow);
-    setAppliedRange({ from: today, to: tomorrow });
-  }
 
   function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -119,37 +141,21 @@ export default function InHouseBookingsContent() {
       <div className="mb-6 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)] sm:p-5">
         <form
           onSubmit={handleGenerate}
-          className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]"
+          className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
         >
           <DateField label="From Date" value={from} onChange={setFrom} />
           <DateField label="To Date" value={to} onChange={setTo} />
           <div className="flex items-end">
             <button
-              type="button"
-              onClick={handleTodayInHouse}
-              disabled={isFetching}
-              className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-[14px] font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 ${
-                isTodayActive
-                  ? "bg-[#183c2f] text-white hover:bg-[#133025]"
-                  : "border border-[#2e6f57] bg-[#eff8f3] text-[#2e6f57] hover:bg-[#e2f3eb]"
-              }`}
-              title="Quickly set From: Today, To: Tomorrow and generate the in-house list"
-            >
-              <CalendarTodayIcon />
-              In-House Today
-            </button>
-          </div>
-          <div className="flex items-end">
-            <button
               type="submit"
               disabled={isFetching}
-              className="inline-flex h-11 w-full min-w-[110px] items-center justify-center rounded-full bg-[#2e6f57] px-5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex h-11 w-full min-w-[130px] items-center justify-center rounded-full bg-[#2e6f57] px-6 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isFetching ? "Loading..." : "Generate"}
             </button>
           </div>
           {formError && (
-            <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600 sm:col-span-4">
+            <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600 sm:col-span-3">
               {formError}
             </p>
           )}
@@ -163,18 +169,8 @@ export default function InHouseBookingsContent() {
           </div>
           <p className="mt-4 text-[18px] font-semibold text-[#183c2f]">Choose dates to generate the in-house list.</p>
           <p className="mx-auto mt-1 max-w-md text-[14px] text-[#667c74]">
-            Select dates above or click below to view currently checked-in guests for today (today to tomorrow).
+            Select your desired from and to dates above and click Generate to view unit availability and guest occupancy for that timeframe.
           </p>
-          <div className="mt-6 flex justify-center">
-            <button
-              type="button"
-              onClick={handleTodayInHouse}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#2e6f57] px-6 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#255f49]"
-            >
-              <CalendarTodayIcon />
-              View Today&apos;s In-House
-            </button>
-          </div>
         </div>
       ) : (
         <>
@@ -191,11 +187,6 @@ export default function InHouseBookingsContent() {
                 <p className="text-[14px] font-semibold text-[#183c2f]">
                   {formatDate(appliedRange.from)} - {formatDate(appliedRange.to)}
                 </p>
-                {isTodayActive && (
-                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                    Today Only
-                  </span>
-                )}
               </div>
 
               {/* Quick Report Downloads */}
@@ -279,7 +270,7 @@ export default function InHouseBookingsContent() {
                               {unit.bookings.map((booking) => (
                                 <div
                                   key={booking.bookingId}
-                                  className="rounded-xl border border-[#dfe8e4] bg-white px-3 py-2 text-[13px] leading-5"
+                                  className="flex flex-wrap items-center gap-2 rounded-xl border border-[#dfe8e4] bg-white px-3.5 py-2 text-[13px] leading-5 shadow-xs"
                                 >
                                   <Link
                                     href={`/admin/bookings/${booking.bookingId}`}
@@ -287,14 +278,16 @@ export default function InHouseBookingsContent() {
                                   >
                                     {booking.bookingNumber}
                                   </Link>
-                                  <span className="mx-2 text-[#b8c8be]">|</span>
-                                  <span className="text-[#414847]">{booking.guestName}</span>
-                                  <span className="mx-2 text-[#b8c8be]">|</span>
+                                  <span className="text-[#dfe8e4]">•</span>
+                                  <BookingStatusBadge status={booking.status} />
+                                  <span className="text-[#dfe8e4]">•</span>
+                                  <span className="font-medium text-[#414847]">{booking.guestName}</span>
+                                  <span className="text-[#dfe8e4]">•</span>
                                   <span className="text-[#667c74]">
                                     {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
                                   </span>
-                                  <span className="mx-2 text-[#b8c8be]">|</span>
-                                  <span className="font-medium text-[#2e6f57]">
+                                  <span className="text-[#dfe8e4]">•</span>
+                                  <span className="rounded-md bg-[#eff8f3] px-2 py-0.5 text-[11px] font-semibold text-[#2e6f57]">
                                     {booking.bookingSourceName || booking.bookingSource}
                                   </span>
                                 </div>

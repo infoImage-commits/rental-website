@@ -43,14 +43,13 @@ export default function RentalCtaSection() {
             variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} 
             className="font-[var(--font-rakkas)] max-w-[188px] text-[14px] font-normal leading-[1.6] text-white lg:max-w-none lg:text-[40px]"
           >
-            Ready to Find Your Next Rental Home?
+            Ready for Your Relaxing Hurghada Holiday?
           </motion.h2>
           <motion.p 
             variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} 
             className="mt-[5.8px] text-[8px] leading-[1.6] text-white lg:mt-4 lg:text-[20px]"
           >
-            Browse verified rental properties in prime locations and discover a place that perfectly fits your lifestyle
-            and budget.
+            Browse verified vacation homes in Hurghada&apos;s top coastal spots and book your holiday stay today.
           </motion.p>
           <motion.div 
             variants={{ hidden: { opacity: 0, scaleX: 0 }, visible: { opacity: 1, scaleX: 1 } }} 
@@ -61,7 +60,7 @@ export default function RentalCtaSection() {
               href="/rent"
               className="mt-[8.7px] inline-flex h-5 w-[91px] items-center justify-center rounded-full bg-white text-[6px] font-medium text-[#2e6f57] transition hover:bg-[#f8f5f0] lg:mt-6 lg:h-14 lg:w-[251px] lg:text-[20px] transition-transform hover:scale-105"
             >
-              Explore Rentals
+              Find Vacation Homes
             </Link>
           </motion.div>
         </motion.div>

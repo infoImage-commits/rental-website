@@ -2,22 +2,55 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
-  useProperties,
+  useAdminProperties,
   useDeleteProperty,
   useUpdatePropertyAvailability,
   useUpdatePropertyFeatured,
   useUpdatePropertyStatus,
+  type AdminPropertiesQueryParams,
 } from "@/lib/hooks/useProperties";
+import { useCategories } from "@/lib/hooks/useCategory";
 import ConfirmModal from "./ConfirmModal";
 import PropertyImagesModal from "./PropertyImagesModal";
 import { API_BASE_URL } from "@/lib/api/config";
 import { PropertyStatus } from "@/lib/types/property";
-import { getPropertyTypeLabel } from "@/lib/utils/propertyUtils"; // we will create this util
+import { getPropertyTypeLabel } from "@/lib/utils/propertyUtils";
+
+interface AdminPropertyFilters {
+  searchTerm: string;
+  propertyStatus: string;
+  city: string;
+  isAvailable: string;
+  isFeatured: string;
+}
+
+const defaultFilters: AdminPropertyFilters = {
+  searchTerm: "",
+  propertyStatus: "",
+  city: "",
+  isAvailable: "",
+  isFeatured: "",
+};
 
 export default function PropertiesContent() {
   const [page, setPage] = useState(1);
-  const { data: response, isLoading, isError } = useProperties({ pageNumber: page, pageSize: 10 });
+  const [draftFilters, setDraftFilters] = useState<AdminPropertyFilters>(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<AdminPropertyFilters>(defaultFilters);
+  const { data: categories } = useCategories();
+
+  const queryParams: AdminPropertiesQueryParams = {
+    pageNumber: page,
+    pageSize: 10,
+    searchTerm: appliedFilters.searchTerm || undefined,
+    propertyStatus: appliedFilters.propertyStatus || undefined,
+    city: appliedFilters.city || undefined,
+    isAvailable: appliedFilters.isAvailable === "" ? undefined : appliedFilters.isAvailable,
+    isFeatured: appliedFilters.isFeatured === "" ? undefined : appliedFilters.isFeatured,
+  };
+
+  const { data: response, isLoading, isError } = useAdminProperties(queryParams);
   const { mutate: updateAvailability } = useUpdatePropertyAvailability();
   const { mutate: updateFeatured } = useUpdatePropertyFeatured();
   const { mutate: updateStatus } = useUpdatePropertyStatus();
@@ -28,6 +61,26 @@ export default function PropertiesContent() {
   const [imagesPropertyId, setImagesPropertyId] = useState<string | null>(null);
 
   const items = response?.items ?? [];
+
+  const isFiltered = Boolean(
+    appliedFilters.searchTerm ||
+    appliedFilters.propertyStatus ||
+    appliedFilters.city ||
+    appliedFilters.isAvailable !== "" ||
+    appliedFilters.isFeatured !== ""
+  );
+
+  function handleApplyFilters(e: React.FormEvent) {
+    e.preventDefault();
+    setPage(1);
+    setAppliedFilters(draftFilters);
+  }
+
+  function handleResetFilters() {
+    setDraftFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+    setPage(1);
+  }
 
   function confirmDelete(id: string) {
     setDeletingId(id);
@@ -64,6 +117,128 @@ export default function PropertiesContent() {
         </Link>
       </header>
 
+      {/* Filter & Search Bar */}
+      <form
+        onSubmit={handleApplyFilters}
+        className="mb-6 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)]"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          {/* Search Term */}
+          <div className="sm:col-span-2 md:col-span-3 lg:col-span-2">
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium text-[#667c74]">Search</span>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={draftFilters.searchTerm}
+                  onChange={(e) => setDraftFilters({ ...draftFilters, searchTerm: e.target.value })}
+                  placeholder="Code, name, address, description..."
+                  className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white pl-9 pr-3 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57]"
+                />
+                <svg
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8a9a94]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </label>
+          </div>
+
+          {/* Property Status */}
+          <div>
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium text-[#667c74]">Status</span>
+              <select
+                value={draftFilters.propertyStatus}
+                onChange={(e) => setDraftFilters({ ...draftFilters, propertyStatus: e.target.value })}
+                className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57]"
+              >
+                <option value="">All Statuses</option>
+                <option value={PropertyStatus.Clean}>Clean</option>
+                <option value={PropertyStatus.Dirty}>Dirty</option>
+                <option value={PropertyStatus.Maintenance}>Maintenance</option>
+              </select>
+            </label>
+          </div>
+
+          {/* Location / City */}
+          <div>
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium text-[#667c74]">Location</span>
+              <select
+                value={draftFilters.city}
+                onChange={(e) => setDraftFilters({ ...draftFilters, city: e.target.value })}
+                className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57]"
+              >
+                <option value="">All Locations</option>
+                {categories?.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {/* Availability */}
+          <div>
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium text-[#667c74]">Availability</span>
+              <select
+                value={draftFilters.isAvailable}
+                onChange={(e) => setDraftFilters({ ...draftFilters, isAvailable: e.target.value })}
+                className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57]"
+              >
+                <option value="">All</option>
+                <option value="true">Available</option>
+                <option value="false">Unavailable</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        {/* Bottom Filter Controls */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#f0f4f2] pt-3">
+          <div className="flex items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#667c74]">
+              <input
+                type="checkbox"
+                checked={draftFilters.isFeatured === "true"}
+                onChange={(e) => setDraftFilters({ ...draftFilters, isFeatured: e.target.checked ? "true" : "" })}
+                className="size-4 accent-[#2e6f57]"
+              />
+              Featured Only
+            </label>
+            {isFiltered && (
+              <span className="rounded-full bg-[#2e6f57]/10 px-2.5 py-0.5 text-[11px] font-medium text-[#2e6f57]">
+                Filters Active ({response?.totalCount ?? items.length} found)
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="h-9 rounded-lg border border-[#dfe8e4] px-4 text-[13px] font-medium text-[#667c74] transition hover:bg-[#f5f7f6]"
+              >
+                Reset
+              </button>
+            )}
+            <button
+              type="submit"
+              className="h-9 rounded-lg bg-[#2e6f57] px-5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[#255f49]"
+            >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      </form>
+
       <div className="w-full overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[14px]">
@@ -93,9 +268,23 @@ export default function PropertiesContent() {
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-24 text-center">
-                    <p className="text-[16px] font-medium text-[#183c2f]">No properties found</p>
-                    <p className="mb-6 mt-1 text-[14px] text-[#667c74]">Get started by adding a new property.</p>
+                  <td colSpan={6} className="py-24 text-center">
+                    <p className="text-[16px] font-medium text-[#183c2f]">
+                      {isFiltered ? "No properties match your filters" : "No properties found"}
+                    </p>
+                    <p className="mb-4 mt-1 text-[14px] text-[#667c74]">
+                      {isFiltered
+                        ? "Try adjusting your search term or clearing some filters."
+                        : "Get started by adding a new property."}
+                    </p>
+                    {isFiltered && (
+                      <button
+                        onClick={handleResetFilters}
+                        className="inline-flex h-9 items-center justify-center rounded-lg bg-[#2e6f57] px-4 text-[13px] font-medium text-white transition hover:bg-[#255f49]"
+                      >
+                        Clear Filters
+                      </button>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -107,10 +296,12 @@ export default function PropertiesContent() {
                         className="group relative block h-14 w-20 overflow-hidden rounded-lg border border-[#dfe8e4] bg-[#f5f7f6] transition hover:border-[#2e6f57]"
                       >
                         {prop.coverImageUrl ? (
-                          <img
+                          <Image
                             src={`${API_BASE_URL}/${prop.coverImageUrl}`}
                             alt={prop.name}
-                            className="h-full w-full object-cover"
+                            fill
+                            sizes="80px"
+                            className="object-cover"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[#8a9a94]">
@@ -170,7 +361,7 @@ export default function PropertiesContent() {
                        {/* Note: List item JSON doesn't contain propertyStatus by default. If it exists, render it. */}
                        {("propertyStatus" in prop) ? (
                          <select
-                           value={(prop as any).propertyStatus}
+                           value={(prop as unknown as { propertyStatus?: number }).propertyStatus}
                            onChange={(e) => updateStatus({ id: prop.id, status: Number(e.target.value) })}
                            className="rounded-lg border border-[#dfe8e4] bg-[#f5f7f6] px-2 py-1 text-[12px] font-medium text-[#183c2f] outline-none transition focus:border-[#2e6f57]"
                          >

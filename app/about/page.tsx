@@ -5,13 +5,13 @@ import { siteConfig } from "@/lib/site";
 export const metadata: Metadata = {
   title: "About Hurghada Vacation Homes",
   description:
-    "Learn how Hurghada Vacation Homes helps guests book vacation homes, property stays, and transfers in Hurghada.",
+    "Learn how Hurghada Vacation Homes connects travelers with handpicked holiday apartments, chalets, and private airport transfers in Hurghada.",
   alternates: {
     canonical: "/about",
   },
   openGraph: {
-    title: `About ${siteConfig.name}`,
-    description: "Trusted local support for vacation homes, property stays, and transfers in Hurghada.",
+    title: `About ${siteConfig.name} | Vacation Homes & Holiday Rentals`,
+    description: "Trusted local hosts for verified vacation homes, beachside chalets, and private transfers in Hurghada.",
     url: "/about",
   },
 };

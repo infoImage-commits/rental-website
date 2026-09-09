@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "Hurghada Vacation Homes",
   description:
-    "Book vacation homes, apartments, villas, and private transfers in Hurghada with local support from Hurghada Vacation Homes.",
+    "Discover and book verified vacation homes, holiday apartments, beach chalets, studios, and private airport transfers in Hurghada with local host support.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://hurghadavacationhomes.com",
   locale: "en_US",
   phone: "+201273613935",

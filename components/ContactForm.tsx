@@ -135,7 +135,7 @@ export default function ContactForm({ defaultSubject = "" }: { defaultSubject?: 
               <ContactInput label="Your Name" id="contact-name" name="name" value={formData.name} onChange={handleChange} placeholder="Your full name" />
               <ContactInput label="Email Address" id="contact-email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Your email address" />
               <ContactInput label="Phone Number" id="contact-phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="Your phone number" />
-              <ContactInput label="Subject" id="contact-subject" name="subject" value={formData.subject} onChange={handleChange} placeholder="How can we help?" />
+              <ContactInput label="Subject" id="contact-subject" name="subject" value={formData.subject} onChange={handleChange} placeholder="Inquire about dates, homes, or transfers" />
 
               <motion.div variants={fadeUp} className="flex flex-col gap-2 sm:col-span-2">
                 <label htmlFor="contact-message" className="text-[13px] font-semibold text-[#183c2f]">

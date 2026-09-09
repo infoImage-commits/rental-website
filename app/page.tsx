@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import BestLocationsSection from "../components/BestLocationsSection";
 import BlogInsightsSection from "../components/BlogInsightsSection";
 import CategoriesSection from "../components/CategoriesSection";
+import FacilitiesSection from "../components/FacilitiesSection";
 import FaqSection from "../components/FaqSection";
 import FeaturedPropertiesSection from "../components/FeaturedPropertiesSection";
 import HeroSection from "../components/HeroSection";
@@ -11,16 +12,16 @@ import WhoWeAreSection from "../components/WhoWeAreSection";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Vacation Homes & Private Transfers in Hurghada",
+  title: "Vacation Homes & Holiday Rentals in Hurghada",
   description:
-    "Find holiday apartments, villas, homes, and private transfers in Hurghada El Kawther with local booking support.",
+    "Discover and book verified holiday vacation homes, apartments, chalets, studios, and private airport transfers in Hurghada with 24/7 local support.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: `${siteConfig.name} | Hurghada Vacation Homes & Private Transfers`,
+    title: `${siteConfig.name} | Hurghada Vacation Homes & Holiday Rentals`,
     description:
-      "Book vacation homes, villas, apartments, and private transfers in Hurghada with local support.",
+      "Discover and book verified holiday vacation homes, apartments, chalets, studios, and private airport transfers in Hurghada with 24/7 local support.",
     url: "/",
   },
 };
@@ -30,6 +31,7 @@ export default function Home() {
     <>
       <HeroSection />
       <CategoriesSection />
+      <FacilitiesSection />
       <FeaturedPropertiesSection />
       <BestLocationsSection />
       <BlogInsightsSection />

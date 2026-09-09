@@ -83,7 +83,7 @@ export default function ContactPageContent() {
             Contact Us
           </motion.h1>
           <motion.p variants={fadeUp} className="mt-3 max-w-[620px] text-[14px] leading-7 text-[#667c74] lg:text-[18px] lg:leading-8">
-            Have questions, need help choosing a property, or want to talk through your plans? Send us a message and our team will get back to you.
+            Have questions, need help choosing a vacation home, or want to arrange airport transfers? Send us a message and our local team will get back to you promptly.
           </motion.p>
         </div>
       </motion.div>

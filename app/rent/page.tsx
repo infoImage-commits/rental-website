@@ -3,15 +3,15 @@ import PropertiesPageContent from "../../components/PropertiesPageContent";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Vacation Rentals in Hurghada",
+  title: "Hurghada Vacation Rentals & Holiday Homes",
   description:
-    "Browse apartments, villas, studios, and vacation homes for rent in Hurghada and El Kawther.",
+    "Find and book verified holiday apartments, chalets, studios, and vacation homes in Hurghada and El Kawther with local guest support.",
   alternates: {
     canonical: "/rent",
   },
   openGraph: {
-    title: `Vacation Rentals in Hurghada | ${siteConfig.name}`,
-    description: "Browse furnished holiday rentals in Hurghada with availability, amenities, and local support.",
+    title: `Hurghada Vacation Rentals & Holiday Homes | ${siteConfig.name}`,
+    description: "Browse furnished vacation rentals in Hurghada with live calendar availability, amenities, and local host support.",
     url: "/rent",
   },
 };
