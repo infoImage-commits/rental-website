@@ -20,6 +20,12 @@ export function buildRentPropertyTypeHref(propertyType: PropertyType | readonly 
   return `/rent?${params.toString()}`;
 }
 
+export function buildRentBedroomHref(bedroomNo: number) {
+  const params = new URLSearchParams();
+  params.set("BedroomNo", bedroomNo.toString());
+  return `/rent?${params.toString()}`;
+}
+
 export function getPropertyTypeLabel(type: PropertyType | number): string {
   switch (type) {
     case PropertyType.Apartment: return "Apartment";

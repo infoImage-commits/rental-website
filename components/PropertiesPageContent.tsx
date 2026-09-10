@@ -62,6 +62,7 @@ function PropertiesPageInner() {
     const city = formData.get("city") as string;
     const minPrice = formData.get("minPrice") as string;
     const maxPrice = formData.get("maxPrice") as string;
+    const bedroomNo = formData.get("BedroomNo") as string;
     const from = (formData.get("from") as string)?.trim();
     const to = (formData.get("to") as string)?.trim();
 
@@ -78,6 +79,7 @@ function PropertiesPageInner() {
     if (city) newParams.append("CategoryId", city);
     if (minPrice) newParams.append("MinPrice", minPrice);
     if (maxPrice) newParams.append("MaxPrice", maxPrice);
+    if (bedroomNo) newParams.append("BedroomNo", bedroomNo);
 
     const minCapacity = formData.get("minCapacity") as string;
     if (minCapacity) newParams.append("MinCapacity", minCapacity);
@@ -196,12 +198,12 @@ function PropertiesHero() {
         className="pointer-events-none absolute bottom-0 right-[-10%] z-0 h-[90%] w-[50%] opacity-40 lg:right-[-10%] lg:h-[110%] lg:w-[40%] lg:opacity-100 xl:right-[-5%]"
       >
         <Image
-          src="/rent/hero-house.png"
+          src="/homepage/vacation/resort-pool-wide.jpeg"
           alt=""
           fill
           priority
           sizes="(min-width: 1024px) 40vw, 50vw"
-          className="scale-x-[-1] object-contain object-right-bottom"
+          className="object-cover object-center"
         />
       </motion.div>
       <div className="relative z-10 mx-auto w-full max-w-[1536px] px-5 lg:px-10">
@@ -248,6 +250,7 @@ function FilterForm({
   const cityVal = categoryIdParam;
   const minPriceVal = paramsObj.MinPrice || "";
   const maxPriceVal = paramsObj.MaxPrice || "";
+  const bedroomNoVal = paramsObj.BedroomNo || paramsObj.bedroomNo || "";
   const minCapacityVal = paramsObj.MinCapacity || "";
   const isAvailableVal = paramsObj.IsAvailable === "true";
   const hasSeaViewVal = paramsObj.HasSeaView === "true";
@@ -307,6 +310,7 @@ function FilterForm({
     <form onSubmit={onSubmit} className="rounded-[20px] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)] lg:p-6">
       <h3 className="mb-4 text-[15px] font-bold text-[#183c2f]">Filter Properties</h3>
       <div className="flex flex-col gap-4">
+        <input type="hidden" name="BedroomNo" value={bedroomNoVal} />
         {/* Check-in & Check-out Dates */}
         <div className="rounded-xl border border-[#e6ece9] bg-[#f8faf9] p-3.5">
           <div className="mb-2.5 flex items-center justify-between">
@@ -722,24 +726,24 @@ function RentCta() {
   return (
     <section
       data-rent-cta
-      className="mt-10 h-[161px] bg-gradient-to-r from-[#1f4d3d] from-[62%] to-[#193b2f] lg:mt-16 lg:h-[361px]"
+      className="mt-10 min-h-[220px] bg-[#1f4d3d] lg:mt-16 lg:min-h-[361px]"
     >
       <div className="relative h-full w-full overflow-hidden">
-        <div className="rent-cta-mask pointer-events-none absolute right-[-3px] top-[-13.8px] z-0 size-[152px] lg:right-[-48px] lg:top-[-38px] lg:size-[419px]">
-          <Image src="/rent/cta-house.png" alt="" fill sizes="(min-width: 1024px) 419px, 152px" className="scale-x-[-1] object-cover" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-0 h-full w-[52%] opacity-75 sm:w-[46%] lg:w-[44%] lg:opacity-95">
+          <Image src="/homepage/vacation/coastal-vacation-home.jpeg" alt="" fill sizes="(min-width: 1024px) 44vw, 52vw" className="object-cover object-center" />
         </div>
-        <div className="pointer-events-none absolute right-[88px] top-0 z-[1] h-full w-[105px] bg-gradient-to-r from-[#1f4d3d] via-[#1f4d3d]/90 to-transparent lg:right-[274px] lg:w-[345px]" />
-        <div className="absolute left-[17px] top-[23px] z-10 max-w-[206px] lg:left-20 lg:top-16 lg:max-w-[730px]">
-          <h2 className="max-w-[188px] text-[14px] font-semibold leading-[1.6] text-white lg:max-w-none lg:text-[40px] lg:font-normal">
-            Ready to Find Your Next Rental Home?
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-[#1f4d3d] via-[#1f4d3d]/95 to-[#1f4d3d]/25" />
+        <div className="relative z-10 flex min-h-[220px] max-w-[720px] flex-col justify-center px-5 py-8 sm:px-8 lg:min-h-[361px] lg:px-20 lg:py-14">
+          <h2 className="max-w-[520px] text-[26px] font-semibold leading-[1.2] text-white sm:text-[34px] lg:max-w-none lg:text-[40px]">
+            Ready to Find Your Next Vacation Rental Home?
           </h2>
-          <p className="mt-[5.8px] text-[8px] leading-[1.6] text-white lg:mt-4 lg:text-[20px]">
-            Browse verified rental properties in prime locations and discover a place that perfectly fits your lifestyle and budget.
+          <p className="mt-4 max-w-[620px] text-[14px] font-medium leading-[1.6] text-white sm:text-[16px] lg:text-[20px]">
+            Browse verified vacation homes in Hurghada&apos;s top coastal spots and discover a relaxing stay that fits your holiday plans.
           </p>
-          <div className="mt-[5.8px] h-[2.5px] w-[62px] rounded bg-[#cfb072] lg:mt-4 lg:h-[7px] lg:w-[170px]" />
+          <div className="mt-4 h-[5px] w-[120px] rounded bg-[#cfb072] lg:h-[7px] lg:w-[170px]" />
           <Link
             href="#properties"
-            className="mt-[8.7px] inline-flex h-5 w-[91px] items-center justify-center rounded-full bg-white text-[6px] font-medium text-[#2e6f57] transition hover:bg-[#f8f5f0] lg:mt-6 lg:h-14 lg:w-[251px] lg:text-[20px]"
+            className="mt-6 inline-flex h-12 min-w-[190px] items-center justify-center rounded-full bg-white px-7 text-[16px] font-medium text-[#2e6f57] transition hover:bg-[#f8f5f0] lg:h-14 lg:min-w-[251px] lg:text-[20px]"
           >
             Explore Rentals
           </Link>

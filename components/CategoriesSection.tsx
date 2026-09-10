@@ -4,28 +4,25 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { PropertyType } from "@/lib/types/property";
-import { buildRentPropertyTypeHref } from "@/lib/utils/propertyUtils";
+import { buildRentBedroomHref, buildRentPropertyTypeHref } from "@/lib/utils/propertyUtils";
 
 const baseCategories = [
   {
-    name: "Apartments",
-    apiName: "Apartment", // Maps to backend 'Apartment'
-    href: buildRentPropertyTypeHref(PropertyType.Apartment),
-    image: "/homepage/Categories/Apartments.jpg",
-    position: "object-center",
-  },
-  {
-    name: "Chalet",
-    apiName: "Chalet", // Maps to backend 'Chalet'
-    href: buildRentPropertyTypeHref(PropertyType.Chalet),
-    image: "/homepage/Categories/chalet.jpg",
-    position: "object-center",
-  },
-  {
     name: "Studio",
-    apiName: "Studio", // Maps to backend 'Studio'
     href: buildRentPropertyTypeHref(PropertyType.Studio),
-    image: "/homepage/Categories/Studio.png",
+    image: "/homepage/vacation/resort-courtyard.jpeg",
+    position: "object-center",
+  },
+  {
+    name: "1 Bedroom",
+    href: buildRentBedroomHref(1),
+    image: "/homepage/vacation/resort-pool-night-portrait.jpeg",
+    position: "object-center",
+  },
+  {
+    name: "2 Bedroom",
+    href: buildRentBedroomHref(2),
+    image: "/homepage/vacation/resort-night-view.jpeg",
     position: "object-center",
   },
 ];

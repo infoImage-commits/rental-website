@@ -6,29 +6,26 @@ import { motion } from "framer-motion";
 
 export default function RentalCtaSection() {
   return (
-    <section className="h-[161px] overflow-hidden bg-gradient-to-r from-[#1f4d3d] from-[62.019%] to-[#193b2f] lg:h-[361px]">
+    <section className="min-h-[220px] overflow-hidden bg-[#1f4d3d] lg:min-h-[361px]">
       <div className="relative h-full w-full overflow-hidden">
-        {/* House Image with custom mask */}
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.8 }}
-          className="rent-cta-mask pointer-events-none absolute right-[-3px] top-[-13.8px] z-0 size-[152.128px] lg:right-[-48px] lg:top-[-38px] lg:size-[419px]"
+          className="pointer-events-none absolute inset-y-0 right-0 z-0 h-full w-[52%] opacity-75 sm:w-[46%] lg:w-[44%] lg:opacity-95"
         >
           <Image
-            src="/rent/cta-house.png"
-            alt="Modern rental home at night"
+            src="/homepage/vacation/resort-night-view.jpeg"
+            alt="Hurghada vacation resort pool at night"
             fill
-            sizes="(min-width: 1024px) 419px, 152px"
-            className="scale-x-[-1] object-cover"
+            sizes="(min-width: 1024px) 44vw, 52vw"
+            className="object-cover object-center"
           />
         </motion.div>
 
-        {/* Gradient Overlay using transparent fades on both ends to prevent any hard lines against the background */}
-        <div className="pointer-events-none absolute right-[88px] top-0 z-[1] h-full w-[105px] bg-gradient-to-r from-transparent via-[#1f4d3d] to-transparent lg:right-[274px] lg:w-[345px]" />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-[#1f4d3d] via-[#1f4d3d]/95 to-[#1f4d3d]/25" />
 
-        {/* Text Content */}
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -37,28 +34,28 @@ export default function RentalCtaSection() {
             hidden: { opacity: 0, x: -30 },
             visible: { opacity: 1, x: 0, transition: { staggerChildren: 0.15 } }
           }}
-          className="absolute left-[17px] top-[23px] z-10 max-w-[206px] lg:left-[80px] lg:top-16 lg:max-w-[730px]"
+          className="relative z-10 flex min-h-[220px] max-w-[680px] flex-col justify-center px-5 py-8 sm:px-8 lg:min-h-[361px] lg:px-20 lg:py-14"
         >
           <motion.h2 
             variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} 
-            className="font-[var(--font-rakkas)] max-w-[188px] text-[14px] font-normal leading-[1.6] text-white lg:max-w-none lg:text-[40px]"
+            className="max-w-[420px] text-[26px] font-semibold leading-[1.2] text-white sm:text-[32px] lg:max-w-none lg:text-[40px]"
           >
             Ready for Your Relaxing Hurghada Holiday?
           </motion.h2>
           <motion.p 
             variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} 
-            className="mt-[5.8px] text-[8px] leading-[1.6] text-white lg:mt-4 lg:text-[20px]"
+            className="mt-4 max-w-[560px] text-[14px] font-medium leading-[1.6] text-white sm:text-[16px] lg:text-[20px]"
           >
             Browse verified vacation homes in Hurghada&apos;s top coastal spots and book your holiday stay today.
           </motion.p>
           <motion.div 
             variants={{ hidden: { opacity: 0, scaleX: 0 }, visible: { opacity: 1, scaleX: 1 } }} 
-            className="mt-[5.8px] h-[2.542px] w-[61.722px] origin-left rounded bg-[#cfb072] lg:mt-4 lg:h-[7px] lg:w-[170px]" 
+            className="mt-4 h-[5px] w-[120px] origin-left rounded bg-[#cfb072] lg:h-[7px] lg:w-[170px]" 
           />
           <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
             <Link
               href="/rent"
-              className="mt-[8.7px] inline-flex h-5 w-[91px] items-center justify-center rounded-full bg-white text-[6px] font-medium text-[#2e6f57] transition hover:bg-[#f8f5f0] lg:mt-6 lg:h-14 lg:w-[251px] lg:text-[20px] transition-transform hover:scale-105"
+              className="mt-6 inline-flex h-12 min-w-[210px] items-center justify-center rounded-full bg-white px-7 text-[16px] font-medium text-[#2e6f57] transition hover:scale-105 hover:bg-[#f8f5f0] lg:h-14 lg:min-w-[251px] lg:text-[20px]"
             >
               Find Vacation Homes
             </Link>

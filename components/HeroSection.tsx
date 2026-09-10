@@ -51,14 +51,15 @@ export default function HeroSection() {
             className="absolute -inset-[20px] origin-center"
           >
             <Image
-              src="/homepage/heroSection1/HeroImage.png"
-              alt="Modern rental home exterior"
+              src="/homepage/vacation/resort-pool-day.jpeg"
+              alt="Hurghada vacation resort pool with holiday apartments"
               fill
               sizes="100vw"
-              className="object-cover object-top sm:object-center lg:object-top"
+              className="object-cover object-center"
               priority
             />
           </motion.div>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent" />
         </div>
 
         <motion.div 

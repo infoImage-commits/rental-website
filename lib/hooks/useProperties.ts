@@ -62,6 +62,12 @@ function getRentCategoryId(params: PropertyQueryParams) {
   return typeof categoryId === "string" && categoryId.trim() ? categoryId.trim() : "";
 }
 
+function getRentBedroomNo(params: PropertyQueryParams) {
+  const bedroomNo = params.BedroomNo ?? params.bedroomNo;
+  const value = typeof bedroomNo === "string" ? Number(bedroomNo) : typeof bedroomNo === "number" ? bedroomNo : NaN;
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
 async function filterRentItemsByCategory(items: PropertyListItem[], categoryId: string) {
   if (!categoryId) return items;
 
@@ -77,6 +83,11 @@ async function filterRentItemsByCategory(items: PropertyListItem[], categoryId: 
   );
 
   return items.filter((item, index) => details[index]?.category?.id === categoryId);
+}
+
+function filterRentItemsByBedroom(items: PropertyListItem[], bedroomNo: number | null) {
+  if (bedroomNo === null) return items;
+  return items.filter((item) => Number(item.bedroomNo) === bedroomNo);
 }
 
 function buildSinglePageResponse(items: PropertyListItem[], pageSize: number) {
@@ -257,13 +268,16 @@ export function usePublicRentProperties(params: PropertyQueryParams = {}) {
     queryFn: async () => {
       const groupedTypes = getGroupedRentPropertyTypes(params);
       const categoryId = getRentCategoryId(params);
+      const bedroomNo = getRentBedroomNo(params);
       const baseParams = stripRentGroupParams({ pageNumber: 1, pageSize: 10, ...params });
 
-      if (categoryId) {
+      if (categoryId || bedroomNo !== null) {
         baseParams.pageNumber = 1;
         baseParams.pageSize = 1000;
-        delete baseParams.City;
-        delete baseParams.city;
+        if (categoryId) {
+          delete baseParams.City;
+          delete baseParams.city;
+        }
       }
 
       if (groupedTypes.length > 0) {
@@ -286,7 +300,8 @@ export function usePublicRentProperties(params: PropertyQueryParams = {}) {
           return true;
         });
 
-        const filteredItems = await filterRentItemsByCategory(items, categoryId);
+        const categoryFilteredItems = await filterRentItemsByCategory(items, categoryId);
+        const filteredItems = filterRentItemsByBedroom(categoryFilteredItems, bedroomNo);
 
         return buildSinglePageResponse(filteredItems, Number(baseParams.pageSize) || 10);
       }
@@ -296,8 +311,9 @@ export function usePublicRentProperties(params: PropertyQueryParams = {}) {
         { params: baseParams }
       );
 
-      if (categoryId) {
-        const filteredItems = await filterRentItemsByCategory(data.data?.items ?? [], categoryId);
+      if (categoryId || bedroomNo !== null) {
+        const categoryFilteredItems = await filterRentItemsByCategory(data.data?.items ?? [], categoryId);
+        const filteredItems = filterRentItemsByBedroom(categoryFilteredItems, bedroomNo);
         return buildSinglePageResponse(filteredItems, Number(baseParams.pageSize) || 10);
       }
 

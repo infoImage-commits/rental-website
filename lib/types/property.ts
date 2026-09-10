@@ -144,6 +144,21 @@ export interface PropertyCategoryGroup {
   items: string[];
 }
 
+export interface PropertyAttributeGroupItem {
+  id: string;
+  attributeGroupId?: string;
+  key: string;
+  value: string;
+  displayOrder: number;
+}
+
+export interface PropertyAttributeGroup {
+  id: string;
+  name: string;
+  displayOrder: number;
+  items: PropertyAttributeGroupItem[];
+}
+
 // Full Property Object (GET /api/properties/{id})
 export interface Property {
   id: string;
@@ -185,6 +200,12 @@ export interface Property {
   prices: DailyPrice[];
   sleepingArrangements: PropertySleepingArrangement[];
   categories: PropertyCategoryGroup[];
+  attributeGroups?: PropertyAttributeGroup[];
+  attributeGroupItems?: PropertyAttributeGroupItem[];
+  attributeGroupItemIds?: string[];
+  attributes?: PropertyAttributeGroupItem[];
+  landmarks?: PropertyAttributeGroupItem[];
+  landMarks?: PropertyAttributeGroupItem[];
 }
 
 // Property ListItem (GET /api/properties)
@@ -236,6 +257,7 @@ export interface PropertyRequest {
   listingDetails?: PropertyListingDetails;
   sleepingArrangements?: PropertySleepingArrangement[];
   propertyCategoryItemIds?: string[];
+  attributeGroupItemIds?: string[];
 }
 
 export interface PaginatedResponse<T> {

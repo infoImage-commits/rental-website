@@ -7,7 +7,9 @@ import { useCreateProperty } from "@/lib/hooks/useProperties";
 import { useCategories } from "@/lib/hooks/useCategory";
 import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
 import { usePropertyCategoryItems } from "@/lib/hooks/usePropertyCategoryItem";
+import { useLandmarks } from "@/lib/hooks/useAttributeGroupItem";
 import { PropertyRequest, PropertyType, PropertyStatus, BedType } from "@/lib/types/property";
+import { sortLandmarks } from "@/lib/utils/landmarks";
 import axiosInstance from "@/lib/api/axiosInstance";
 
 const defaultPayload: PropertyRequest = {
@@ -62,6 +64,7 @@ const defaultPayload: PropertyRequest = {
     },
   ],
   propertyCategoryItemIds: [],
+  attributeGroupItemIds: [],
 };
 
 const hiddenListingDefaults = {
@@ -77,7 +80,9 @@ export default function PropertyCreateContent() {
   const { data: locationCategories = [] } = useCategories();
   const { data: includeCategories = [] } = usePropertyCategories();
   const { data: items = [] } = usePropertyCategoryItems();
+  const { data: landmarkItems = [], isLoading: landmarksLoading } = useLandmarks();
   const { mutate: createProperty, isPending } = useCreateProperty();
+  const sortedLandmarkItems = sortLandmarks(landmarkItems);
 
   const updateForm = (updates: Partial<PropertyRequest>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
@@ -89,6 +94,31 @@ export default function PropertyCreateContent() {
 
   const updateListing = (updates: Partial<typeof defaultPayload.listingDetails>) => {
     setFormData((prev) => ({ ...prev, listingDetails: { ...prev.listingDetails!, ...updates } }));
+  };
+
+  const layoutPreset =
+    formData.propertyType === PropertyType.Studio
+      ? "studio"
+      : formData.bedroomNo === 1
+        ? "one-bedroom"
+        : formData.bedroomNo === 2
+          ? "two-bedroom"
+          : "";
+
+  const updateLayoutPreset = (preset: string) => {
+    if (preset === "studio") {
+      updateForm({ propertyType: PropertyType.Studio, bedroomNo: 1 });
+      return;
+    }
+
+    if (preset === "one-bedroom") {
+      updateForm({ propertyType: PropertyType.Apartment, bedroomNo: 1 });
+      return;
+    }
+
+    if (preset === "two-bedroom") {
+      updateForm({ propertyType: PropertyType.Apartment, bedroomNo: 2 });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -175,6 +205,15 @@ export default function PropertyCreateContent() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Rental Layout Preset</label>
+                <select value={layoutPreset} onChange={e => updateLayoutPreset(e.target.value)} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]">
+                  <option value="">Custom</option>
+                  <option value="studio">Studio</option>
+                  <option value="one-bedroom">1 Bedroom</option>
+                  <option value="two-bedroom">2 Bedroom</option>
+                </select>
+              </div>
               <div>
                 <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Property Type</label>
                 <select value={formData.propertyType} onChange={e => updateForm({ propertyType: Number(e.target.value) })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]">
@@ -358,6 +397,56 @@ export default function PropertyCreateContent() {
                   </div>
                 );
               })}
+            </div>
+
+            <div className="rounded-xl border border-[#dfe8e4] bg-white p-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-[14px] font-semibold text-[#183c2f]">Landmarks</h3>
+                  <p className="mt-1 text-[12px] text-[#667c74]">Select nearby places to show on the rental page.</p>
+                </div>
+                <span className="rounded-full bg-[#f5f7f6] px-3 py-1 text-[12px] font-medium text-[#667c74]">
+                  {formData.attributeGroupItemIds?.length || 0} Selected
+                </span>
+              </div>
+
+              {landmarksLoading ? (
+                <div className="rounded-lg bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#8a9a94]">
+                  Loading landmarks...
+                </div>
+              ) : sortedLandmarkItems.length === 0 ? (
+                <div className="rounded-lg bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#8a9a94]">
+                  No landmarks have been created yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {sortedLandmarkItems.map((landmark) => (
+                    <label
+                      key={landmark.id}
+                      className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#dfe8e4] bg-[#f5f7f6] px-3 py-2.5 transition hover:border-[#2e6f57]/40"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.attributeGroupItemIds?.includes(landmark.id)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setFormData((prev) => ({
+                            ...prev,
+                            attributeGroupItemIds: checked
+                              ? [...(prev.attributeGroupItemIds || []), landmark.id]
+                              : (prev.attributeGroupItemIds || []).filter((id) => id !== landmark.id),
+                          }));
+                        }}
+                        className="size-4 rounded border-gray-300 text-[#2e6f57] focus:ring-[#2e6f57]"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-medium text-[#183c2f]">{landmark.key}</span>
+                        <span className="block text-[12px] text-[#667c74]">{landmark.value}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

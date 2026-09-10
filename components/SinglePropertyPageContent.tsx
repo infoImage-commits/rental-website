@@ -16,10 +16,14 @@ import { useCreateRentBooking } from "@/lib/hooks/useBooking";
 import { useCreatePaypalOrder } from "@/lib/hooks/usePayment";
 import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
 import { usePropertyCategoryItems } from "@/lib/hooks/usePropertyCategoryItem";
+import { useLandmarks } from "@/lib/hooks/useAttributeGroupItem";
 import type { Property, PropertyCategoryGroup } from "@/lib/types/property";
+import type { AttributeGroupItem } from "@/lib/types/attributeGroupItem";
 import { useReviews, usePropertyAverageRating, useCreateReview } from "@/lib/hooks/useReview";
 import { savePaymentBookingContext } from "@/lib/utils/paymentBookingContext";
 import { formatUsd } from "@/lib/utils/currency";
+import { DEFAULT_LANDMARK_ICON } from "@/lib/constants/landmarks";
+import { getPropertyLandmarks } from "@/lib/utils/landmarks";
 import { toast } from "sonner";
 
 
@@ -93,6 +97,7 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
   const { data: property, isLoading } = usePropertyById(id);
   const { data: includeCategories = [] } = usePropertyCategories();
   const { data: includeItems = [] } = usePropertyCategoryItems();
+  const { data: landmarkItems = [] } = useLandmarks();
 
   if (isLoading) return <div className="p-20 text-center">Loading Property...</div>;
   if (!property) return <div className="p-20 text-center">Property not found</div>;
@@ -132,6 +137,7 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
     ["Area:", property.address?.area || "Unknown"],
     ["Availability:", property.isAvailable ? "Available" : "Not Available"],
   ];
+  const selectedLandmarks = getPropertyLandmarks(property, landmarkItems);
   return (
     <main className="overflow-hidden bg-white font-[var(--font-poppins)] text-[#183c2f]">
       <section className="px-5 pb-12 pt-6 lg:px-20 lg:pb-4 lg:pt-14">
@@ -163,6 +169,12 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
               itemIconByCategoryAndName={itemIconByCategoryAndName}
             />
           </ScrollAnimation>
+
+          {selectedLandmarks.length > 0 && (
+            <ScrollAnimation delay={0.1}>
+              <LandmarksSection landmarks={selectedLandmarks} />
+            </ScrollAnimation>
+          )}
           
           <ScrollAnimation delay={0.1}>
             <AvailabilitySection propertyId={property.id} propertyName={property.name} capacity={property.capacity || 1} basePrice={property.basePrice || 0} />
@@ -306,6 +318,32 @@ function AmenitiesSection({
               })}
             </ul>
           </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function LandmarksSection({ landmarks }: { landmarks: AttributeGroupItem[] }) {
+  if (landmarks.length === 0) return null;
+
+  return (
+    <section className="mt-7 rounded-lg border border-[#dfe8e4] bg-white p-[25px] shadow-[0_4px_10px_rgba(175,132,255,0.03)]">
+      <div className="flex items-center gap-2">
+        <Image src={DEFAULT_LANDMARK_ICON} alt="" width={20} height={20} className="size-5 object-contain" />
+        <SectionTitle>Landmarks</SectionTitle>
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {landmarks.map((landmark) => (
+          <article key={landmark.id} className="flex min-w-0 items-center gap-3 rounded-lg bg-[#f5f7f6] px-4 py-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#2e6f57]">
+              <Image src={DEFAULT_LANDMARK_ICON} alt="" width={18} height={18} className="size-[18px] object-contain" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="truncate text-[14px] font-semibold text-[#183c2f]">{landmark.key}</h3>
+              <p className="mt-0.5 text-[13px] font-medium text-[#667c74]">{landmark.value}</p>
+            </div>
+          </article>
         ))}
       </div>
     </section>

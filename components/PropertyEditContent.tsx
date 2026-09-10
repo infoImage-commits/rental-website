@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   usePropertyById,
@@ -19,11 +19,13 @@ import { useAdminPropertyBookings } from "@/lib/hooks/useBooking";
 import { useCategories } from "@/lib/hooks/useCategory";
 import { usePropertyCategoryItems } from "@/lib/hooks/usePropertyCategoryItem";
 import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
+import { useLandmarks } from "@/lib/hooks/useAttributeGroupItem";
 import { API_BASE_URL } from "@/lib/api/config";
 import Image from "next/image";
-import { BedType, type DailyPrice } from "@/lib/types/property";
+import { BedType, PropertyType, type DailyPrice } from "@/lib/types/property";
 import type { AdminBookingListItem } from "@/lib/types/booking";
 import { formatUsd } from "@/lib/utils/currency";
+import { getPropertyLandmarks, sortLandmarks } from "@/lib/utils/landmarks";
 
 type Tab = "basic" | "features" | "beds" | "address" | "details" | "images" | "prices";
 
@@ -122,7 +124,12 @@ function stripArrangements(arrangements: any[]) {
 // Schema: categoryId, name, description, bedroomNo, bathroomNo, roomNo, capacity, size,
 //         basePrice, propertyType, propertyStatus, hasSeaView/Pool/Garden/Mountain/City,
 //         latitude, longitude, rulesCancellation, notes, sleepingArrangements, propertyCategoryItemIds
-function buildPutPayload(property: any, currentItemIds: string[], overrides: Record<string, any>) {
+function buildPutPayload(
+  property: any,
+  currentItemIds: string[],
+  currentLandmarkIds: string[],
+  overrides: Record<string, any>
+) {
   return {
     categoryId: property.category?.id || "00000000-0000-0000-0000-000000000000",
     name: property.name || "",
@@ -146,6 +153,7 @@ function buildPutPayload(property: any, currentItemIds: string[], overrides: Rec
     notes: property.notes || "",
     sleepingArrangements: stripArrangements(property.sleepingArrangements || []),
     propertyCategoryItemIds: currentItemIds,
+    attributeGroupItemIds: currentLandmarkIds,
     ...overrides,
   };
 }
@@ -155,6 +163,7 @@ export default function PropertyEditContent({ id }: { id: string }) {
   const { data: property, isLoading } = usePropertyById(id);
   // Fetch items once at top level so all tabs can derive current category item IDs
   const { data: includeItems = [] } = usePropertyCategoryItems();
+  const { data: landmarkItems = [] } = useLandmarks();
 
   // Compute current selected item IDs from property.categories (name-based) × items (id-based)
   const currentItemIds = useMemo(() => {
@@ -162,6 +171,11 @@ export default function PropertyEditContent({ id }: { id: string }) {
     const names: string[] = property.categories?.flatMap((c: any) => c.items) || [];
     return includeItems.filter((i: any) => names.includes(i.name)).map((i: any) => i.id);
   }, [property, includeItems]);
+
+  const currentLandmarkIds = useMemo(() => {
+    if (!property) return [];
+    return getPropertyLandmarks(property, landmarkItems).map((landmark) => landmark.id);
+  }, [property, landmarkItems]);
 
   if (isLoading) {
     return (
@@ -191,7 +205,7 @@ export default function PropertyEditContent({ id }: { id: string }) {
     { key: "prices", label: "Prices" },
   ];
 
-  const sharedProps = { property, currentItemIds };
+  const sharedProps = { property, currentItemIds, currentLandmarkIds };
 
   return (
     <div className="mx-auto max-w-5xl min-w-0">
@@ -218,9 +232,9 @@ export default function PropertyEditContent({ id }: { id: string }) {
       </div>
 
       <div className="rounded-2xl border border-[#dfe8e4] bg-white p-6 shadow-[0_8px_24px_rgba(31,77,61,0.05)] sm:p-8">
-        {activeTab === "basic"   && <BasicInfoTab   {...sharedProps} includeItems={includeItems} />}
+        {activeTab === "basic"   && <BasicInfoTab   {...sharedProps} />}
         {activeTab === "features"&& <FeaturesTab    {...sharedProps} includeItems={includeItems} />}
-        {activeTab === "beds"    && <BedsTab        {...sharedProps} includeItems={includeItems} />}
+        {activeTab === "beds"    && <BedsTab        {...sharedProps} />}
         {activeTab === "address" && <AddressTab     property={property} />}
         {activeTab === "details" && <ListingDetailsTab property={property} />}
         {activeTab === "images"  && <ImagesTab      property={property} />}
@@ -231,7 +245,15 @@ export default function PropertyEditContent({ id }: { id: string }) {
 }
 
 // ── 1. Basic Info — PUT /api/properties/{id} ─────────────────────────────────
-function BasicInfoTab({ property, currentItemIds, includeItems }: { property: any; currentItemIds: string[]; includeItems: any[] }) {
+function BasicInfoTab({
+  property,
+  currentItemIds,
+  currentLandmarkIds,
+}: {
+  property: any;
+  currentItemIds: string[];
+  currentLandmarkIds: string[];
+}) {
   const { mutate: updateProperty, isPending } = useUpdateProperty();
   const { data: locationCategories = [] } = useCategories();
 
@@ -260,12 +282,37 @@ function BasicInfoTab({ property, currentItemIds, includeItems }: { property: an
     // PUT /api/properties/{id} — pass currentItemIds and current beds unchanged
     updateProperty({
       id: property.id,
-      payload: buildPutPayload(property, currentItemIds, {
+      payload: buildPutPayload(property, currentItemIds, currentLandmarkIds, {
         ...form,
         // Preserve existing sleeping arrangements (stripped of IDs)
         sleepingArrangements: stripArrangements(property.sleepingArrangements || []),
       }),
     });
+  };
+
+  const layoutPreset =
+    form.propertyType === PropertyType.Studio
+      ? "studio"
+      : form.bedroomNo === 1
+        ? "one-bedroom"
+        : form.bedroomNo === 2
+          ? "two-bedroom"
+          : "";
+
+  const updateLayoutPreset = (preset: string) => {
+    if (preset === "studio") {
+      setForm({ ...form, propertyType: PropertyType.Studio, bedroomNo: 1 });
+      return;
+    }
+
+    if (preset === "one-bedroom") {
+      setForm({ ...form, propertyType: PropertyType.Apartment, bedroomNo: 1 });
+      return;
+    }
+
+    if (preset === "two-bedroom") {
+      setForm({ ...form, propertyType: PropertyType.Apartment, bedroomNo: 2 });
+    }
   };
 
   return (
@@ -291,6 +338,15 @@ function BasicInfoTab({ property, currentItemIds, includeItems }: { property: an
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-5">
+        <div>
+          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Rental Layout Preset</label>
+          <select value={layoutPreset} onChange={e => updateLayoutPreset(e.target.value)} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]">
+            <option value="">Custom</option>
+            <option value="studio">Studio</option>
+            <option value="one-bedroom">1 Bedroom</option>
+            <option value="two-bedroom">2 Bedroom</option>
+          </select>
+        </div>
         <div>
           <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Property Type</label>
           <select value={form.propertyType} onChange={e => setForm({ ...form, propertyType: Number(e.target.value) })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]">
@@ -364,11 +420,25 @@ function BasicInfoTab({ property, currentItemIds, includeItems }: { property: an
 }
 
 // ── 2. Features — PUT /api/properties/{id} with views + category item IDs ────
-function FeaturesTab({ property, currentItemIds, includeItems }: { property: any; currentItemIds: string[]; includeItems: any[] }) {
+function FeaturesTab({
+  property,
+  currentItemIds,
+  currentLandmarkIds,
+  includeItems,
+}: {
+  property: any;
+  currentItemIds: string[];
+  currentLandmarkIds: string[];
+  includeItems: any[];
+}) {
   const { mutate: updateProperty, isPending } = useUpdateProperty();
   const { data: includeCategories = [] } = usePropertyCategories();
+  const { data: landmarkItems = [], isLoading: landmarksLoading } = useLandmarks();
 
-  const [selectedIds, setSelectedIds] = useState<string[]>(currentItemIds);
+  const [selectedItemIdsOverride, setSelectedItemIdsOverride] = useState<string[] | null>(null);
+  const [selectedLandmarkIdsOverride, setSelectedLandmarkIdsOverride] = useState<string[] | null>(null);
+  const selectedIds = selectedItemIdsOverride ?? currentItemIds;
+  const selectedLandmarkIds = selectedLandmarkIdsOverride ?? currentLandmarkIds;
   const [views, setViews] = useState({
     hasSeaView: property.hasSeaView,
     hasPoolView: property.hasPoolView,
@@ -378,20 +448,32 @@ function FeaturesTab({ property, currentItemIds, includeItems }: { property: any
   });
 
   const toggle = (id: string) =>
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    setSelectedItemIdsOverride(prev => {
+      const base = prev ?? currentItemIds;
+      return base.includes(id) ? base.filter(x => x !== id) : [...base, id];
+    });
+
+  const toggleLandmark = (id: string) =>
+    setSelectedLandmarkIdsOverride(prev => {
+      const base = prev ?? currentLandmarkIds;
+      return base.includes(id) ? base.filter(x => x !== id) : [...base, id];
+    });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // PUT /api/properties/{id} — preserves existing beds, updates views + item IDs
     updateProperty({
       id: property.id,
-      payload: buildPutPayload(property, selectedIds, {
+      payload: buildPutPayload(property, selectedIds, selectedLandmarkIds, {
         ...views,
         sleepingArrangements: stripArrangements(property.sleepingArrangements || []),
         propertyCategoryItemIds: selectedIds,
+        attributeGroupItemIds: selectedLandmarkIds,
       }),
     });
   };
+
+  const sortedLandmarkItems = sortLandmarks(landmarkItems);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in">
@@ -428,6 +510,48 @@ function FeaturesTab({ property, currentItemIds, includeItems }: { property: any
         </div>
       </div>
 
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-[14px] font-semibold text-[#183c2f]">Landmarks</h3>
+            <p className="mt-1 text-[13px] text-[#667c74]">Choose nearby places to display on the rental page.</p>
+          </div>
+          <span className="rounded-full bg-[#f5f7f6] px-3 py-1 text-[12px] font-medium text-[#667c74]">
+            {selectedLandmarkIds.length} Selected
+          </span>
+        </div>
+
+        {landmarksLoading ? (
+          <div className="rounded-lg bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#8a9a94]">
+            Loading landmarks...
+          </div>
+        ) : sortedLandmarkItems.length === 0 ? (
+          <div className="rounded-lg bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#8a9a94]">
+            No landmarks have been created yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedLandmarkItems.map((landmark) => (
+              <label
+                key={landmark.id}
+                className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#dfe8e4] bg-[#f5f7f6] px-3 py-2.5 transition hover:border-[#2e6f57]/40"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedLandmarkIds.includes(landmark.id)}
+                  onChange={() => toggleLandmark(landmark.id)}
+                  className="size-4 rounded border-gray-300 text-[#2e6f57] focus:ring-[#2e6f57]"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-medium text-[#183c2f]">{landmark.key}</span>
+                  <span className="block text-[12px] text-[#667c74]">{landmark.value}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-end pt-4 border-t border-[#dfe8e4]">
         <button type="submit" disabled={isPending} className="rounded-full bg-[#2e6f57] px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#255f49] disabled:opacity-50">
           {isPending ? "Saving…" : "Save Features"}
@@ -438,7 +562,15 @@ function FeaturesTab({ property, currentItemIds, includeItems }: { property: any
 }
 
 // ── 3. Beds — PUT /api/properties/{id} with new sleeping arrangements ─────────
-function BedsTab({ property, currentItemIds, includeItems }: { property: any; currentItemIds: string[]; includeItems: any[] }) {
+function BedsTab({
+  property,
+  currentItemIds,
+  currentLandmarkIds,
+}: {
+  property: any;
+  currentItemIds: string[];
+  currentLandmarkIds: string[];
+}) {
   const { mutate: updateProperty, isPending } = useUpdateProperty();
   // Local copy of arrangements without IDs (as required by PUT)
   const [arrangements, setArrangements] = useState<any[]>(
@@ -450,7 +582,7 @@ function BedsTab({ property, currentItemIds, includeItems }: { property: any; cu
     // PUT /api/properties/{id} — sends cleaned arrangements, preserves views + item IDs
     updateProperty({
       id: property.id,
-      payload: buildPutPayload(property, currentItemIds, {
+      payload: buildPutPayload(property, currentItemIds, currentLandmarkIds, {
         sleepingArrangements: arrangements,
       }),
     });
