@@ -1,7 +1,7 @@
 "use client";
 
 import { usePublicRentProperties } from "@/lib/hooks/useProperties";
-import type { PropertyListItem } from "@/lib/types/property";
+import { PropertyType, type PropertyListItem } from "@/lib/types/property";
 import { slugify } from "@/lib/utils/slugify";
 import { API_BASE_URL } from "@/lib/api/config";
 import { useCategories } from "@/lib/hooks/useCategory";
@@ -42,7 +42,8 @@ export default function PropertiesPageContent() {
 function PropertiesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const paramsObj = Object.fromEntries(searchParams.entries());
+  const paramsKey = searchParams.toString();
+  const paramsObj = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
@@ -62,7 +63,7 @@ function PropertiesPageInner() {
     const city = formData.get("city") as string;
     const minPrice = formData.get("minPrice") as string;
     const maxPrice = formData.get("maxPrice") as string;
-    const bedroomNo = formData.get("BedroomNo") as string;
+    const propertyType = formData.get("propertyType") as string;
     const from = (formData.get("from") as string)?.trim();
     const to = (formData.get("to") as string)?.trim();
 
@@ -77,9 +78,9 @@ function PropertiesPageInner() {
     }
 
     if (city) newParams.append("CategoryId", city);
+    if (propertyType) newParams.append("PropertyType", propertyType);
     if (minPrice) newParams.append("MinPrice", minPrice);
     if (maxPrice) newParams.append("MaxPrice", maxPrice);
-    if (bedroomNo) newParams.append("BedroomNo", bedroomNo);
 
     const minCapacity = formData.get("minCapacity") as string;
     if (minCapacity) newParams.append("MinCapacity", minCapacity);
@@ -154,7 +155,7 @@ function PropertiesPageInner() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <FilterForm paramsObj={paramsObj} onSubmit={handleFilterSubmit} />
+              <FilterForm key={`mobile-${paramsKey}`} paramsObj={paramsObj} onSubmit={handleFilterSubmit} />
             </div>
           </motion.aside>
         )}
@@ -166,11 +167,11 @@ function PropertiesPageInner() {
         <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:flex-row lg:items-start lg:gap-8">
           {/* Desktop sidebar always visible, sticky */}
           <aside className="hidden lg:sticky lg:top-8 lg:block lg:w-[280px] lg:shrink-0">
-            <FilterForm paramsObj={paramsObj} onSubmit={handleFilterSubmit} />
+            <FilterForm key={`desktop-${paramsKey}`} paramsObj={paramsObj} onSubmit={handleFilterSubmit} />
           </aside>
           {/* Property grid */}
           <div className="min-w-0 flex-1">
-            <PropertyGrid paramsObj={paramsObj} />
+            <PropertyGrid key={`grid-${paramsKey}`} paramsObj={paramsObj} />
           </div>
         </div>
       </div>
@@ -195,15 +196,15 @@ function PropertiesHero() {
         initial={{ x: 100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-        className="pointer-events-none absolute bottom-0 right-[-10%] z-0 h-[90%] w-[50%] opacity-40 lg:right-[-10%] lg:h-[110%] lg:w-[40%] lg:opacity-100 xl:right-[-5%]"
+        className="pointer-events-none absolute bottom-0 right-[6%] z-0 h-[76%] w-[38%] opacity-45 sm:right-[8%] sm:h-[82%] sm:w-[34%] lg:right-[5%] lg:h-[92%] lg:w-[28%] lg:opacity-100 xl:right-[9%] xl:w-[24%]"
       >
         <Image
-          src="/homepage/vacation/resort-pool-wide.jpeg"
+          src="/rent/beach-lounge-chair-clean.png"
           alt=""
           fill
           priority
-          sizes="(min-width: 1024px) 40vw, 50vw"
-          className="object-cover object-center"
+          sizes="(min-width: 1280px) 24vw, (min-width: 1024px) 28vw, 38vw"
+          className="object-contain object-center"
         />
       </motion.div>
       <div className="relative z-10 mx-auto w-full max-w-[1536px] px-5 lg:px-10">
@@ -248,9 +249,9 @@ function FilterForm({
 
   const categoryIdParam = paramsObj.CategoryId || paramsObj.categoryId || "";
   const cityVal = categoryIdParam;
+  const propertyTypeVal = paramsObj.PropertyType || paramsObj.propertyType || "";
   const minPriceVal = paramsObj.MinPrice || "";
   const maxPriceVal = paramsObj.MaxPrice || "";
-  const bedroomNoVal = paramsObj.BedroomNo || paramsObj.bedroomNo || "";
   const minCapacityVal = paramsObj.MinCapacity || "";
   const isAvailableVal = paramsObj.IsAvailable === "true";
   const hasSeaViewVal = paramsObj.HasSeaView === "true";
@@ -310,7 +311,6 @@ function FilterForm({
     <form onSubmit={onSubmit} className="rounded-[20px] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)] lg:p-6">
       <h3 className="mb-4 text-[15px] font-bold text-[#183c2f]">Filter Properties</h3>
       <div className="flex flex-col gap-4">
-        <input type="hidden" name="BedroomNo" value={bedroomNoVal} />
         {/* Check-in & Check-out Dates */}
         <div className="rounded-xl border border-[#e6ece9] bg-[#f8faf9] p-3.5">
           <div className="mb-2.5 flex items-center justify-between">
@@ -362,6 +362,15 @@ function FilterForm({
             ))}
           </select>
         </label>
+        <label className="block">
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Property Type</span>
+          <select name="propertyType" defaultValue={propertyTypeVal} className={inputCls}>
+            <option value="">All</option>
+            <option value={PropertyType.Studio}>Studio</option>
+            <option value={PropertyType.oneBedroom}>1 Bedroom</option>
+            <option value={PropertyType.twoBedroom}>2 Bedroom</option>
+          </select>
+        </label>
         <div>
           <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Price / Night (USD)</span>
           <div className="flex items-center gap-2">
@@ -371,7 +380,7 @@ function FilterForm({
           </div>
         </div>
         <label className="block">
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">No.Adults</span>
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">No Adults</span>
           <input type="number" name="minCapacity" defaultValue={minCapacityVal} placeholder="Any" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
         </label>
         <div className="flex flex-col gap-2.5 border-t border-[#f0f0f0] pt-4">

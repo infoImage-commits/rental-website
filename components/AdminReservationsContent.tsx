@@ -117,7 +117,7 @@ export default function AdminReservationsContent() {
         },
         onError: (err) => {
           setDownloadingFormat(null);
-          toast.error(err.message || "Failed to download today's reservations report.");
+          toast.error(err.message || "Failed to download today's in-house report.");
         },
       }
     );
@@ -145,10 +145,10 @@ export default function AdminReservationsContent() {
             </span>
           </div>
           <h1 className="mt-1 text-[26px] font-bold leading-tight text-[#183c2f] lg:text-[32px]">
-            Reservations
+            In-House
           </h1>
           <p className="mt-1 text-[14px] text-[#667c74]">
-            Today&apos;s live in-house guest occupancy, unit availability, and active reservations.
+            Today&apos;s live in-house guest occupancy, unit availability, and active stays.
           </p>
         </div>
 
@@ -321,7 +321,7 @@ export default function AdminReservationsContent() {
                 <th className="px-5 py-4">Unit Name</th>
                 <th className="px-5 py-4">Unit No.</th>
                 <th className="px-5 py-4">Status Today</th>
-                <th className="px-5 py-4">Active Reservations & Guest Details</th>
+                <th className="px-5 py-4">In-House Guests & Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f0f4f2]">
@@ -330,7 +330,7 @@ export default function AdminReservationsContent() {
                   <td colSpan={4} className="py-24 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <span className="size-7 animate-spin rounded-full border-3 border-[#2e6f57]/20 border-t-[#2e6f57]" />
-                      <p className="text-[14px] font-medium text-[#667c74]">Loading today&apos;s reservations...</p>
+                      <p className="text-[14px] font-medium text-[#667c74]">Loading today&apos;s in-house data...</p>
                     </div>
                   </td>
                 </tr>
@@ -338,7 +338,7 @@ export default function AdminReservationsContent() {
                 <tr>
                   <td colSpan={4} className="py-24 text-center">
                     <div className="rounded-xl bg-red-50 p-6 max-w-md mx-auto text-red-700">
-                      <p className="font-semibold">Unable to load reservations</p>
+                      <p className="font-semibold">Unable to load in-house data</p>
                       <p className="mt-1 text-[13px]">Please check your network connection or permissions.</p>
                       <button
                         type="button"
@@ -364,7 +364,7 @@ export default function AdminReservationsContent() {
                       <p className="mt-1 text-[13px] text-[#667c74]">
                         {searchTerm || statusFilter !== "all"
                           ? "No units match your search or filter criteria. Try clearing the filters."
-                          : "No in-house reservations recorded for today."}
+                          : "No in-house stays recorded for today."}
                       </p>
                       {(searchTerm || statusFilter !== "all") && (
                         <button

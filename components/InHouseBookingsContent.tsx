@@ -124,10 +124,10 @@ export default function InHouseBookingsContent() {
         <div>
           <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-[#d9a441]">Operations</p>
           <h1 className="mt-1 text-[26px] font-semibold leading-tight text-[#183c2f] lg:text-[32px]">
-            In-House
+            Reservations
           </h1>
           <p className="mt-1 max-w-2xl text-[14px] leading-6 text-[#667c74]">
-            View unit availability, booked units, and guests currently in house for a selected range.
+            View reservation status and booking details for a selected range.
           </p>
         </div>
         <Link
@@ -167,16 +167,16 @@ export default function InHouseBookingsContent() {
           <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#eff8f3] text-[#2e6f57]">
             <CalendarTodayIcon className="size-7" />
           </div>
-          <p className="mt-4 text-[18px] font-semibold text-[#183c2f]">Choose dates to generate the in-house list.</p>
+          <p className="mt-4 text-[18px] font-semibold text-[#183c2f]">Choose dates to generate the reservations list.</p>
           <p className="mx-auto mt-1 max-w-md text-[14px] text-[#667c74]">
-            Select your desired from and to dates above and click Generate to view unit availability and guest occupancy for that timeframe.
+            Select your desired from and to dates above and click Generate to view reservation status and guest occupancy for that timeframe.
           </p>
         </div>
       ) : (
         <>
           <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Total Units" value={data?.totalUnits ?? 0} />
-            <Metric label="In-House" value={data?.inHouseCount ?? 0} />
+            <Metric label="Reservations" value={data?.inHouseCount ?? 0} />
             <Metric label="Booked" value={data?.bookedCount ?? 0} />
             <Metric label="Available" value={data?.availableCount ?? 0} />
           </div>
@@ -197,7 +197,7 @@ export default function InHouseBookingsContent() {
                   onClick={() => handleDownload("excel")}
                   disabled={isDownloadingReport}
                   className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#dfe8e4] bg-white px-3 text-[12px] font-medium text-[#183c2f] transition hover:border-[#2e6f57] hover:bg-[#eff8f3] disabled:opacity-60"
-                  title="Download In-House Report as Excel"
+                  title="Download Reservations Report as Excel"
                 >
                   {downloadingFormat === "excel" ? (
                     <span className="size-3.5 animate-spin rounded-full border-2 border-[#2e6f57]/30 border-t-[#2e6f57]" />
@@ -211,7 +211,7 @@ export default function InHouseBookingsContent() {
                   onClick={() => handleDownload("pdf")}
                   disabled={isDownloadingReport}
                   className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#dfe8e4] bg-white px-3 text-[12px] font-medium text-[#183c2f] transition hover:border-[#2e6f57] hover:bg-[#eff8f3] disabled:opacity-60"
-                  title="Download In-House Report as PDF"
+                  title="Download Reservations Report as PDF"
                 >
                   {downloadingFormat === "pdf" ? (
                     <span className="size-3.5 animate-spin rounded-full border-2 border-[#2e6f57]/30 border-t-[#2e6f57]" />

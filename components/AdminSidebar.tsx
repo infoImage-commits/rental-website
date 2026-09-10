@@ -8,8 +8,8 @@ import { useProfile, useLogout } from "@/lib/hooks/useAuth";
 const mainNavItems = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
   { label: "Bookings", href: "/admin/bookings", icon: "clipboard" },
-  { label: "Reservations", href: "/admin/reservations", icon: "calendar" },
-  { label: "In-House", href: "/admin/in-house", icon: "bed" },
+  { label: "In-House", href: "/admin/reservations", icon: "calendar" },
+  { label: "Reservations", href: "/admin/in-house", icon: "bed" },
   { label: "Reports", href: "/admin/reports", icon: "report" },
   { label: "Reviews", href: "/admin/reviews", icon: "star" },
   { label: "Transfer Bookings", href: "/admin/transfer-bookings", icon: "route" },

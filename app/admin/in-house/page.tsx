@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import InHouseBookingsContent from "@/components/InHouseBookingsContent";
 
 export const metadata: Metadata = {
-  title: "In-House | Admin",
-  description: "View operational unit status and in-house bookings.",
+  title: "Reservations | Admin",
+  description: "View reservation lists and booking status by date range.",
 };
 
 export default function InHousePage() {
