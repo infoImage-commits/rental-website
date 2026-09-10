@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { PropertyType } from "@/lib/types/property";
-import { buildRentBedroomHref, buildRentPropertyTypeHref } from "@/lib/utils/propertyUtils";
+import { buildRentPropertyTypeHref } from "@/lib/utils/propertyUtils";
 
 const baseCategories = [
   {
@@ -15,13 +15,13 @@ const baseCategories = [
   },
   {
     name: "1 Bedroom",
-    href: buildRentBedroomHref(1),
+    href: buildRentPropertyTypeHref(PropertyType.oneBedroom),
     image: "/homepage/vacation/resort-pool-night-portrait.jpeg",
     position: "object-center",
   },
   {
     name: "2 Bedroom",
-    href: buildRentBedroomHref(2),
+    href: buildRentPropertyTypeHref(PropertyType.twoBedroom),
     image: "/homepage/vacation/resort-night-view.jpeg",
     position: "object-center",
   },

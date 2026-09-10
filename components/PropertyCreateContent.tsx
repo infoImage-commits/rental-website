@@ -99,9 +99,9 @@ export default function PropertyCreateContent() {
   const layoutPreset =
     formData.propertyType === PropertyType.Studio
       ? "studio"
-      : formData.bedroomNo === 1
+      : formData.propertyType === PropertyType.oneBedroom
         ? "one-bedroom"
-        : formData.bedroomNo === 2
+        : formData.propertyType === PropertyType.twoBedroom
           ? "two-bedroom"
           : "";
 
@@ -112,12 +112,12 @@ export default function PropertyCreateContent() {
     }
 
     if (preset === "one-bedroom") {
-      updateForm({ propertyType: PropertyType.Apartment, bedroomNo: 1 });
+      updateForm({ propertyType: PropertyType.oneBedroom, bedroomNo: 1 });
       return;
     }
 
     if (preset === "two-bedroom") {
-      updateForm({ propertyType: PropertyType.Apartment, bedroomNo: 2 });
+      updateForm({ propertyType: PropertyType.twoBedroom, bedroomNo: 2 });
     }
   };
 
@@ -227,6 +227,8 @@ export default function PropertyCreateContent() {
                   <option value={8}>Penthouse</option>
                   <option value={9}>Cabin</option>
                   <option value={10}>Hotel</option>
+                  <option value={11}>2 Bedroom</option>
+                  <option value={12}>1 Bedroom</option>
                 </select>
               </div>
               <div>

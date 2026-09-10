@@ -15,6 +15,8 @@ export enum PropertyType {
   Penthouse = 8,
   Cabin = 9,
   Hotel = 10,
+  twoBedroom = 11,
+  oneBedroom = 12,
 }
 
 export enum BedType {
@@ -144,6 +146,23 @@ export interface PropertyCategoryGroup {
   items: string[];
 }
 
+export interface PropertyCategoryValueItem {
+  id: string;
+  propertyCategoryId: string;
+  name: string;
+  icon: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  isDefault: boolean;
+}
+
+export interface PropertyCategoryValueDto {
+  id: string;
+  propertyId: string;
+  propertyCategoryItemId: string;
+  propertyCategoryItem: PropertyCategoryValueItem | null;
+}
+
 export interface PropertyAttributeGroupItem {
   id: string;
   attributeGroupId?: string;
@@ -200,6 +219,7 @@ export interface Property {
   prices: DailyPrice[];
   sleepingArrangements: PropertySleepingArrangement[];
   categories: PropertyCategoryGroup[];
+  propertyCategoryValueDtos?: PropertyCategoryValueDto[];
   attributeGroups?: PropertyAttributeGroup[];
   attributeGroupItems?: PropertyAttributeGroupItem[];
   attributeGroupItemIds?: string[];

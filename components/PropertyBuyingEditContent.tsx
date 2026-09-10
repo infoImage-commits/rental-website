@@ -181,6 +181,8 @@ export default function PropertyBuyingEditContent({ id }: { id: string }) {
                     <option value={8}>Penthouse</option>
                     <option value={9}>Cabin</option>
                     <option value={10}>Hotel</option>
+                    <option value={11}>2 Bedroom</option>
+                    <option value={12}>1 Bedroom</option>
                   </select>
                 </div>
                 <div>

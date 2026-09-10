@@ -26,6 +26,7 @@ import { BedType, PropertyType, type DailyPrice } from "@/lib/types/property";
 import type { AdminBookingListItem } from "@/lib/types/booking";
 import { formatUsd } from "@/lib/utils/currency";
 import { getPropertyLandmarks, sortLandmarks } from "@/lib/utils/landmarks";
+import { getSelectedPropertyCategoryItemIds } from "@/lib/utils/propertyCategoryValues";
 
 type Tab = "basic" | "features" | "beds" | "address" | "details" | "images" | "prices";
 
@@ -165,11 +166,10 @@ export default function PropertyEditContent({ id }: { id: string }) {
   const { data: includeItems = [] } = usePropertyCategoryItems();
   const { data: landmarkItems = [] } = useLandmarks();
 
-  // Compute current selected item IDs from property.categories (name-based) × items (id-based)
+  // Prefer selected ids returned by propertyCategoryValueDtos; fall back to older category-name shape.
   const currentItemIds = useMemo(() => {
     if (!property) return [];
-    const names: string[] = property.categories?.flatMap((c: any) => c.items) || [];
-    return includeItems.filter((i: any) => names.includes(i.name)).map((i: any) => i.id);
+    return getSelectedPropertyCategoryItemIds(property, includeItems);
   }, [property, includeItems]);
 
   const currentLandmarkIds = useMemo(() => {
@@ -293,9 +293,9 @@ function BasicInfoTab({
   const layoutPreset =
     form.propertyType === PropertyType.Studio
       ? "studio"
-      : form.bedroomNo === 1
+      : form.propertyType === PropertyType.oneBedroom
         ? "one-bedroom"
-        : form.bedroomNo === 2
+        : form.propertyType === PropertyType.twoBedroom
           ? "two-bedroom"
           : "";
 
@@ -306,12 +306,12 @@ function BasicInfoTab({
     }
 
     if (preset === "one-bedroom") {
-      setForm({ ...form, propertyType: PropertyType.Apartment, bedroomNo: 1 });
+      setForm({ ...form, propertyType: PropertyType.oneBedroom, bedroomNo: 1 });
       return;
     }
 
     if (preset === "two-bedroom") {
-      setForm({ ...form, propertyType: PropertyType.Apartment, bedroomNo: 2 });
+      setForm({ ...form, propertyType: PropertyType.twoBedroom, bedroomNo: 2 });
     }
   };
 
@@ -350,7 +350,7 @@ function BasicInfoTab({
         <div>
           <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Property Type</label>
           <select value={form.propertyType} onChange={e => setForm({ ...form, propertyType: Number(e.target.value) })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]">
-            {[["Apartment",1],["Villa",2],["Studio",3],["Chalet",4],["TwinHouse",5],["TownHouse",6],["Duplex",7],["Penthouse",8],["Cabin",9],["Hotel",10]].map(([l,v]) => <option key={v} value={v}>{l}</option>)}
+            {[["Apartment",1],["Villa",2],["Studio",3],["Chalet",4],["TwinHouse",5],["TownHouse",6],["Duplex",7],["Penthouse",8],["Cabin",9],["Hotel",10],["2 Bedroom",11],["1 Bedroom",12]].map(([l,v]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
         <div>

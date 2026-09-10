@@ -24,6 +24,7 @@ import { savePaymentBookingContext } from "@/lib/utils/paymentBookingContext";
 import { formatUsd } from "@/lib/utils/currency";
 import { DEFAULT_LANDMARK_ICON } from "@/lib/constants/landmarks";
 import { getPropertyLandmarks } from "@/lib/utils/landmarks";
+import { getPropertyCategoryGroupsFromValues } from "@/lib/utils/propertyCategoryValues";
 import { toast } from "sonner";
 
 
@@ -137,6 +138,7 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
     ["Area:", property.address?.area || "Unknown"],
     ["Availability:", property.isAvailable ? "Available" : "Not Available"],
   ];
+  const amenityCategories = getPropertyCategoryGroupsFromValues(property, includeCategories, includeItems);
   const selectedLandmarks = getPropertyLandmarks(property, landmarkItems);
   return (
     <main className="overflow-hidden bg-white font-[var(--font-poppins)] text-[#183c2f]">
@@ -163,7 +165,7 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
           
           <ScrollAnimation delay={0.1}>
             <AmenitiesSection
-              categories={property.categories || []}
+              categories={amenityCategories}
               categoryIconByName={categoryIconByName}
               itemIconByName={itemIconByName}
               itemIconByCategoryAndName={itemIconByCategoryAndName}

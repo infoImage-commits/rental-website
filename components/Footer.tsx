@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import type { ReactNode } from "react";
 import { PropertyType } from "@/lib/types/property";
-import { buildRentBedroomHref, buildRentPropertyTypeHref } from "@/lib/utils/propertyUtils";
+import { buildRentPropertyTypeHref } from "@/lib/utils/propertyUtils";
 import { siteConfig } from "@/lib/site";
 
 const quickLinks = [
@@ -21,8 +21,8 @@ const quickLinks = [
 
 const propertyTypes = [
   { label: "Studio", href: buildRentPropertyTypeHref(PropertyType.Studio) },
-  { label: "1 Bedroom", href: buildRentBedroomHref(1) },
-  { label: "2 Bedroom", href: buildRentBedroomHref(2) },
+  { label: "1 Bedroom", href: buildRentPropertyTypeHref(PropertyType.oneBedroom) },
+  { label: "2 Bedroom", href: buildRentPropertyTypeHref(PropertyType.twoBedroom) },
 ];
 
 const socialLinks = [
