@@ -3,29 +3,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCategories } from "@/lib/hooks/useCategory";
 import { motion } from "framer-motion";
 
 export default function HeroSection() {
   const router = useRouter();
   const listingType = "rent";
-  const { data: categories } = useCategories();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const searchParams = new URLSearchParams();
 
-    const city = formData.get("city") as string;
-    const minPrice = formData.get("minPrice") as string;
-    const maxPrice = formData.get("maxPrice") as string;
     const from = (formData.get("from") as string)?.trim();
     const to = (formData.get("to") as string)?.trim();
-
-    if (city) searchParams.append("city", city);
-    
-    if (minPrice) searchParams.append("MinPrice", minPrice);
-    if (maxPrice) searchParams.append("MaxPrice", maxPrice);
     
     if (from && to) {
       searchParams.append("from", from);
@@ -43,7 +33,7 @@ export default function HeroSection() {
   return (
     <section className="relative flex flex-col bg-white pb-10 font-[var(--font-poppins)] lg:pb-24 xl:pb-[190px]">
       <div className="relative w-full overflow-visible">
-        <div className="relative h-[338px] w-full overflow-hidden rounded-b-[30px] sm:h-[560px] sm:rounded-b-[50px] lg:h-[898px] lg:rounded-b-[60px]">
+        <div className="relative h-[400px] w-full overflow-hidden rounded-b-[30px] sm:h-[560px] sm:rounded-b-[50px] lg:h-[750px] lg:rounded-b-[60px]">
           <motion.div 
             initial={{ scale: 1.05 }}
             animate={{ scale: 1 }}
@@ -66,7 +56,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, staggerChildren: 0.15 }}
-          className="absolute left-1/2 top-[30px] w-[calc(100%-28px)] max-w-[1120px] -translate-x-1/2 text-center sm:top-[108px] lg:top-[105px]"
+          className="absolute left-1/2 top-[50px] w-[calc(100%-28px)] max-w-[1120px] -translate-x-1/2 text-center sm:top-[108px] lg:top-[105px]"
         >
           <motion.h1 
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
@@ -95,57 +85,12 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           onSubmit={handleSubmit} 
-          className="relative z-30 mx-auto -mt-[136px] w-[calc(100%-26px)] max-w-[1280px] rounded-[16px] bg-white p-4 shadow-[0_12px_30px_rgba(31,77,61,0.14)] sm:-mt-[188px] sm:rounded-[24px] sm:p-6 lg:w-[calc(100%-48px)] xl:-mt-[400px] xl:w-[calc(100%-64px)] xl:max-w-[1360px] 2xl:max-w-[1400px] xl:rounded-[28px] xl:p-7"
+          className="relative z-30 mx-auto -mt-[60px] w-[calc(100%-26px)] max-w-[800px] rounded-[16px] bg-white p-4 shadow-[0_12px_30px_rgba(31,77,61,0.14)] sm:-mt-[80px] sm:rounded-[24px] sm:p-6 lg:-mt-[160px] lg:w-[calc(100%-48px)] lg:max-w-[900px] lg:p-8 xl:-mt-[200px] xl:max-w-[1100px] xl:rounded-[28px] xl:p-9"
         >
-          <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-[minmax(160px,1fr)_minmax(180px,1.1fr)_minmax(300px,1.5fr)_auto] xl:gap-3.5 2xl:gap-4">
-            
-            {/* Location (Categories) */}
-            <label className="block min-w-0 text-[#1F4D3D]">
-              <span className="mb-1.5 block text-[13px] font-medium leading-none text-[#1F4D3D] sm:text-[14px] xl:text-[15px] 2xl:text-[16px]">
-                Location
-              </span>
-              <select
-                name="city"
-                defaultValue=""
-                className="h-10 w-full cursor-pointer rounded-lg border border-[#e6ece9] bg-white px-3 text-[13px] text-[#8b9a95] outline-none transition hover:border-[#cfb072] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10 sm:rounded-xl xl:h-[48px] xl:text-[14px]"
-              >
-                <option value="">Any Location</option>
-                {categories?.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {/* Price Range */}
-            <label className="block min-w-0 text-[#1F4D3D]">
-              <span className="mb-1.5 block text-[13px] font-medium leading-none text-[#1F4D3D] sm:text-[14px] xl:text-[15px] 2xl:text-[16px]">
-                Price / Night (USD)
-              </span>
-              <div className="grid grid-cols-2 items-center gap-1.5 sm:gap-2">
-                <input
-                  type="number"
-                  name="minPrice"
-                  placeholder="Min"
-                  min="0"
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                  className="h-10 w-full min-w-0 rounded-lg border border-[#e6ece9] bg-white px-3 text-[13px] text-[#1F4D3D] outline-none transition placeholder:text-[#aab4b0] hover:border-[#cfb072] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10 sm:rounded-xl xl:h-[48px] xl:text-[14px]"
-                />
-                <input
-                  type="number"
-                  name="maxPrice"
-                  placeholder="Max"
-                  min="0"
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                  className="h-10 w-full min-w-0 rounded-lg border border-[#e6ece9] bg-white px-3 text-[13px] text-[#1F4D3D] outline-none transition placeholder:text-[#aab4b0] hover:border-[#cfb072] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10 sm:rounded-xl xl:h-[48px] xl:text-[14px]"
-                />
-              </div>
-            </label>
-
+          <div className="flex flex-col sm:flex-row items-end gap-3 sm:gap-4 w-full">
             {/* Check-in & Check-out Dates */}
-            <div className="min-w-0 text-[#1F4D3D] sm:col-span-2 xl:col-span-1">
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+            <div className="min-w-0 text-[#1F4D3D] w-full sm:flex-1">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 <label className="block min-w-0">
                   <span className="mb-1.5 block truncate text-[13px] font-medium leading-none text-[#1F4D3D] sm:text-[14px] xl:text-[15px] 2xl:text-[16px]">
                     Check-in Date
@@ -156,7 +101,7 @@ export default function HeroSection() {
                     min={new Date().toISOString().split("T")[0]}
                     aria-label="Check-in Date"
                     title="Check-in Date"
-                    className="h-10 w-full min-w-0 cursor-pointer rounded-lg border border-[#e6ece9] bg-white px-2 sm:px-2.5 text-[12px] font-medium text-[#1F4D3D] outline-none transition hover:border-[#cfb072] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10 sm:rounded-xl sm:text-[13px] xl:h-[48px] xl:text-[13px] 2xl:text-[14px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
+                    className="h-10 w-full min-w-0 cursor-pointer rounded-lg border border-[#e6ece9] bg-white px-2 sm:px-3 text-[12px] font-medium text-[#1F4D3D] outline-none transition hover:border-[#cfb072] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10 sm:rounded-xl sm:text-[13px] xl:h-[48px] xl:text-[14px] 2xl:text-[15px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
                   />
                 </label>
 
@@ -170,7 +115,7 @@ export default function HeroSection() {
                     min={new Date().toISOString().split("T")[0]}
                     aria-label="Check-out Date"
                     title="Check-out Date"
-                    className="h-10 w-full min-w-0 cursor-pointer rounded-lg border border-[#e6ece9] bg-white px-2 sm:px-2.5 text-[12px] font-medium text-[#1F4D3D] outline-none transition hover:border-[#cfb072] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10 sm:rounded-xl sm:text-[13px] xl:h-[48px] xl:text-[13px] 2xl:text-[14px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
+                    className="h-10 w-full min-w-0 cursor-pointer rounded-lg border border-[#e6ece9] bg-white px-2 sm:px-3 text-[12px] font-medium text-[#1F4D3D] outline-none transition hover:border-[#cfb072] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10 sm:rounded-xl sm:text-[13px] xl:h-[48px] xl:text-[14px] 2xl:text-[15px] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
                   />
                 </label>
               </div>
@@ -179,7 +124,7 @@ export default function HeroSection() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="mt-2 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-[#1F4D3D] px-6 text-[14px] font-semibold text-white shadow-md transition hover:bg-[#173a2e] hover:shadow-lg sm:col-span-2 sm:mt-4 sm:h-11 sm:text-[15px] xl:col-span-1 xl:mt-0 xl:h-[48px] xl:w-auto xl:px-8 xl:text-[16px]"
+              className="mt-2 inline-flex h-10 w-full sm:w-auto cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-[#1F4D3D] px-6 text-[14px] font-semibold text-white shadow-md transition hover:bg-[#173a2e] hover:shadow-lg sm:mt-0 sm:h-11 sm:text-[15px] xl:h-[48px] xl:px-8 xl:text-[16px]"
               aria-label="Search vacation homes"
             >
               <span>Search</span>

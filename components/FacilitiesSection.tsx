@@ -78,8 +78,8 @@ const facilities: FacilityItem[] = [
   },
   {
     id: "beach",
-    title: "Private Beach Access",
-    subtitle: "Direct Red Sea coastline",
+    title: "Nearby Beaches",
+    subtitle: "Only 10-15 minutes walk",
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
