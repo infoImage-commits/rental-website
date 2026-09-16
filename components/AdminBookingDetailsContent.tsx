@@ -88,7 +88,7 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
   const requiredPaymentAmount = booking.requiredPaymentAmount ?? 0;
   const paidAmount = booking.paidAmount ?? 0;
   const remainingAmount = booking.remainingAmount ?? Math.max(0, totalPrice - paidAmount);
-  const canMarkAsPaid = remainingAmount > 0;
+  const canMarkAsPaid = remainingAmount > 0 && booking.bookingSource === "Website";
 
   function handleMarkAsPaid() {
     markAsPaidAll(bookingId, {
@@ -486,14 +486,14 @@ function PaymentsSection({
                               <button
                                 onClick={() => setEditingId(null)}
                                 disabled={isPending}
-                                className="text-[12px] font-semibold text-[#667c74] hover:underline"
+                                className="inline-flex h-7 items-center rounded-lg border border-[#dfe8e4] bg-white px-2.5 text-[12px] font-medium text-[#667c74] transition hover:bg-[#f5f7f6]"
                               >
                                 Cancel
                               </button>
                               <button
                                 onClick={() => handleSave(payment)}
                                 disabled={isPending}
-                                className="text-[12px] font-semibold text-[#2e6f57] hover:underline disabled:opacity-50"
+                                className="inline-flex h-7 items-center rounded-lg border border-[#2e6f57] bg-[#2e6f57] px-2.5 text-[12px] font-medium text-white transition hover:bg-[#255f49] disabled:opacity-50"
                               >
                                 Save
                               </button>
@@ -501,7 +501,7 @@ function PaymentsSection({
                           ) : (
                             <button
                               onClick={() => handleEdit(payment)}
-                              className="text-[12px] font-semibold text-[#2e6f57] hover:underline"
+                              className="inline-flex h-7 items-center rounded-lg border border-[#dfe8e4] bg-white px-2.5 text-[12px] font-medium text-[#2e6f57] transition hover:border-[#2e6f57] hover:bg-[#f5f7f6]"
                             >
                               Edit
                             </button>
@@ -511,7 +511,7 @@ function PaymentsSection({
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => setViewingHistoryId(isViewingHistory ? null : payment.id)}
-                          className="text-[12px] font-semibold text-[#667c74] hover:underline"
+                          className="inline-flex h-7 items-center rounded-lg border border-[#dfe8e4] bg-white px-2.5 text-[12px] font-medium text-[#667c74] transition hover:border-[#8a9a94] hover:bg-[#f5f7f6]"
                         >
                           {isViewingHistory ? "Hide" : "History"}
                         </button>
