@@ -58,7 +58,7 @@ function LandmarkFormPanel({
       <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#dfe8e4] px-6 py-4">
           <h2 className="text-[18px] font-semibold text-[#183c2f]">
-            {isEditing ? "Edit Landmark" : "New Landmark"}
+            {isEditing ? "Edit Info Area" : "New Info Area"}
           </h2>
           <button
             type="button"
@@ -75,7 +75,7 @@ function LandmarkFormPanel({
         <form onSubmit={handleSave} className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
           <div>
             <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Landmark Name <span className="text-red-500">*</span>
+              Info Area Name <span className="text-red-500">*</span>
             </label>
             <input
               required
@@ -134,7 +134,7 @@ function LandmarkFormPanel({
               ) : isEditing ? (
                 "Save Changes"
               ) : (
-                "Create Landmark"
+                "Create Info Area"
               )}
             </button>
           </div>
@@ -185,7 +185,7 @@ export default function LandmarksContent() {
             Management
           </p>
           <h1 className="mt-1 text-[26px] font-semibold leading-tight text-[#183c2f] lg:text-[32px]">
-            Landmarks
+            Info Area
           </h1>
           <p className="mt-1 text-[14px] text-[#667c74]">
             Manage nearby places and distances that can be attached to rental properties.
@@ -198,14 +198,14 @@ export default function LandmarksContent() {
           <svg className="size-4" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
           </svg>
-          Add Landmark
+          Add Info Area
         </button>
       </header>
 
       {!isLoading && (
         <div className="mb-4">
           <span className="rounded-full bg-[#f5f7f6] px-3 py-1 text-[12px] font-medium text-[#667c74]">
-            {sortedLandmarks.length} Landmark{sortedLandmarks.length !== 1 ? "s" : ""}
+            {sortedLandmarks.length} Info Area{sortedLandmarks.length !== 1 ? "s" : ""}
           </span>
         </div>
       )}
@@ -214,11 +214,11 @@ export default function LandmarksContent() {
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-[14px] text-[#8a9a94]">
             <span className="mr-2 inline-block size-5 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
-            Loading landmarks...
+            Loading info areas...
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-[15px] font-medium text-[#183c2f]">Failed to load landmarks</p>
+            <p className="text-[15px] font-medium text-[#183c2f]">Failed to load info areas</p>
             <p className="mt-1 text-[13px] text-[#667c74]">Check your connection and try again.</p>
           </div>
         ) : sortedLandmarks.length === 0 ? (
@@ -229,7 +229,7 @@ export default function LandmarksContent() {
                 <circle cx="12" cy="10" r="3" />
               </svg>
             </div>
-            <p className="text-[16px] font-medium text-[#183c2f]">No landmarks yet</p>
+            <p className="text-[16px] font-medium text-[#183c2f]">No info areas yet</p>
             <p className="mb-6 mt-1 max-w-sm text-[14px] text-[#667c74]">
               Add nearby places so admins can attach them to rental properties.
             </p>
@@ -237,7 +237,7 @@ export default function LandmarksContent() {
               onClick={openCreatePanel}
               className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#2e6f57] px-4 text-[13px] font-medium text-white shadow-sm transition hover:bg-[#255f49]"
             >
-              Create first landmark
+              Create first info area
             </button>
           </div>
         ) : (
@@ -245,7 +245,7 @@ export default function LandmarksContent() {
             <table className="w-full text-left text-[14px]">
               <thead className="bg-[#f5f7f6] text-[12px] font-medium uppercase tracking-wider text-[#8a9a94]">
                 <tr>
-                  <th className="px-6 py-4">Landmark</th>
+                  <th className="px-6 py-4">Info Area</th>
                   <th className="px-6 py-4">Distance</th>
                   <th className="px-6 py-4 text-center">Order</th>
                   <th className="px-6 py-4 text-right">Actions</th>
@@ -304,9 +304,9 @@ export default function LandmarksContent() {
 
       <ConfirmModal
         isOpen={Boolean(landmarkToDelete)}
-        title="Delete Landmark"
+        title="Delete Info Area"
         message={`Are you sure you want to delete "${landmarkToDelete?.key}"? This cannot be undone.`}
-        confirmText="Delete Landmark"
+        confirmText="Delete Info Area"
         onConfirm={() => landmarkToDelete && confirmDelete(landmarkToDelete.id)}
         onCancel={() => setLandmarkToDelete(null)}
         isPending={deletingId === landmarkToDelete?.id}

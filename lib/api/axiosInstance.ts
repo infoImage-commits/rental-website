@@ -60,8 +60,32 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Mark as retried immediately so neither this request nor queued requests
+    // can ever trigger a secondary refresh attempt.
+    originalRequest._retry = true;
+
     const { accessToken, refreshToken, setAuth, clearAuth } =
       useAuthStore.getState();
+
+    // Check if the store token was already refreshed by another concurrent request or tab
+    const authHeader =
+      originalRequest.headers?.Authorization ||
+      originalRequest.headers?.authorization;
+    const sentToken =
+      typeof authHeader === "string"
+        ? authHeader.replace(/^Bearer\s+/i, "")
+        : null;
+
+    if (accessToken && sentToken && accessToken !== sentToken) {
+      // The token in store is already newer than the one that failed on this request.
+      // Retry immediately with the new token without hitting the refresh endpoint again.
+      if (originalRequest.headers?.set) {
+        originalRequest.headers.set("Authorization", `Bearer ${accessToken}`);
+      } else {
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+      }
+      return axiosInstance(originalRequest);
+    }
 
     // No session at all — this is a public request, just reject normally
     // without touching auth state or redirecting to login.
@@ -72,7 +96,7 @@ axiosInstance.interceptors.response.use(
     // No refresh token — nothing we can do, go to login
     if (!refreshToken || !accessToken) {
       clearAuth();
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && window.location.pathname !== "/admin/login") {
         window.location.href = "/admin/login";
       }
       return Promise.reject(error);
@@ -84,13 +108,16 @@ axiosInstance.interceptors.response.use(
         failedQueue.push({ resolve, reject });
       })
         .then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
+          if (originalRequest.headers?.set) {
+            originalRequest.headers.set("Authorization", `Bearer ${token}`);
+          } else {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+          }
           return axiosInstance(originalRequest);
         })
         .catch((err) => Promise.reject(err));
     }
 
-    originalRequest._retry = true;
     isRefreshing = true;
 
     try {
@@ -121,7 +148,12 @@ axiosInstance.interceptors.response.use(
         });
 
         processQueue(null, newAccessToken);
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+        if (originalRequest.headers?.set) {
+          originalRequest.headers.set("Authorization", `Bearer ${newAccessToken}`);
+        } else {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        }
         return axiosInstance(originalRequest);
       } else {
         throw new Error(data.message ?? "Token refresh failed");
@@ -129,7 +161,7 @@ axiosInstance.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError, null);
       clearAuth();
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && window.location.pathname !== "/admin/login") {
         window.location.href = "/admin/login";
       }
       return Promise.reject(refreshError);

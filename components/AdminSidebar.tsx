@@ -15,7 +15,7 @@ const mainNavItems = [
   { label: "Transfer Bookings", href: "/admin/transfer-bookings", icon: "route" },
   { label: "Properties Views", href: "/admin/properties-locations", icon: "globe" },
   { label: "Rent Properties", href: "/admin/properties", icon: "home" },
-  { label: "Landmarks", href: "/admin/landmarks", icon: "map-pin" },
+  { label: "Info Area", href: "/admin/landmarks", icon: "map-pin" },
   { label: "Rent Includes Categories", href: "/admin/property-categories", icon: "tag" },
   { label: "Rent Includes Items", href: "/admin/property-items", icon: "list" },
   { label: "Journey Locations", href: "/admin/locations", icon: "map-pin" },

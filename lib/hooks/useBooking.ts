@@ -18,6 +18,7 @@ import type {
   BookingExtensionRequest,
   BookingExtensionResponseData,
   PaginatedBookingResponse,
+  CancelBookingPayload,
 } from "@/lib/types/booking";
 
 const BOOKING_KEY = "bookings";
@@ -195,5 +196,28 @@ export function useAdminTransferBooking(id: string) {
     },
     enabled: !!id,
     staleTime: 30 * 1000,
+  });
+}
+
+export function useCancelAdminBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ bookingId, payload }: { bookingId: string; payload: CancelBookingPayload }) => {
+      const { data } = await axiosInstance.put<AdminBookingApiResponse<null>>(
+        `/api/admin/bookings/${bookingId}/cancel`,
+        payload
+      );
+
+      if (!data.isSuccess) {
+        throw new Error(data.errors?.[0] || data.message || "Could not cancel this booking.");
+      }
+
+      return data;
+    },
+    onSuccess: (_data, { bookingId }) => {
+      queryClient.invalidateQueries({ queryKey: [BOOKING_KEY, "admin", "property"] });
+      queryClient.invalidateQueries({ queryKey: [BOOKING_KEY, "admin", "property", bookingId] });
+    },
   });
 }

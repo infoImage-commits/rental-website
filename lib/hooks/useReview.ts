@@ -46,7 +46,7 @@ export function usePropertyAverageRating(propertyId: string) {
     queryKey: ["property-average-rating", propertyId],
     queryFn: async () => {
       const response = await axiosInstance.get<ReviewsApiResponse<PropertyRatingAverage> | PropertyRatingAverage>(
-        `/api/reviews/property/${propertyId}/average`
+        `/api/reviews/property/${propertyId}/average-rating`
       );
       const data = response.data;
       if (data && typeof data === "object" && "data" in data) {

@@ -141,21 +141,25 @@ export default function InHouseBookingsContent() {
       <div className="mb-6 rounded-2xl border border-[#dfe8e4] bg-white p-4 shadow-[0_8px_24px_rgba(31,77,61,0.04)] sm:p-5">
         <form
           onSubmit={handleGenerate}
-          className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+          className="flex flex-wrap items-end gap-3 sm:gap-4"
         >
-          <DateField label="From Date" value={from} onChange={setFrom} />
-          <DateField label="To Date" value={to} onChange={setTo} />
-          <div className="flex items-end">
+          <div className="w-full sm:w-48 lg:w-52">
+            <DateField label="From Date" value={from} onChange={setFrom} />
+          </div>
+          <div className="w-full sm:w-48 lg:w-52">
+            <DateField label="To Date" value={to} onChange={setTo} />
+          </div>
+          <div>
             <button
               type="submit"
               disabled={isFetching}
-              className="inline-flex h-11 w-full min-w-[130px] items-center justify-center rounded-full bg-[#2e6f57] px-6 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[#2e6f57] px-6 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isFetching ? "Loading..." : "Generate"}
             </button>
           </div>
           {formError && (
-            <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600 sm:col-span-3">
+            <p className="w-full rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600">
               {formError}
             </p>
           )}
@@ -324,7 +328,7 @@ function DateField({
         type="date"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+        className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
       />
     </label>
   );

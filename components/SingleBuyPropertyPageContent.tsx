@@ -144,11 +144,11 @@ function DetailsCards({ prices, location }: { prices: DetailRow[]; location: Det
   );
 }
 
-function InfoCard({ title, icon, rows }: { title: string; icon: string; rows: string[][] }) {
+function InfoCard({ title, icon, rows }: { title: string; icon: string; rows: DetailRow[] }) {
   return (
     <article className="rounded-lg border border-[#dfe8e4] bg-white p-[25px] shadow-[0_4px_10px_rgba(175,132,255,0.03)]">
       <h2 className="flex items-center gap-2 text-[12px] font-bold uppercase leading-4 tracking-[0.05em] text-[#183c2f]">
-        <Image src={icon} alt="" width={22} height={20} className="max-h-5 w-5 object-contain" />
+        <Image src={icon} alt="" width={22} height={20} className="h-auto max-h-5 w-5 object-contain" />
         {title}
       </h2>
       <dl className="mt-4 grid gap-3 text-[14px] leading-[22px]">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useCreateAdminPropertyBooking, useInHouseBookings } from "@/lib/hooks/useBooking";
-import { useProperties } from "@/lib/hooks/useProperties";
+import { useProperties, usePropertyDailyPrices } from "@/lib/hooks/useProperties";
 import { BOOKING_SOURCES } from "@/lib/types/booking";
 import type { BookingSource } from "@/lib/types/booking";
 import { formatUsd } from "@/lib/utils/currency";
@@ -37,7 +37,8 @@ export default function AdminCreateBookingContent() {
   const defaultCheckIn = useMemo(() => getDateOffset(1), []);
   const defaultCheckOut = useMemo(() => getDateOffset(2), []);
   const [propertyId, setPropertyId] = useState("");
-  const [bookingSource, setBookingSource] = useState<BookingSource>("Website");
+  const adminBookingSources = useMemo(() => BOOKING_SOURCES.filter(s => s !== "Website"), []);
+  const [bookingSource, setBookingSource] = useState<BookingSource>(adminBookingSources[0]);
   const [checkIn, setCheckIn] = useState(defaultCheckIn);
   const [checkOut, setCheckOut] = useState(defaultCheckOut);
   const [propertySearch, setPropertySearch] = useState("");
@@ -45,16 +46,27 @@ export default function AdminCreateBookingContent() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [person, setPerson] = useState(1);
+  const [payAmount, setPayAmount] = useState<number | "">("");
   const [formError, setFormError] = useState("");
 
   const { data: propertiesResponse, isLoading: isLoadingProperties } = useProperties({
     pageNumber: 1,
     pageSize: 1000,
   });
-  const { data: operationalData, isLoading: isLoadingStatus } = useInHouseBookings({
-    from: checkIn,
-    to: checkOut,
+
+  // Only fetch in-house data when dates are valid to avoid repeated bad requests
+  const validDates = checkIn && checkOut && checkOut > checkIn;
+  const { data: operationalData, isLoading: isLoadingStatus } = useInHouseBookings(
+    validDates ? { from: checkIn, to: checkOut } : {}
+  );
+
+  // Fetch daily prices for the selected property and date range
+  const { data: dailyPricesData, isLoading: isLoadingPrices } = usePropertyDailyPrices({
+    propertyId: propertyId || "",
+    startDate: checkIn || undefined,
+    endDate: checkOut || undefined,
   });
+
   const { mutate: createBooking, isPending } = useCreateAdminPropertyBooking();
 
   const properties = propertiesResponse?.items ?? [];
@@ -88,14 +100,30 @@ export default function AdminCreateBookingContent() {
     selectedUnitStatus.status.toLowerCase() !== "available" &&
     selectedUnitStatus.statusName.toLowerCase() !== "available";
 
+  // Compute total price from daily prices (sum of nights: checkIn up to but not including checkOut)
+  const computedTotal = useMemo(() => {
+    if (!dailyPricesData?.prices?.length || !checkIn || !checkOut) return null;
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    if (checkOutDate <= checkInDate) return null;
+    const total = dailyPricesData.prices
+      .filter((p) => {
+        const d = new Date(p.date);
+        return d >= checkInDate && d < checkOutDate;
+      })
+      .reduce((sum, p) => sum + p.price, 0);
+    return total > 0 ? total : null;
+  }, [dailyPricesData, checkIn, checkOut]);
+
+  const paidAmountNum = Number(payAmount) || 0;
+  const remaining = computedTotal !== null ? Math.max(0, computedTotal - paidAmountNum) : null;
+
   function validateForm() {
     if (!propertyId) return "Choose a property.";
     if (!checkIn) return "Choose a check-in date.";
     if (!checkOut) return "Choose a check-out date.";
     if (checkOut <= checkIn) return "Check-out must be after check-in.";
     if (!fullName.trim()) return "Enter the guest name.";
-    if (!email.trim()) return "Enter the guest email.";
-    if (!phone.trim()) return "Enter the guest phone.";
     if (person < 1) return "Guests must be at least 1.";
     if (selectedProperty && person > selectedProperty.capacity) {
       return `This property allows up to ${selectedProperty.capacity} guests.`;
@@ -122,9 +150,10 @@ export default function AdminCreateBookingContent() {
         checkOut,
         bookingSource,
         fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
+        email: email.trim() || null,
+        phone: phone.trim() || null,
         person,
+        payAmount: Number(payAmount) || 0,
       },
       {
         onSuccess: (booking) => {
@@ -160,20 +189,20 @@ export default function AdminCreateBookingContent() {
         onSubmit={handleSubmit}
         className="grid gap-6 rounded-2xl border border-[#dfe8e4] bg-white p-5 shadow-[0_8px_24px_rgba(31,77,61,0.05)] lg:p-7"
       >
-        <section className="grid gap-4 lg:grid-cols-2">
-          <label className="block lg:col-span-2">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="block sm:col-span-2 lg:col-span-4">
             <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Property</span>
             <input
               type="search"
               value={propertySearch}
               onChange={(event) => setPropertySearch(event.target.value)}
               placeholder="Search by property number, name, city..."
-              className="mb-2 h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none placeholder:text-[#b8c8de] transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+              className="mb-2 h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3.5 text-[13px] text-[#183c2f] outline-none placeholder:text-[#b8c8de] transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
             />
             <select
               value={propertyId}
               onChange={(event) => setPropertyId(event.target.value)}
-              className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+              className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3.5 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
             >
               <option value="">
                 {isLoadingProperties
@@ -196,12 +225,21 @@ export default function AdminCreateBookingContent() {
           </label>
 
           {selectedProperty && (
-            <div className="rounded-xl bg-[#f5f7f6] p-4 text-[13px] leading-5 text-[#667c74] lg:col-span-2">
+            <div className="rounded-xl bg-[#f5f7f6] p-3.5 text-[13px] leading-5 text-[#667c74] sm:col-span-2 lg:col-span-4">
               <span className="font-semibold text-[#183c2f]">{selectedProperty.name}</span>
               <span className="mx-2 text-[#b8c8be]">|</span>
               Capacity {selectedProperty.capacity}
               <span className="mx-2 text-[#b8c8be]">|</span>
-              Base {formatUsd(selectedProperty.basePrice)}
+              {isLoadingPrices && validDates ? (
+                <span className="text-[#8a9a94]">Loading price...</span>
+              ) : computedTotal !== null ? (
+                <span>
+                  <span className="font-semibold text-[#183c2f]">{formatUsd(computedTotal)}</span>
+                  <span className="ml-1 text-[#8a9a94]">est. total</span>
+                </span>
+              ) : (
+                <span>Base {formatUsd(selectedProperty.basePrice)}/night</span>
+              )}
               {selectedUnitStatus && (
                 <>
                   <span className="mx-2 text-[#b8c8be]">|</span>
@@ -222,9 +260,9 @@ export default function AdminCreateBookingContent() {
             <select
               value={bookingSource}
               onChange={(event) => setBookingSource(event.target.value as BookingSource)}
-              className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+              className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3.5 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
             >
-              {BOOKING_SOURCES.map((source) => (
+              {adminBookingSources.map((source) => (
                 <option key={source} value={source}>
                   {source}
                 </option>
@@ -239,15 +277,38 @@ export default function AdminCreateBookingContent() {
               max={selectedProperty?.capacity}
               value={person}
               onChange={(event) => setPerson(Number(event.target.value))}
-              className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+              className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3.5 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
             />
           </label>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-3">
+        <section className="grid gap-4 lg:grid-cols-4">
           <TextField label="Guest Name" value={fullName} onChange={setFullName} placeholder="Full name" />
-          <TextField label="Email" type="email" value={email} onChange={setEmail} placeholder="guest@email.com" />
-          <TextField label="Phone" value={phone} onChange={setPhone} placeholder="+20..." />
+          <TextField label="Email (Optional)" type="email" value={email} onChange={setEmail} placeholder="guest@email.com" />
+          <TextField label="Phone (Optional)" value={phone} onChange={setPhone} placeholder="+20..." />
+          <div className="block">
+            <label className="block">
+              <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Paid Amount</span>
+              <input
+                type="number"
+                min={0}
+                value={payAmount.toString()}
+                onChange={(e) => setPayAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                placeholder="0"
+                className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none placeholder:text-[#b8c8de] transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+              />
+            </label>
+            {remaining !== null && (
+              <div className={`mt-2 flex items-center justify-between rounded-lg px-3 py-2 text-[12px] font-semibold ${
+                remaining === 0
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}>
+                <span>Remaining</span>
+                <span>{formatUsd(remaining)}</span>
+              </div>
+            )}
+          </div>
         </section>
 
         {formError && (
@@ -259,14 +320,14 @@ export default function AdminCreateBookingContent() {
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Link
             href="/admin/bookings"
-            className="inline-flex h-10 items-center justify-center rounded-full px-5 text-[14px] font-medium text-[#667c74] transition hover:bg-[#f5f7f6]"
+            className="inline-flex h-11 items-center justify-center rounded-full border border-[#dfe8e4] px-6 text-[14px] font-semibold text-[#667c74] transition hover:bg-[#f5f7f6]"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={isPending}
-            className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-full bg-[#2e6f57] px-5 text-[14px] font-semibold text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-[#2e6f57] px-6 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isPending ? "Creating..." : "Create Booking"}
           </button>
@@ -292,7 +353,7 @@ function DateField({
         type="date"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+        className="h-10 w-full rounded-xl border border-[#dfe8e4] bg-white px-3 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
       />
     </label>
   );

@@ -9,7 +9,7 @@ const quickActions = [
   { label: "Reservations", href: "/admin/in-house", helper: "View reservation lists by date" },
   { label: "Transfer Bookings", href: "/admin/transfer-bookings", helper: "Track transfer reservations" },
   { label: "Rent Properties", href: "/admin/properties", helper: "Manage rental listings" },
-  { label: "Landmarks", href: "/admin/landmarks", helper: "Manage nearby places for rental listings" },
+  { label: "Info Area", href: "/admin/landmarks", helper: "Manage nearby places for rental listings" },
   { label: "Messages", href: "/admin/messages", helper: "Read customer messages" },
 ];
 

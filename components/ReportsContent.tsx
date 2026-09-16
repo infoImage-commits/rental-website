@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useDownloadReport, useReportPreview } from "@/lib/hooks/useReports";
+import { useDownloadReport, useReportPreview, useCancelledBookingsPreview } from "@/lib/hooks/useReports";
 import { formatUsd } from "@/lib/utils/currency";
 import type { FormEvent } from "react";
 import type {
@@ -10,6 +10,7 @@ import type {
   ReportOption,
   ReportPreviewRequest,
   ReportType,
+  CancelledBookingItem,
 } from "@/lib/types/report";
 
 const PAGE_SIZE = 50;
@@ -31,6 +32,11 @@ const reportOptions: ReportOption[] = [
     value: "in-house",
     label: "In-House",
     helper: "Actual checked-in guests who have not checked out during this range.",
+  },
+  {
+    value: "cancelled",
+    label: "Cancelled Bookings",
+    helper: "All bookings cancelled within the selected date range.",
   },
 ];
 
@@ -61,23 +67,26 @@ export default function ReportsContent() {
   const [to, setTo] = useState(today);
   const [message, setMessage] = useState("");
   const [previewRequest, setPreviewRequest] = useState<ReportPreviewRequest | null>(null);
+  const [cancelledPreviewParams, setCancelledPreviewParams] = useState<{ fromDate: string; toDate: string } | null>(null);
 
   const { mutate: downloadReport, isPending: isDownloading, reset } = useDownloadReport();
-  const { data: preview, isLoading: isLoadingPreview, isError: isPreviewError } = useReportPreview(previewRequest);
+  const { data: preview, isLoading: isLoadingPreview, isError: isPreviewError } = useReportPreview(reportType !== "cancelled" ? previewRequest : null);
+  const { data: cancelledPreview, isLoading: isLoadingCancelled, isError: isCancelledError } = useCancelledBookingsPreview(reportType === "cancelled" ? cancelledPreviewParams : null);
+
+  const isRangeReport = reportType === "in-house" || reportType === "cancelled";
+  const isCancelledReport = reportType === "cancelled";
 
   useEffect(() => {
     if (!message || !message.includes("downloading")) return;
-
     const timer = window.setTimeout(() => {
       setMessage("");
     }, 4000);
-
     return () => window.clearTimeout(timer);
   }, [message]);
 
   const selectedReport = reportOptions.find((option) => option.value === reportType) ?? reportOptions[0];
-  const isRangeReport = reportType === "in-house";
   const rows = preview?.items ?? [];
+  const cancelledRows = cancelledPreview?.items ?? [];
 
   function validateForm() {
     if (!reportType) return "Choose a report type.";
@@ -94,31 +103,29 @@ export default function ReportsContent() {
 
   function buildPreviewRequest(pageNumber = 1): ReportPreviewRequest {
     if (isRangeReport) {
-      return { type: "in-house", from, to, pageNumber, pageSize: PAGE_SIZE };
+      return { type: reportType as "in-house" | "cancelled", from, to, pageNumber, pageSize: PAGE_SIZE };
     }
-
-    return { type: reportType, date, pageNumber, pageSize: PAGE_SIZE };
+    return { type: reportType as "arrival" | "departure", date, pageNumber, pageSize: PAGE_SIZE };
   }
 
   function buildDownloadRequest(): ReportDownloadRequest {
     if (isRangeReport) {
-      return { type: "in-house", format, from, to };
+      return { type: reportType as "in-house" | "cancelled", format, from, to };
     }
-
-    return { type: reportType, format, date };
+    return { type: reportType as "arrival" | "departure", format, date };
   }
 
   function handlePreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
-
     const validationMessage = validateForm();
-    if (validationMessage) {
-      setMessage(validationMessage);
-      return;
-    }
+    if (validationMessage) { setMessage(validationMessage); return; }
 
-    setPreviewRequest(buildPreviewRequest(1));
+    if (isCancelledReport) {
+      setCancelledPreviewParams({ fromDate: from, toDate: to });
+    } else {
+      setPreviewRequest(buildPreviewRequest(1));
+    }
   }
 
   function handleDownload() {
@@ -173,6 +180,7 @@ export default function ReportsContent() {
             onChange={(value) => {
               setReportType(value as ReportType);
               setPreviewRequest(null);
+              setCancelledPreviewParams(null);
             }}
             options={reportOptions.map((option) => ({
               value: option.value,
@@ -241,17 +249,74 @@ export default function ReportsContent() {
         )}
       </form>
 
-      {previewRequest && (
+      {(isCancelledReport ? cancelledPreviewParams : previewRequest) && (
         <section className="mt-6">
-          <div className="mb-4 grid gap-3 sm:grid-cols-3">
-            <Metric label="Total Records" value={String(preview?.summary.totalRecords ?? 0)} />
-            <Metric label="Total Nights" value={String(preview?.summary.totalNights ?? 0)} />
-            <Metric label="Total Price" value={money(preview?.summary.totalPrice ?? 0)} />
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
-            <div className="border-b border-[#dfe8e4] bg-[#f8faf9] px-5 py-4">
-              <h2 className="text-[18px] font-semibold text-[#183c2f]">{selectedReport.label} Preview</h2>
+          {isCancelledReport ? (
+            <>
+              {/* Cancelled Report Summary */}
+              {cancelledPreview && (
+                <div className="mb-4 grid gap-3 sm:grid-cols-4">
+                  <Metric label="Total Records" value={String(cancelledPreview.summary.totalRecords)} />
+                  <Metric label="Total Amount" value={formatUsd(cancelledPreview.summary.totalAmount)} />
+                  <Metric label="Total Paid" value={formatUsd(cancelledPreview.summary.totalPaid)} />
+                  <Metric label="Remaining" value={formatUsd(cancelledPreview.summary.totalRemaining)} />
+                </div>
+              )}
+              {cancelledPreview && (
+                <div className="mb-4 grid gap-3 sm:grid-cols-3">
+                  <Metric label="Fully Paid Cancellations" value={String(cancelledPreview.summary.fullyPaidCancellations)} />
+                  <Metric label="Partially Paid" value={String(cancelledPreview.summary.partiallyPaidCancellations)} />
+                  <Metric label="Unpaid" value={String(cancelledPreview.summary.unpaidCancellations)} />
+                </div>
+              )}
+              <div className="overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
+                <div className="border-b border-[#dfe8e4] bg-[#f8faf9] px-5 py-4">
+                  <h2 className="text-[18px] font-semibold text-[#183c2f]">Cancelled Bookings Preview</h2>
+                  <p className="mt-1 text-[13px] text-[#667c74]">{formatDate(from)} - {formatDate(to)}</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[960px] text-left text-[14px]">
+                    <thead className="bg-[#f5f7f6] text-[12px] font-semibold uppercase tracking-[0.08em] text-[#667c74]">
+                      <tr>
+                        <th className="px-5 py-3">Customer</th>
+                        <th className="px-5 py-3">Property</th>
+                        <th className="px-5 py-3">Stay</th>
+                        <th className="px-5 py-3 text-right">Nights</th>
+                        <th className="px-5 py-3">Source</th>
+                        <th className="px-5 py-3 text-right">Paid</th>
+                        <th className="px-5 py-3 text-right">Remaining</th>
+                        <th className="px-5 py-3">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#edf2ef]">
+                      {isLoadingCancelled ? (
+                        <tr><td colSpan={8} className="py-20 text-center text-[14px] text-[#8a9a94]">Loading...</td></tr>
+                      ) : isCancelledError ? (
+                        <tr><td colSpan={8} className="py-20 text-center text-red-600">Failed to load report.</td></tr>
+                      ) : cancelledRows.length === 0 ? (
+                        <tr><td colSpan={8} className="py-20 text-center text-[14px] text-[#8a9a94]">No cancellations found.</td></tr>
+                      ) : cancelledRows.map((item: CancelledBookingItem) => (
+                        <tr key={item.bookingId} className="transition hover:bg-[#f8faf9]">
+                          <td className="px-5 py-4 font-semibold text-[#183c2f]">{item.customerName}</td>
+                          <td className="px-5 py-4 text-[#667c74]">{item.propertyName}</td>
+                          <td className="px-5 py-4 text-[13px] text-[#667c74]">{formatDate(item.checkIn)} - {formatDate(item.checkOut)}</td>
+                          <td className="px-5 py-4 text-right font-semibold text-[#183c2f]">{item.nights}</td>
+                          <td className="px-5 py-4 text-[#667c74]">{item.bookingSourceName || "-"}</td>
+                          <td className="px-5 py-4 text-right text-[#183c2f]">{formatUsd(item.paidAmount)}</td>
+                          <td className="px-5 py-4 text-right text-[#183c2f]">{formatUsd(item.remainingAmount)}</td>
+                          <td className="px-5 py-4 text-[13px] text-[#667c74]">{item.cancellationReason || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
+                <div className="border-b border-[#dfe8e4] bg-[#f8faf9] px-5 py-4">
+                  <h2 className="text-[18px] font-semibold text-[#183c2f]">{selectedReport.label} Preview</h2>
               <p className="mt-1 text-[13px] text-[#667c74]">
                 {preview?.date
                   ? formatDate(preview.date)
@@ -334,8 +399,10 @@ export default function ReportsContent() {
               </button>
             </div>
           )}
-        </section>
-      )}
+          </>
+        )}
+      </section>
+    )}
     </div>
   );
 }

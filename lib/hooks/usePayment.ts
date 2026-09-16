@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/api/axiosInstance";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -144,5 +144,58 @@ export function useCancelPayment() {
       const { data } = await axiosInstance.post("/api/payments/cancel", { orderId });
       return data;
     },
+  });
+}
+
+/**
+ * Edit an admin payment.
+ */
+export function useUpdateAdminPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ paymentId, payload }: { paymentId: string; payload: { bookingId: string; payAmount: number; paidAmount: number } }) => {
+      const { data } = await axiosInstance.put<PaymentApiResponse>(
+        `/api/admin/payments/${paymentId}`,
+        payload
+      );
+      return data;
+    },
+    onSuccess: (_data, { payload }) => {
+      queryClient.invalidateQueries({ queryKey: ["payments", "booking", payload.bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["bookings", "admin", "property", payload.bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["bookings", "admin", "property"] });
+    },
+  });
+}
+
+export interface PaymentHistoryItem {
+  id: string;
+  paymentId: string;
+  bookingId: string;
+  previousAmount: number;
+  newAmount: number;
+  previousStatus: number;
+  previousStatusName: string;
+  newStatus: number;
+  newStatusName: string;
+  changedBy: string;
+  changedAt: string;
+}
+
+/**
+ * Get payment modification history for a specific payment.
+ */
+export function usePaymentHistory(paymentId: string) {
+  return useQuery({
+    queryKey: ["payments", "history", paymentId],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get<PaymentApiResponse<PaymentHistoryItem[]>>(
+        `/api/payments/${paymentId}/history`
+      );
+      return data.data || [];
+    },
+    enabled: !!paymentId,
+    staleTime: 30 * 1000,
   });
 }

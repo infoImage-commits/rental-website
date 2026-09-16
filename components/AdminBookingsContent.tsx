@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useAdminPropertyBookings } from "@/lib/hooks/useBooking";
+import { useAdminPropertyBookings, useCancelAdminBooking } from "@/lib/hooks/useBooking";
+import { toast } from "sonner";
 import { BOOKING_SOURCES } from "@/lib/types/booking";
 import type { AdminBookingListQuery, BookingSource } from "@/lib/types/booking";
 import { formatUsd } from "@/lib/utils/currency";
@@ -83,6 +84,33 @@ export default function AdminBookingsContent() {
   const query = compactQuery(filters, page);
   const { data: response, isLoading, isError } = useAdminPropertyBookings(query);
   const bookings = response?.items ?? [];
+
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const { mutate: cancelBooking, isPending: isCancelling } = useCancelAdminBooking();
+
+  function handleCancelSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!cancellingBookingId) return;
+    if (!cancelReason.trim()) {
+      toast.error("Please enter a cancellation reason.");
+      return;
+    }
+
+    cancelBooking(
+      { bookingId: cancellingBookingId, payload: { cause: cancelReason.trim(), reason: cancelReason.trim() } },
+      {
+        onSuccess: () => {
+          toast.success("Booking cancelled successfully.");
+          setCancellingBookingId(null);
+          setCancelReason("");
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || "Failed to cancel booking.");
+        },
+      }
+    );
+  }
 
   function updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]) {
     setDraftFilters((current) => ({ ...current, [key]: value }));
@@ -240,27 +268,27 @@ export default function AdminBookingsContent() {
 
       <div className="w-full overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-[0_8px_24px_rgba(31,77,61,0.05)]">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left text-[14px]">
-            <thead className="bg-[#f5f7f6] text-[12px] font-medium uppercase tracking-wider text-[#8a9a94]">
+          <table className="w-full min-w-[1020px] text-left text-[13px]">
+            <thead className="bg-[#f5f7f6] text-[11px] font-semibold uppercase tracking-wider text-[#8a9a94]">
               <tr>
-                <th className="px-6 py-4">Booking</th>
-                <th className="px-6 py-4">Guest</th>
-                <th className="px-6 py-4">Source</th>
-                <th className="px-6 py-4">Stay</th>
-                <th className="px-6 py-4 text-right">Total</th>
-                <th className="px-6 py-4 text-right">Paid</th>
-                <th className="px-6 py-4 text-right">Remaining</th>
-                <th className="px-6 py-4 text-center">Status</th>
-                <th className="px-6 py-4 text-center">Payment</th>
-                <th className="px-6 py-4">Created</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-4 py-3">Booking</th>
+                <th className="px-4 py-3">Guest</th>
+                <th className="px-4 py-3">Source</th>
+                <th className="px-4 py-3">Stay Dates</th>
+                <th className="px-4 py-3 text-right">Total</th>
+                <th className="px-4 py-3 text-right">Paid</th>
+                <th className="px-4 py-3 text-right">Remaining</th>
+                <th className="px-4 py-3 text-center">Status</th>
+                <th className="px-4 py-3 text-center">Payment</th>
+                <th className="px-4 py-3">Created</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f0f4f2]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={11} className="py-20 text-center text-[14px] text-[#8a9a94]">
-                    <span className="mr-2 inline-block size-5 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
+                  <td colSpan={11} className="py-20 text-center text-[13px] text-[#8a9a94]">
+                    <span className="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-[#dfe8e4] border-t-[#2e6f57]" />
                     Loading bookings...
                   </td>
                 </tr>
@@ -273,47 +301,64 @@ export default function AdminBookingsContent() {
               ) : bookings.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="py-24 text-center">
-                    <p className="text-[16px] font-medium text-[#183c2f]">No bookings found</p>
-                    <p className="mt-1 text-[14px] text-[#667c74]">Try adjusting your filters.</p>
+                    <p className="text-[15px] font-medium text-[#183c2f]">No bookings found</p>
+                    <p className="mt-1 text-[13px] text-[#667c74]">Try adjusting your filters.</p>
                   </td>
                 </tr>
               ) : (
                 bookings.map((booking) => (
                   <tr key={booking.id} className="transition hover:bg-[#f5f7f6]">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <Link href={`/admin/bookings/${booking.id}`} className="font-semibold text-[#183c2f] hover:underline">
                         {booking.bookingNumber}
                       </Link>
-                      <p className="mt-0.5 text-[12px] text-[#8a9a94]">{booking.bookingTypeName}</p>
+                      <p className="text-[11px] text-[#8a9a94]">{booking.bookingTypeName}</p>
                     </td>
-                    <td className="px-6 py-4 text-[#414847]">{booking.fullName}</td>
-                    <td className="px-6 py-4 text-[13px] text-[#667c74]">
+                    <td className="px-4 py-3 text-[#414847]">{booking.fullName}</td>
+                    <td className="px-4 py-3 text-[12px] text-[#667c74]">
                       {booking.bookingSourceName || booking.bookingSource || "-"}
                     </td>
-                    <td className="px-6 py-4 text-[13px] text-[#667c74]">
-                      {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
+                    <td className="px-4 py-3 text-[12px] whitespace-nowrap">
+                      <div className="font-semibold text-[#183c2f] leading-tight">
+                        {formatDate(booking.checkIn)}
+                      </div>
+                      <div className="text-[11px] text-[#8a9a94] leading-tight">
+                        to {formatDate(booking.checkOut)}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-right font-semibold text-[#183c2f]">{money(booking.totalPrice)}</td>
-                    <td className="px-6 py-4 text-right font-semibold text-[#183c2f]">{money(booking.paidAmount ?? 0)}</td>
-                    <td className="px-6 py-4 text-right font-semibold text-[#183c2f]">{money(booking.remainingAmount ?? 0)}</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${statusClass(booking.statusName)}`}>
+                    <td className="px-4 py-3 text-right font-semibold text-[#183c2f]">{money(booking.totalPrice)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-[#183c2f]">{money(booking.paidAmount ?? 0)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-[#183c2f]">{money(booking.remainingAmount ?? 0)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusClass(booking.statusName)}`}>
                         {booking.statusName}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${paymentStatusClass(booking.paymentStatusName)}`}>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${paymentStatusClass(booking.paymentStatusName)}`}>
                         {booking.paymentStatusName || "-"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[13px] text-[#667c74]">{formatDate(booking.createdAtUtc)}</td>
-                    <td className="px-6 py-4 text-right">
-                      <Link
-                        href={`/admin/bookings/${booking.id}`}
-                        className="inline-flex h-8 items-center rounded-lg border border-[#dfe8e4] bg-white px-3 text-[12px] font-medium text-[#2e6f57] transition hover:border-[#2e6f57] hover:bg-[#f5f7f6]"
-                      >
-                        View
-                      </Link>
+                    <td className="px-4 py-3 text-[12px] text-[#667c74] whitespace-nowrap">{formatDate(booking.createdAtUtc)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/bookings/${booking.id}`}
+                          className="inline-flex h-7 items-center rounded-lg border border-[#dfe8e4] bg-white px-2.5 text-[12px] font-medium text-[#2e6f57] transition hover:border-[#2e6f57] hover:bg-[#f5f7f6]"
+                        >
+                          View
+                        </Link>
+                        {booking.statusName !== "Cancelled" &&
+                          booking.bookingSourceName !== "Website" && (
+                            <button
+                              type="button"
+                              onClick={() => setCancellingBookingId(booking.id)}
+                              className="inline-flex h-7 items-center rounded-lg border border-red-200 bg-white px-2.5 text-[12px] font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -342,6 +387,49 @@ export default function AdminBookingsContent() {
           >
             Next
           </button>
+        </div>
+      )}
+      {/* ─── Cancel Booking Modal ─── */}
+      {cancellingBookingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#183c2f]/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-[18px] font-semibold text-[#183c2f]">Cancel Booking</h3>
+            <p className="mt-2 text-[14px] text-[#667c74]">
+              Are you sure you want to cancel this booking? Please provide a reason.
+            </p>
+            <form onSubmit={handleCancelSubmit} className="mt-5">
+              <label className="block">
+                <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Reason</span>
+                <input
+                  type="text"
+                  required
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="e.g., Guest requested cancellation"
+                  className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none placeholder:text-[#b8c8de] transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+                />
+              </label>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCancellingBookingId(null);
+                    setCancelReason("");
+                  }}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-[#dfe8e4] px-5 text-[13px] font-semibold text-[#667c74] transition hover:bg-[#f5f7f6]"
+                >
+                  Nevermind
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCancelling}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
+                >
+                  {isCancelling ? "Cancelling..." : "Confirm Cancel"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

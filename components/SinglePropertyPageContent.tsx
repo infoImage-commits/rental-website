@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import PropertyImageGallery from "./PropertyImageGallery";
+import PropertyBookingCard from "./PropertyBookingCard";
 import ScrollAnimation from "./ScrollAnimation";
 import {
   useCheckPropertyAvailabilityRange,
@@ -18,6 +19,7 @@ import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
 import { usePropertyCategoryItems } from "@/lib/hooks/usePropertyCategoryItem";
 import { useLandmarks } from "@/lib/hooks/useAttributeGroupItem";
 import type { Property, PropertyCategoryGroup } from "@/lib/types/property";
+import type { PropertyCategory, PropertyCategoryItem } from "@/lib/types/propertyCategory";
 import type { AttributeGroupItem } from "@/lib/types/attributeGroupItem";
 import { useReviews, usePropertyAverageRating, useCreateReview } from "@/lib/hooks/useReview";
 import { savePaymentBookingContext } from "@/lib/utils/paymentBookingContext";
@@ -26,7 +28,6 @@ import { DEFAULT_LANDMARK_ICON } from "@/lib/constants/landmarks";
 import { getPropertyLandmarks } from "@/lib/utils/landmarks";
 import { getPropertyCategoryGroupsFromValues } from "@/lib/utils/propertyCategoryValues";
 import { toast } from "sonner";
-
 
 const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -99,270 +100,67 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
   const { data: includeCategories = [] } = usePropertyCategories();
   const { data: includeItems = [] } = usePropertyCategoryItems();
   const { data: landmarkItems = [] } = useLandmarks();
+  const { data: averageData } = usePropertyAverageRating(id);
 
-  if (isLoading) return <div className="p-20 text-center">Loading Property...</div>;
-  if (!property) return <div className="p-20 text-center">Property not found</div>;
-
-  const propertyWithOptionalCover = property as Property & { coverImageUrl?: string | null };
-  const galleryImages = (property.images || [])
-    .sort((a,b)=>a.displayOrder - b.displayOrder)
-    .map((img, i) => ({ src: resolveApiImageUrl(img.imageUrl), alt: property.name, className: i === 0 ? "col-span-2 row-span-2" : (i === 3 ? "col-span-2" : "") }));
-  const fallbackImage = resolveApiImageUrl(propertyWithOptionalCover.coverImageUrl) || resolveApiImageUrl(property.category?.imageUrl) || "/rent/property-card.png";
-  if (galleryImages.length === 0) galleryImages.push({ src: fallbackImage, alt: property.name, className: "col-span-2 row-span-2" });
-  const categoryNameById = new Map(includeCategories.map(category => [category.id, category.name]));
-  const categoryIconByName = new Map(includeCategories.map(category => [
-    normalizeLookupKey(category.name),
-    category.defaultIcon || category.icon,
-  ]));
-  const itemIconByName = new Map<string, string | null>();
-  const itemIconByCategoryAndName = new Map<string, string | null>();
-  includeItems.forEach(item => {
-    itemIconByName.set(normalizeLookupKey(item.name), item.icon);
-    const categoryName = categoryNameById.get(item.propertyCategoryId);
-    if (categoryName) {
-      itemIconByCategoryAndName.set(`${normalizeLookupKey(categoryName)}::${normalizeLookupKey(item.name)}`, item.icon);
-    }
-  });
-  const quickFacts = [
-    { label: property.propertyTypeName || "Property", icon: "/homepage/properties/icons/size.svg" },
-    { label: `${property.capacity || 2} Guests`, icon: "/billing/icons/tenant.svg" },
-    { label: `${property.bedroomNo || 1} Bedroom`, icon: "/homepage/properties/icons/bed.svg" },
-  ];
-
-  const priceDetails: DetailRow[] = [
-    ["Price per night:", `${formatUsd(property.basePrice)} / night`],
-  ];
-
-  const locationDetails: DetailRow[] = [
-    ["City:", property.address?.city || "Unknown"],
-    ["Area:", property.address?.area || "Unknown"],
-    ["Availability:", property.isAvailable ? "Available" : "Not Available"],
-  ];
-  const amenityCategories = getPropertyCategoryGroupsFromValues(property, includeCategories, includeItems);
-  const selectedLandmarks = getPropertyLandmarks(property, landmarkItems);
-  return (
-    <main className="overflow-hidden bg-white font-[var(--font-poppins)] text-[#183c2f]">
-      <section className="px-5 pb-12 pt-6 lg:px-20 lg:pb-4 lg:pt-14">
-        <div className="mx-auto w-full max-w-[1282px]">
-          <ScrollAnimation delay={0}>
-            <PropertyHeader property={property} />
-          </ScrollAnimation>
-
-          <div className="mt-5 min-w-0 lg:mt-[22px]">
-            <ScrollAnimation delay={0} className="min-w-0">
-              <PropertyImageGallery images={galleryImages} />
-              <QuickFacts facts={quickFacts} />
-            </ScrollAnimation>
-          </div>
-
-          <ScrollAnimation delay={0.1}>
-            <DescriptionSection text={property.description} />
-          </ScrollAnimation>
-          
-          <ScrollAnimation delay={0.1}>
-            <DetailsCards prices={priceDetails} location={locationDetails} />
-          </ScrollAnimation>
-          
-          <ScrollAnimation delay={0.1}>
-            <AmenitiesSection
-              categories={amenityCategories}
-              categoryIconByName={categoryIconByName}
-              itemIconByName={itemIconByName}
-              itemIconByCategoryAndName={itemIconByCategoryAndName}
-            />
-          </ScrollAnimation>
-
-          {selectedLandmarks.length > 0 && (
-            <ScrollAnimation delay={0.1}>
-              <LandmarksSection landmarks={selectedLandmarks} />
-            </ScrollAnimation>
-          )}
-          
-          <ScrollAnimation delay={0.1}>
-            <AvailabilitySection propertyId={property.id} propertyName={property.name} capacity={property.capacity || 1} basePrice={property.basePrice || 0} />
-          </ScrollAnimation>
-
-          <ScrollAnimation delay={0.1}>
-            <ReviewsSection propertyId={property.id} propertyName={property.name} />
-          </ScrollAnimation>
-          
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center p-20 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <span className="size-8 animate-spin rounded-full border-3 border-[#183c2f] border-t-transparent" />
+          <span className="text-[15px] font-medium text-[#183c2f]">Loading Property...</span>
         </div>
-      </section>
-    </main>
-  );
-}
-
-function PropertyHeader({ property }: { property: Property }) {
-  return (
-    <header>
-      <nav className="flex items-center gap-1 text-[14px] leading-6 text-[#b3b3b3] lg:text-[20px] lg:leading-[30px]">
-        <span className="relative grid size-5 place-items-center lg:size-6">
-          <Image src="/single-property/icon-home.svg" alt="" fill sizes="24px" className="object-contain" />
-        </span>
-        <span>Home&gt;Apartment &gt;</span>
-        <span className="text-[#292d32]">Property Details</span>
-      </nav>
-
-      <div className="mt-4 lg:mt-6">
-        <h1 className="text-[16px] font-semibold leading-6 text-[#183c2f] lg:text-[36px] lg:font-medium lg:leading-[49px]">
-          {property.name}
-        </h1>
-        <p className="mt-2 flex items-center gap-1 text-[12px] leading-6 text-[#b3b3b3] lg:text-[16px]">
-          <Image src="/homepage/properties/icons/location.svg" alt="" width={24} height={24} className="size-6" />
-          <span className="truncate">{[property.address?.street, property.address?.area, property.address?.city, property.address?.country].filter(Boolean).join(", ")}</span>
-        </p>
       </div>
-    </header>
-  );
-}
+    );
+  }
 
+  if (!property) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center p-20 text-center">
+        <h2 className="text-[20px] font-bold text-[#183c2f]">Property Not Found</h2>
+        <p className="mt-2 text-[14px] text-[#667c74]">The property you are looking for does not exist or has been removed.</p>
+        <Link
+          href="/rent"
+          className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-[#183c2f] px-6 text-[14px] font-semibold text-white transition hover:bg-[#2e6f57]"
+        >
+          Browse Vacation Homes
+        </Link>
+      </div>
+    );
+  }
 
-function QuickFacts({ facts }: { facts: QuickFact[] }) {
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] leading-4 text-[#656566] lg:text-[14px]">
-      {facts.map((fact) => (
-        <span key={fact.label} className="inline-flex items-center gap-2">
-          <Image src={fact.icon} alt="" width={16} height={16} className="size-4" />
-          {fact.label}
-        </span>
-      ))}
-    </div>
+    <PropertyDetailView
+      property={property}
+      includeCategories={includeCategories}
+      includeItems={includeItems}
+      landmarkItems={landmarkItems}
+      averageRating={averageData?.averageRating ?? 0}
+      totalReviews={averageData?.totalReviews ?? 0}
+    />
   );
 }
 
-function DescriptionSection({ text }: { text: string }) {
-  return (
-    <section className="mt-8 lg:mt-10">
-      <SectionTitle>Description</SectionTitle>
-      <p className="mt-[15px] max-w-[954px] text-[14px] leading-[1.9] text-[#656566] lg:text-[16px] lg:leading-[23px]">
-        {text || "No description provided."}
-      </p>
-    </section>
-  );
-}
-
-function DetailsCards({ prices, location }: { prices: DetailRow[]; location: DetailRow[] }) {
-  return (
-    <section className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.05fr)]">
-      <InfoCard title="PRICE DETAILS" icon="/billing/icons/cash.svg" rows={prices} />
-      <InfoCard title="Location" icon="/billing/icons/location.svg" rows={location} />
-    </section>
-  );
-}
-
-function InfoCard({ title, icon, rows }: { title: string; icon: string; rows: string[][] }) {
-  return (
-    <article className="rounded-lg border border-[#dfe8e4] bg-white p-[25px] shadow-[0_4px_10px_rgba(175,132,255,0.03)]">
-      <h2 className="flex items-center gap-2 text-[12px] font-bold uppercase leading-4 tracking-[0.05em] text-[#183c2f]">
-        <Image src={icon} alt="" width={22} height={20} className="max-h-5 w-5 object-contain" />
-        {title}
-      </h2>
-      <dl className="mt-4 grid gap-3 text-[14px] leading-[22px]">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between gap-6">
-            <dt className="text-[#183c2f]">{label}</dt>
-            <dd className="whitespace-nowrap font-medium text-[#101d28]">{value}</dd>
-          </div>
-        ))}
-      </dl>
-    </article>
-  );
-}
-
-function AmenitiesSection({
-  categories,
-  categoryIconByName,
-  itemIconByName,
-  itemIconByCategoryAndName,
+function PropertyDetailView({
+  property,
+  includeCategories,
+  includeItems,
+  landmarkItems,
+  averageRating,
+  totalReviews,
 }: {
-  categories: PropertyCategoryGroup[];
-  categoryIconByName: Map<string, string | null>;
-  itemIconByName: Map<string, string | null>;
-  itemIconByCategoryAndName: Map<string, string | null>;
+  property: Property;
+  includeCategories: PropertyCategory[];
+  includeItems: PropertyCategoryItem[];
+  landmarkItems: AttributeGroupItem[];
+  averageRating: number;
+  totalReviews: number;
 }) {
-  return (
-    <section className="mt-7 rounded-lg border border-[#dfe8e4] bg-white p-[25px] shadow-[0_4px_10px_rgba(175,132,255,0.03)]">
-      <div className="flex items-center gap-2">
-        <Image src="/icons/amenities/amenities-title.svg" alt="" width={20} height={20} className="object-contain" />
-        <SectionTitle>Amenities</SectionTitle>
-      </div>
-      <div className="mt-6 grid gap-8 lg:gap-10">
-        {categories?.map((cat) => (
-          <div key={cat.categoryName}>
-            <h3 className="inline-flex min-h-10 items-center gap-2 rounded bg-[#f5f7f6] px-3 text-[14px] font-medium leading-6 text-[#183c2f] lg:text-[16px]">
-              <Image
-                src={resolveAmenityIcon(categoryIconByName.get(normalizeLookupKey(cat.categoryName)))}
-                alt=""
-                width={20}
-                height={20}
-                className="size-5 object-contain"
-              />
-              {cat.categoryName}
-            </h3>
-            <ul className="mt-4 grid gap-x-4 gap-y-4 text-[14px] leading-5 text-[#656566] lg:grid-cols-4">
-              {cat.items?.map((item) => {
-                const categoryKey = normalizeLookupKey(cat.categoryName);
-                const itemKey = normalizeLookupKey(item);
-                const icon = itemIconByCategoryAndName.get(`${categoryKey}::${itemKey}`) ?? itemIconByName.get(itemKey);
+  const propertyId = property.id;
+  const propertyName = property.name;
+  const basePrice = property.basePrice || 0;
+  const capacity = property.capacity || 1;
 
-                return (
-                  <li key={item} className="flex items-center gap-3">
-                    <Image
-                      src={resolveAmenityIcon(icon)}
-                      alt=""
-                      width={18}
-                      height={18}
-                      className="size-[18px] shrink-0 object-contain"
-                    />
-                    {item}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function LandmarksSection({ landmarks }: { landmarks: AttributeGroupItem[] }) {
-  if (landmarks.length === 0) return null;
-
-  return (
-    <section className="mt-7 rounded-lg border border-[#dfe8e4] bg-white p-[25px] shadow-[0_4px_10px_rgba(175,132,255,0.03)]">
-      <div className="flex items-center gap-2">
-        <Image src={DEFAULT_LANDMARK_ICON} alt="" width={20} height={20} className="size-5 object-contain" />
-        <SectionTitle>Landmarks</SectionTitle>
-      </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {landmarks.map((landmark) => (
-          <article key={landmark.id} className="flex min-w-0 items-center gap-3 rounded-lg bg-[#f5f7f6] px-4 py-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#2e6f57]">
-              <Image src={DEFAULT_LANDMARK_ICON} alt="" width={18} height={18} className="size-[18px] object-contain" />
-            </span>
-            <div className="min-w-0">
-              <h3 className="truncate text-[14px] font-semibold text-[#183c2f]">{landmark.key}</h3>
-              <p className="mt-0.5 text-[13px] font-medium text-[#667c74]">{landmark.value}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function AvailabilitySection({
-  propertyId,
-  propertyName,
-  capacity,
-  basePrice,
-}: {
-  propertyId: string;
-  propertyName: string;
-  capacity: number;
-  basePrice: number;
-}) {
+  // ─── Booking State ───
   const today = new Date();
   const todayString = formatLocalDate(today);
   const currentMonth = today.getMonth();
@@ -512,6 +310,47 @@ function AvailabilitySection({
     }
 
     setCheckOut(day.date);
+  };
+
+  const handleCheckInChange = (newCheckIn: string) => {
+    setFormError("");
+    setCheckIn(newCheckIn);
+    if (checkOut && checkOut <= newCheckIn) {
+      setCheckOut("");
+    } else if (checkOut && rangeHasBookedDate(newCheckIn, checkOut)) {
+      setCheckOut("");
+      setFormError("Selected date range includes unavailable days.");
+    }
+  };
+
+  const handleCheckOutChange = (newCheckOut: string) => {
+    setFormError("");
+    if (!checkIn) {
+      setFormError("Please select a check-in date first.");
+      return;
+    }
+    if (newCheckOut <= checkIn) {
+      setFormError("Check-out date must be after check-in date.");
+      return;
+    }
+    if (rangeHasBookedDate(checkIn, newCheckOut)) {
+      setFormError("Selected date range includes unavailable days.");
+      return;
+    }
+    setCheckOut(newCheckOut);
+  };
+
+  const clearDates = () => {
+    setCheckIn("");
+    setCheckOut("");
+    setFormError("");
+  };
+
+  const scrollToCalendar = () => {
+    const el = document.getElementById("availability-calendar");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const getDaysForMonth = (year: number, month: number) => {
@@ -688,177 +527,496 @@ function AvailabilitySection({
     );
   };
 
-  return (
-    <section className="mt-7 rounded-xl border border-[#e5edf1] bg-white p-4 lg:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <h2 className="flex items-center gap-2 text-[16px] font-semibold leading-7 text-[#101d28]">
-          <span
-            aria-hidden="true"
-            className="size-[18px] bg-[#d6a85c]"
-            style={{
-              WebkitMask: "url('/billing/icons/calendar.svg') center / contain no-repeat",
-              mask: "url('/billing/icons/calendar.svg') center / contain no-repeat",
-            }}
-          />
-          Availability & Booking
-        </h2>
+  // ─── Image Gallery and Info Setup ───
+  const propertyWithOptionalCover = property as Property & { coverImageUrl?: string | null };
+  const galleryImages = (property.images || [])
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map((img) => ({
+      src: resolveApiImageUrl(img.imageUrl),
+      alt: property.name,
+    }));
+  const fallbackImage =
+    resolveApiImageUrl(propertyWithOptionalCover.coverImageUrl) ||
+    resolveApiImageUrl(property.category?.imageUrl) ||
+    "/rent/property-card.png";
+  if (galleryImages.length === 0) {
+    galleryImages.push({ src: fallbackImage, alt: property.name });
+  }
 
-        <div className="inline-flex rounded-full border border-[#dfe8e4] bg-[#f8faf9] p-1">
-          {[1, 2, 3].map((count) => (
+  const categoryNameById = new Map(includeCategories.map((category) => [category.id, category.name]));
+  const categoryIconByName = new Map<string, string | null>(
+    includeCategories.map((category) => [
+      normalizeLookupKey(category.name),
+      category.defaultIcon || category.icon || null,
+    ])
+  );
+  const itemIconByName = new Map<string, string | null>();
+  const itemIconByCategoryAndName = new Map<string, string | null>();
+  includeItems.forEach((item) => {
+    itemIconByName.set(normalizeLookupKey(item.name), item.icon ?? null);
+    const categoryName = categoryNameById.get(item.propertyCategoryId);
+    if (categoryName) {
+      itemIconByCategoryAndName.set(`${normalizeLookupKey(categoryName)}::${normalizeLookupKey(item.name)}`, item.icon ?? null);
+    }
+  });
+
+  const quickFacts = [
+    { label: property.propertyTypeName || "Vacation Home", icon: "/homepage/properties/icons/size.svg" },
+    { label: `${property.capacity || 2} Guests`, icon: "/billing/icons/tenant.svg" },
+    { label: `${property.bedroomNo || 1} Bedroom`, icon: "/homepage/properties/icons/bed.svg" },
+  ];
+
+  const priceDetails: DetailRow[] = [
+    ["Price per night:", `${formatUsd(property.basePrice)} / night`],
+  ];
+
+  const locationDetails: DetailRow[] = [
+    ["City:", property.address?.city || "Unknown"],
+    ["Area:", property.address?.area || "Unknown"],
+    ["Availability:", property.isAvailable ? "Available" : "Not Available"],
+  ];
+  const amenityCategories = getPropertyCategoryGroupsFromValues(property, includeCategories, includeItems);
+  const selectedLandmarks = getPropertyLandmarks(property, landmarkItems);
+
+  return (
+    <main className="bg-white pb-24 font-[var(--font-poppins)] text-[#183c2f] lg:pb-12">
+      <section className="px-4 pb-12 pt-5 sm:px-6 lg:px-16 lg:pb-8 lg:pt-10">
+        <div className="mx-auto w-full max-w-[1282px]">
+          {/* ─── Top Breadcrumbs & Header ─── */}
+          <ScrollAnimation delay={0}>
+            <PropertyHeader property={property} />
+          </ScrollAnimation>
+
+          {/* ─── Desktop 2-Column Grid / Mobile Stacking ─── */}
+          <div className="mt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] lg:gap-10 xl:gap-12 lg:items-start">
+            {/* ─── Left Column: Main Showcase ─── */}
+            <div className="min-w-0 space-y-7">
+              {/* Photo Gallery & Quick Facts */}
+              <ScrollAnimation delay={0} className="min-w-0">
+                <PropertyImageGallery images={galleryImages} />
+                <QuickFacts facts={quickFacts} />
+              </ScrollAnimation>
+
+              {/* Description */}
+              <ScrollAnimation delay={0.05}>
+                <DescriptionSection text={property.description} />
+              </ScrollAnimation>
+
+              {/* Details Cards */}
+              <ScrollAnimation delay={0.05}>
+                <DetailsCards prices={priceDetails} location={locationDetails} />
+              </ScrollAnimation>
+
+              {/* Amenities */}
+              <ScrollAnimation delay={0.05}>
+                <AmenitiesSection
+                  categories={amenityCategories}
+                  categoryIconByName={categoryIconByName}
+                  itemIconByName={itemIconByName}
+                  itemIconByCategoryAndName={itemIconByCategoryAndName}
+                />
+              </ScrollAnimation>
+
+              {/* Info Area (Landmarks) */}
+              {selectedLandmarks.length > 0 && (
+                <ScrollAnimation delay={0.05}>
+                  <LandmarksSection landmarks={selectedLandmarks} />
+                </ScrollAnimation>
+              )}
+
+              {/* Interactive Calendar */}
+              <ScrollAnimation delay={0.05}>
+                <AvailabilityCalendarSection
+                  checkIn={checkIn}
+                  checkOut={checkOut}
+                  onSelectDate={selectDate}
+                  onClearDates={clearDates}
+                  months={months}
+                  monthsToShow={monthsToShow}
+                  setMonthsToShow={setMonthsToShow}
+                  nights={nights}
+                />
+              </ScrollAnimation>
+
+              {/* Mobile Booking Section: Placed immediately after Availability & Dates on screens < lg */}
+              <div className="mt-7 lg:hidden" id="booking-card-mobile">
+                <PropertyBookingCard
+                  idPrefix="mobile"
+                  propertyId={property.id}
+                  propertyName={property.name}
+                  basePrice={basePrice}
+                  capacity={capacity}
+                  rating={averageRating}
+                  totalReviews={totalReviews}
+                  todayString={todayString}
+                  checkIn={checkIn}
+                  checkOut={checkOut}
+                  nights={nights}
+                  onCheckInChange={handleCheckInChange}
+                  onCheckOutChange={handleCheckOutChange}
+                  onClearDates={clearDates}
+                  bookingForm={bookingForm}
+                  setBookingForm={setBookingForm}
+                  hasAcceptedRules={hasAcceptedRules}
+                  setHasAcceptedRules={setHasAcceptedRules}
+                  formError={formError}
+                  isPending={isPending}
+                  isCheckingPrice={isCheckingPrice}
+                  isPriceUnavailable={isPriceUnavailable}
+                  estimatedTotal={estimatedTotal}
+                  missingDates={missingDates}
+                  onSubmitBooking={submitBooking}
+                  onScrollToCalendar={scrollToCalendar}
+                />
+              </div>
+
+
+            </div>
+
+            {/* ─── Right Column: Sticky Booking Sidebar on Desktop (hidden on mobile) ─── */}
+            <aside className="hidden lg:block lg:sticky lg:top-20 lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#cfb072_transparent] self-start pr-1">
+              <PropertyBookingCard
+                idPrefix="desktop"
+                propertyId={property.id}
+                propertyName={property.name}
+                basePrice={basePrice}
+                capacity={capacity}
+                rating={averageRating}
+                totalReviews={totalReviews}
+                todayString={todayString}
+                checkIn={checkIn}
+                checkOut={checkOut}
+                nights={nights}
+                onCheckInChange={handleCheckInChange}
+                onCheckOutChange={handleCheckOutChange}
+                onClearDates={clearDates}
+                bookingForm={bookingForm}
+                setBookingForm={setBookingForm}
+                hasAcceptedRules={hasAcceptedRules}
+                setHasAcceptedRules={setHasAcceptedRules}
+                formError={formError}
+                isPending={isPending}
+                isCheckingPrice={isCheckingPrice}
+                isPriceUnavailable={isPriceUnavailable}
+                estimatedTotal={estimatedTotal}
+                missingDates={missingDates}
+                onSubmitBooking={submitBooking}
+                onScrollToCalendar={scrollToCalendar}
+              />
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Reviews & Ratings Section (Full Width) ─── */}
+      <section className="bg-[#f8faf9] py-16 sm:py-24">
+        <div className="mx-auto max-w-[1282px] px-4 sm:px-6 lg:px-8">
+          <ScrollAnimation delay={0.05}>
+            <ReviewsSection propertyId={property.id} propertyName={property.name} />
+          </ScrollAnimation>
+        </div>
+      </section>
+
+      {/* ─── Mobile Sticky Bottom Bar (Screens < 1024px) ─── */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#dfe8e4] bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md lg:hidden">
+        <div className="mx-auto flex max-w-[1282px] items-center justify-between gap-4">
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-bold text-[#183c2f]">{formatUsd(basePrice)}</span>
+              <span className="text-[12px] text-[#667c74]">/ night</span>
+            </div>
+            <p className="text-[11px] font-medium text-[#8a9a94]">
+              {checkIn && checkOut
+                ? `${checkIn} to ${checkOut} (${nights} ${nights === 1 ? "nt" : "nts"})`
+                : "Choose dates to book"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById("booking-card-mobile") || document.getElementById("booking-card");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }}
+            className="inline-flex h-11 items-center justify-center rounded-full bg-[#2e6f57] px-6 text-[14px] font-semibold text-white shadow-md transition hover:bg-[#255f49] active:scale-95"
+          >
+            Reserve
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function PropertyHeader({ property }: { property: Property }) {
+  return (
+    <header>
+      <nav className="flex items-center gap-1.5 text-[13px] leading-6 text-[#8a9a94] lg:text-[14px]">
+        <Link href="/" className="hover:text-[#183c2f] transition flex items-center gap-1">
+          <span className="relative grid size-4 place-items-center">
+            <Image src="/single-property/icon-home.svg" alt="" fill sizes="16px" className="object-contain" />
+          </span>
+          <span>Home</span>
+        </Link>
+        <span>&gt;</span>
+        <Link href="/rent" className="hover:text-[#183c2f] transition">
+          Vacation Homes
+        </Link>
+        <span>&gt;</span>
+        <span className="truncate font-medium text-[#183c2f] max-w-[180px] sm:max-w-none">
+          {property.name}
+        </span>
+      </nav>
+
+      <div className="mt-3 lg:mt-4">
+        <h1 className="text-[22px] font-bold leading-tight text-[#183c2f] sm:text-[28px] lg:text-[34px]">
+          {property.name}
+        </h1>
+        <p className="mt-1.5 flex items-center gap-1.5 text-[13px] leading-6 text-[#667c74] lg:text-[15px]">
+          <Image src="/homepage/properties/icons/location.svg" alt="" width={20} height={20} className="size-5 shrink-0" />
+          <span className="truncate">
+            {[property.address?.street, property.address?.area, property.address?.city, property.address?.country]
+              .filter(Boolean)
+              .join(", ") || "Hurghada, Egypt"}
+          </span>
+        </p>
+      </div>
+    </header>
+  );
+}
+
+function QuickFacts({ facts }: { facts: QuickFact[] }) {
+  return (
+    <div className="mt-3.5 flex flex-wrap items-center gap-x-6 gap-y-2.5 rounded-xl border border-[#dfe8e4] bg-[#fbfdfc] px-4 py-3 text-[13px] text-[#40544c] lg:text-[14px]">
+      {facts.map((fact) => (
+        <span key={fact.label} className="inline-flex items-center gap-2 font-medium">
+          <Image src={fact.icon} alt="" width={18} height={18} className="size-[18px] object-contain" />
+          {fact.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function DescriptionSection({ text }: { text: string }) {
+  return (
+    <section className="rounded-2xl border border-[#dfe8e4] bg-white p-5 sm:p-6 shadow-[0_2px_12px_rgba(24,60,47,0.03)]">
+      <SectionTitle>Description</SectionTitle>
+      <p className="mt-3.5 text-[14px] leading-[1.8] text-[#556960] sm:text-[15px]">
+        {text || "No description provided."}
+      </p>
+    </section>
+  );
+}
+
+function DetailsCards({ prices, location }: { prices: DetailRow[]; location: DetailRow[] }) {
+  return (
+    <section className="grid gap-4 sm:grid-cols-2">
+      <InfoCard title="PRICE DETAILS" icon="/billing/icons/cash.svg" rows={prices} />
+      <InfoCard title="LOCATION" icon="/billing/icons/location.svg" rows={location} />
+    </section>
+  );
+}
+
+function InfoCard({ title, icon, rows }: { title: string; icon: string; rows: string[][] }) {
+  return (
+    <article className="rounded-2xl border border-[#dfe8e4] bg-white p-5 shadow-[0_2px_12px_rgba(24,60,47,0.03)]">
+      <h2 className="flex items-center gap-2 text-[12px] font-bold uppercase leading-4 tracking-[0.05em] text-[#183c2f]">
+        <Image src={icon} alt="" width={20} height={20} className="size-5 object-contain" />
+        {title}
+      </h2>
+      <dl className="mt-4 grid gap-3 text-[14px] leading-[22px]">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between gap-4">
+            <dt className="text-[#667c74]">{label}</dt>
+            <dd className="whitespace-nowrap font-medium text-[#101d28]">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </article>
+  );
+}
+
+function AmenitiesSection({
+  categories,
+  categoryIconByName,
+  itemIconByName,
+  itemIconByCategoryAndName,
+}: {
+  categories: PropertyCategoryGroup[];
+  categoryIconByName: Map<string, string | null>;
+  itemIconByName: Map<string, string | null>;
+  itemIconByCategoryAndName: Map<string, string | null>;
+}) {
+  return (
+    <section className="rounded-2xl border border-[#dfe8e4] bg-white p-5 sm:p-6 shadow-[0_2px_12px_rgba(24,60,47,0.03)]">
+      <div className="flex items-center gap-2">
+        <Image src="/icons/amenities/amenities-title.svg" alt="" width={22} height={22} className="object-contain" />
+        <SectionTitle>Amenities</SectionTitle>
+      </div>
+      <div className="mt-5 grid gap-6">
+        {categories?.map((cat) => (
+          <div key={cat.categoryName}>
+            <h3 className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-[#f5f7f6] px-3 text-[14px] font-semibold text-[#183c2f]">
+              <Image
+                src={resolveAmenityIcon(categoryIconByName.get(normalizeLookupKey(cat.categoryName)))}
+                alt=""
+                width={18}
+                height={18}
+                className="size-[18px] object-contain"
+              />
+              {cat.categoryName}
+            </h3>
+            <ul className="mt-3 grid gap-x-4 gap-y-2.5 text-[14px] leading-5 text-[#556960] sm:grid-cols-2 md:grid-cols-3">
+              {cat.items?.map((item) => {
+                const categoryKey = normalizeLookupKey(cat.categoryName);
+                const itemKey = normalizeLookupKey(item);
+                const icon = itemIconByCategoryAndName.get(`${categoryKey}::${itemKey}`) ?? itemIconByName.get(itemKey);
+
+                return (
+                  <li key={item} className="flex items-center gap-2.5">
+                    <Image
+                      src={resolveAmenityIcon(icon)}
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="size-4 shrink-0 object-contain"
+                    />
+                    <span>{item}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function LandmarksSection({ landmarks }: { landmarks: AttributeGroupItem[] }) {
+  if (landmarks.length === 0) return null;
+
+  return (
+    <section className="rounded-2xl border border-[#dfe8e4] bg-white p-5 sm:p-6 shadow-[0_2px_12px_rgba(24,60,47,0.03)]">
+      <div className="flex items-center gap-2">
+        <Image src={DEFAULT_LANDMARK_ICON} alt="" width={22} height={22} className="size-[22px] object-contain" />
+        <SectionTitle>Info Area</SectionTitle>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {landmarks.map((landmark) => (
+          <article key={landmark.id} className="flex min-w-0 items-center gap-3 rounded-xl bg-[#f5f7f6] px-4 py-3">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#2e6f57]">
+              <Image src={DEFAULT_LANDMARK_ICON} alt="" width={16} height={16} className="size-4 object-contain" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="truncate text-[13px] font-semibold text-[#183c2f]">{landmark.key}</h3>
+              <p className="mt-0.5 text-[12px] font-medium text-[#667c74]">{landmark.value}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AvailabilityCalendarSection({
+  checkIn,
+  checkOut,
+  onSelectDate,
+  onClearDates,
+  months,
+  monthsToShow,
+  setMonthsToShow,
+  nights,
+}: {
+  checkIn: string;
+  checkOut: string;
+  onSelectDate: (day: CalendarDay) => void;
+  onClearDates: () => void;
+  months: Array<{
+    title: string;
+    startOffset: number;
+    days: CalendarDay[];
+  }>;
+  monthsToShow: number;
+  setMonthsToShow: (count: number) => void;
+  nights: number;
+}) {
+  return (
+    <section
+      id="availability-calendar"
+      className="scroll-mt-24 rounded-2xl border border-[#dfe8e4] bg-white p-5 sm:p-6 shadow-[0_2px_12px_rgba(24,60,47,0.03)]"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#edf2ef] pb-4">
+        <div>
+          <h2 className="flex items-center gap-2 text-[17px] font-bold text-[#183c2f]">
+            <span
+              aria-hidden="true"
+              className="size-[18px] bg-[#d6a85c]"
+              style={{
+                WebkitMask: "url('/billing/icons/calendar.svg') center / contain no-repeat",
+                mask: "url('/billing/icons/calendar.svg') center / contain no-repeat",
+              }}
+            />
+            Availability & Dates
+          </h2>
+          <p className="mt-1 text-[13px] text-[#667c74]">
+            {checkIn && checkOut
+              ? `Selected: ${checkIn} → ${checkOut} (${nights} ${nights === 1 ? "night" : "nights"})`
+              : checkIn
+                ? `Check-in: ${checkIn} — Click a checkout date`
+                : "Select your dates on the calendar"}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {(checkIn || checkOut) && (
             <button
-              key={count}
               type="button"
-              onClick={() => setMonthsToShow(count)}
-              className={`h-9 rounded-full px-4 text-[12px] font-semibold transition ${
-                monthsToShow === count ? "bg-[#2e6f57] text-white" : "text-[#667c74] hover:text-[#183c2f]"
-              }`}
+              onClick={onClearDates}
+              className="rounded-full border border-[#dfe8e4] bg-white px-3 py-1 text-[12px] font-medium text-[#667c74] hover:border-[#cfb072] hover:text-[#183c2f]"
             >
-              {count} mo
+              Clear dates
             </button>
-          ))}
+          )}
+
+          <div className="inline-flex rounded-full border border-[#dfe8e4] bg-[#f8faf9] p-1">
+            {[1, 2].map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => setMonthsToShow(count)}
+                className={`h-8 rounded-full px-3 text-[12px] font-semibold transition ${
+                  monthsToShow === count ? "bg-[#2e6f57] text-white" : "text-[#667c74] hover:text-[#183c2f]"
+                }`}
+              >
+                {count} mo
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="mx-auto mt-6 grid w-full max-w-[980px] gap-8 lg:grid-cols-2 lg:items-start lg:gap-14">
+      <div className={`mt-6 grid gap-6 ${monthsToShow > 1 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
         {months.map((month) => (
           <CalendarMonth
             key={month.title}
             {...month}
             checkIn={checkIn}
             checkOut={checkOut}
-            onSelectDate={selectDate}
+            onSelectDate={onSelectDate}
           />
         ))}
       </div>
 
-      <div className="mt-7 flex flex-wrap gap-4 text-[11px] leading-4 text-[#6f8793] lg:ml-1">
+      <div className="mt-6 flex flex-wrap gap-4 border-t border-[#edf2ef] pt-4 text-[11px] leading-4 text-[#6f8793]">
         <Legend label="Past" className="bg-[#f1f5f8]" />
         <Legend label="Today" className="border border-[#2e6f57] bg-white" />
         <Legend label="Booked" className="bg-[#e9eef3]" />
         <Legend label="Selected" className="bg-[#2e6f57]" />
       </div>
-
-      <form onSubmit={submitBooking} className="mt-8 grid gap-5 rounded-xl border border-[#dfe8e4] bg-[#fbfdfc] p-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)] lg:p-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Full Name</span>
-            <input
-              type="text"
-              value={bookingForm.fullName}
-              onChange={(e) => setBookingForm({ ...bookingForm, fullName: e.target.value })}
-              className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] outline-none focus:border-[#2e6f57]"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Email</span>
-            <input
-              type="email"
-              value={bookingForm.email}
-              onChange={(e) => setBookingForm({ ...bookingForm, email: e.target.value })}
-              className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] outline-none focus:border-[#2e6f57]"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Phone</span>
-            <input
-              type="tel"
-              value={bookingForm.phone}
-              onChange={(e) => setBookingForm({ ...bookingForm, phone: e.target.value.replace(/[^\d+]/g, '') })}
-              className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] outline-none focus:border-[#2e6f57]"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Guests</span>
-            <select
-              value={bookingForm.person}
-              onChange={(e) => setBookingForm({ ...bookingForm, person: Number(e.target.value) })}
-              className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] outline-none focus:border-[#2e6f57]"
-            >
-              {Array.from({ length: Math.max(1, capacity) }, (_, index) => index + 1).map((count) => (
-                <option key={count} value={count}>
-                  {count} {count === 1 ? "Guest" : "Guests"}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="rounded-xl border border-[#dfe8e4] bg-white p-4">
-          <h3 className="text-[15px] font-semibold text-[#101d28]">Booking Summary</h3>
-          <dl className="mt-4 grid gap-3 text-[13px] leading-5">
-            <div className="flex justify-between gap-4">
-              <dt className="text-[#667c74]">Check-in</dt>
-              <dd className="font-semibold text-[#183c2f]">{checkIn || "Select date"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-[#667c74]">Check-out</dt>
-              <dd className="font-semibold text-[#183c2f]">{checkOut || "Select date"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-[#667c74]">Nights</dt>
-              <dd className="font-semibold text-[#183c2f]">{nights || "-"}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-[#eef3f1] pt-3">
-              <dt className="text-[#667c74]">Total</dt>
-              <dd className="font-semibold text-[#2e6f57]">
-                {isCheckingPrice && checkIn && checkOut ? "Checking..." : formatUsd(estimatedTotal)}
-              </dd>
-            </div>
-          </dl>
-
-          {isPriceUnavailable && (
-            <p className="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[12px] leading-5 text-amber-700">
-              Pricing is missing for {missingDates.length ? missingDates.join(", ") : "this date range"}.
-            </p>
-          )}
-
-          {formError && (
-            <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-[12px] leading-5 text-red-600">
-              {formError}
-            </p>
-          )}
-
-          <label className="mt-4 flex items-start gap-2 text-[13px] leading-5 text-[#656566] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={hasAcceptedRules}
-              onChange={(e) => setHasAcceptedRules(e.target.checked)}
-              className="mt-0.5 accent-[#2e6f57]"
-            />
-            <span>
-              I have read and accepted the{" "}
-              <Link
-                href="/house-rules"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#2e6f57] underline hover:no-underline"
-              >
-                House Rules
-              </Link>
-              .
-            </span>
-          </label>
-
-          <button
-            type="submit"
-            disabled={
-              isPending ||
-              isPriceUnavailable ||
-              !bookingForm.fullName.trim() ||
-              !bookingForm.email.trim() ||
-              !bookingForm.phone.trim() ||
-              !checkIn ||
-              !checkOut ||
-              checkOut <= checkIn ||
-              bookingForm.person > capacity ||
-              !hasAcceptedRules
-            }
-            className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[#2e6f57] text-[15px] font-semibold text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isPending ? "Processing..." : "Book & Pay Now"}
-          </button>
-        </div>
-      </form>
     </section>
   );
 }
@@ -988,35 +1146,35 @@ function ReviewsSection({ propertyId, propertyName }: { propertyId: string; prop
   });
 
   return (
-    <section className="mt-9 lg:mt-12">
-      <div className="rounded-2xl border border-[#dfe8e4] bg-white p-6 shadow-[0_4px_20px_rgba(31,77,61,0.04)] sm:p-8 lg:p-10">
+    <section className="space-y-6">
+      <div className="rounded-2xl border border-[#dfe8e4] bg-white p-5 sm:p-7 shadow-[0_2px_12px_rgba(24,60,47,0.03)]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-[22px] font-bold text-[#183c2f] sm:text-[26px]">Guest Reviews & Ratings</h2>
+          <h2 className="text-[18px] font-bold text-[#183c2f] sm:text-[22px]">Guest Reviews & Ratings</h2>
           <a
             href="#add-review-section"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#1F4D3D] px-6 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[#183c2f] hover:shadow sm:w-auto"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#1F4D3D] px-5 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#183c2f] hover:shadow sm:w-auto"
           >
             <span>★</span>
             <span>Write a Review</span>
           </a>
         </div>
-        
-        <div className="mt-6 grid gap-6 border-b border-[#edf2ef] pb-8 lg:grid-cols-[minmax(12rem,0.35fr)_minmax(16rem,0.65fr)] lg:items-center">
-          <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-3">
-              <span className="text-[52px] font-bold leading-none text-[#183c2f] lg:text-[68px]">
+
+        <div className="mt-5 grid gap-6 border-b border-[#edf2ef] pb-6 sm:grid-cols-[minmax(10rem,0.4fr)_1fr] sm:items-center">
+          <div className="text-center sm:text-left">
+            <div className="inline-flex items-center gap-2.5">
+              <span className="text-[44px] font-bold leading-none text-[#183c2f] sm:text-[54px]">
                 {totalReviews > 0 ? average.toFixed(1) : "New"}
               </span>
-              <span className="text-[34px] leading-none text-[#cfb072]">★</span>
+              <span className="text-[28px] leading-none text-[#cfb072]">★</span>
             </div>
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#f4f7f5] px-5 py-2 text-[13px] font-medium text-[#40544c]">
+            <p className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-[#f4f7f5] px-4 py-1.5 text-[12px] font-medium text-[#40544c]">
               {totalReviews > 0
                 ? `${totalReviews} verified ${totalReviews === 1 ? "review" : "reviews"}`
                 : "No reviews yet"}
             </p>
           </div>
 
-          <div className="grid gap-2.5">
+          <div className="grid gap-2">
             {ratingBars.map((bar) => (
               <div key={bar.score} className="grid grid-cols-[2.5rem_1fr_2rem] items-center gap-3 text-[12px] text-[#656566]">
                 <span className="font-medium">{bar.score} ★</span>
@@ -1033,14 +1191,14 @@ function ReviewsSection({ propertyId, propertyName }: { propertyId: string; prop
         </div>
 
         {/* Reviews List */}
-        <div className="mt-8">
+        <div className="mt-6">
           {isLoadingReviews ? (
-            <div className="flex h-32 items-center justify-center">
+            <div className="flex h-28 items-center justify-center">
               <span className="size-6 animate-spin rounded-full border-2 border-[#183c2f] border-t-transparent" />
             </div>
           ) : reviews.length === 0 ? (
-            <div className="rounded-xl bg-[#f8faf9] p-8 text-center">
-              <p className="text-[15px] font-medium text-[#183c2f]">
+            <div className="rounded-xl bg-[#f8faf9] p-6 text-center">
+              <p className="text-[14px] font-semibold text-[#183c2f]">
                 No reviews yet for this vacation home
               </p>
               <p className="mt-1 text-[13px] text-[#667c74]">
@@ -1048,7 +1206,7 @@ function ReviewsSection({ propertyId, propertyName }: { propertyId: string; prop
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-3.5 sm:grid-cols-2">
               {reviews.map((review) => (
                 <article
                   key={review.id}
@@ -1171,8 +1329,8 @@ function AddReviewForm({ propertyName }: { propertyName: string }) {
   };
 
   return (
-    <section id="add-review-section" className="mt-8 scroll-mt-24 rounded-2xl border border-[#dfe8e4] bg-white p-6 shadow-sm sm:p-8">
-      <h2 className="text-[22px] font-semibold leading-snug text-[#183c2f]">Leave a Review</h2>
+    <section id="add-review-section" className="scroll-mt-24 rounded-2xl border border-[#dfe8e4] bg-white p-5 sm:p-7 shadow-[0_2px_12px_rgba(24,60,47,0.03)]">
+      <h2 className="text-[18px] font-bold leading-snug text-[#183c2f] sm:text-[20px]">Leave a Review</h2>
       <p className="mt-2 text-[14px] leading-relaxed text-[#656566]">
         Completed your stay at <span className="font-semibold text-[#183c2f]">{propertyName}</span>? We&apos;d love to hear how your trip went! Please enter your booking confirmation number below. Reviews can only be submitted on or after your checkout date once your booking is completed. Your verified name and stay details will be automatically linked — no profile photo or sign-up needed.
       </p>
@@ -1286,5 +1444,5 @@ function AddReviewForm({ propertyName }: { propertyName: string }) {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-[20px] font-semibold leading-7 text-[#101d28]">{children}</h2>;
+  return <h2 className="text-[18px] font-bold leading-7 text-[#101d28] sm:text-[20px]">{children}</h2>;
 }

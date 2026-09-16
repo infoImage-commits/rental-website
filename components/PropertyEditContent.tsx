@@ -513,7 +513,7 @@ function FeaturesTab({
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-[14px] font-semibold text-[#183c2f]">Landmarks</h3>
+            <h3 className="text-[14px] font-semibold text-[#183c2f]">Info Area</h3>
             <p className="mt-1 text-[13px] text-[#667c74]">Choose nearby places to display on the rental page.</p>
           </div>
           <span className="rounded-full bg-[#f5f7f6] px-3 py-1 text-[12px] font-medium text-[#667c74]">
@@ -523,11 +523,11 @@ function FeaturesTab({
 
         {landmarksLoading ? (
           <div className="rounded-lg bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#8a9a94]">
-            Loading landmarks...
+            Loading info areas...
           </div>
         ) : sortedLandmarkItems.length === 0 ? (
           <div className="rounded-lg bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#8a9a94]">
-            No landmarks have been created yet.
+            No info areas have been created yet.
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

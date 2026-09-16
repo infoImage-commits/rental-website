@@ -7,6 +7,7 @@ import type {
   ReportPreviewData,
   ReportPreviewRequest,
   ReportType,
+  CancelledBookingsReport,
 } from "@/lib/types/report";
 
 const ACCEPT_HEADERS: Record<ReportFormat, string> = {
@@ -23,28 +24,31 @@ const REPORT_FILENAMES: Record<ReportType, string> = {
   arrival: "ArrivalReport",
   departure: "DepartureReport",
   "in-house": "InHouseReport",
+  cancelled: "CancelledBookingsReport",
 };
 
 function getReportEndpoint(request: ReportDownloadRequest) {
+  if (request.type === "cancelled") {
+    return `/api/reports/cancelled-bookings/${request.format}`;
+  }
   return `/api/reports/${request.type}/${request.format}`;
 }
 
 function getReportParams(request: ReportDownloadRequest) {
-  if (request.type === "in-house") {
-    return { from: request.from, to: request.to };
+  if (request.type === "in-house" || request.type === "cancelled") {
+    return { fromDate: request.from, toDate: request.to };
   }
-
-  return { date: request.date };
+  return { date: (request as any).date };
 }
 
 function getFallbackFilename(request: ReportDownloadRequest) {
   const extension = FILE_EXTENSIONS[request.format];
 
-  if (request.type === "in-house") {
+  if (request.type === "in-house" || request.type === "cancelled") {
     return `${REPORT_FILENAMES[request.type]}_${request.from}_to_${request.to}.${extension}`;
   }
 
-  return `${REPORT_FILENAMES[request.type]}_${request.date}.${extension}`;
+  return `${REPORT_FILENAMES[request.type]}_${(request as any).date}.${extension}`;
 }
 
 function parseContentDispositionFilename(header: string | undefined) {
@@ -157,7 +161,7 @@ export function useReportPreview(request: ReportPreviewRequest | null) {
       if (!request) return null;
 
       const params =
-        request.type === "in-house"
+        request.type === "in-house" || request.type === "cancelled"
           ? {
               from: request.from,
               to: request.to,
@@ -165,7 +169,7 @@ export function useReportPreview(request: ReportPreviewRequest | null) {
               pageSize: request.pageSize,
             }
           : {
-              date: request.date,
+              date: (request as any).date,
               pageNumber: request.pageNumber,
               pageSize: request.pageSize,
             };
@@ -185,6 +189,28 @@ export function useReportPreview(request: ReportPreviewRequest | null) {
       return data.data;
     },
     enabled: Boolean(request),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useCancelledBookingsPreview(params: { fromDate: string; toDate: string; pageNumber?: number; pageSize?: number } | null) {
+  return useQuery({
+    queryKey: ["reports", "cancelled", params],
+    queryFn: async () => {
+      if (!params) return null;
+      const { data } = await axiosInstance.get<{
+        data: CancelledBookingsReport | null;
+        isSuccess: boolean;
+        message: string | null;
+        errors: string[];
+        type: number;
+      }>("/api/reports/cancelled-bookings", { params });
+      if (!data.isSuccess || !data.data) {
+        throw new Error(data.errors?.[0] || data.message || "Could not load cancelled bookings report.");
+      }
+      return data.data;
+    },
+    enabled: Boolean(params),
     staleTime: 30 * 1000,
   });
 }

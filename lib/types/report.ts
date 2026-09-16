@@ -1,8 +1,8 @@
-export type ReportType = "arrival" | "departure" | "in-house";
+export type ReportType = "arrival" | "departure" | "in-house" | "cancelled";
 
 export type ReportFormat = "excel" | "pdf";
 
-export type SingleDateReportType = Exclude<ReportType, "in-house">;
+export type SingleDateReportType = Exclude<ReportType, "in-house" | "cancelled">;
 
 export type SingleDateReportRequest = {
   type: SingleDateReportType;
@@ -11,7 +11,7 @@ export type SingleDateReportRequest = {
 };
 
 export type RangeReportRequest = {
-  type: "in-house";
+  type: "in-house" | "cancelled";
   format: ReportFormat;
   from: string;
   to: string;
@@ -31,7 +31,7 @@ export type ReportPreviewRequest =
       pageSize?: number;
     }
   | {
-      type: "in-house";
+      type: "in-house" | "cancelled";
       from: string;
       to: string;
       pageNumber?: number;
@@ -76,3 +76,52 @@ export type ReportOption = {
   helper: string;
   dateLabel?: string;
 };
+
+export interface CancelledBookingsSummary {
+  totalRecords: number;
+  totalNights: number;
+  totalAmount: number;
+  totalPaid: number;
+  totalRemaining: number;
+  fullyPaidCancellations: number;
+  partiallyPaidCancellations: number;
+  unpaidCancellations: number;
+}
+
+export interface CancelledBookingItem {
+  bookingId: string;
+  bookingNumber: string;
+  customerName: string;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  propertyCode: string;
+  propertyName: string;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  bookingCreatedAt: string;
+  cancellationDate: string;
+  cancellationReason: string;
+  status: number;
+  statusName: string;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  paymentStatus: number;
+  paymentStatusName: string;
+  bookingSource: string;
+  bookingSourceName: string;
+}
+
+export interface CancelledBookingsReport {
+  fromDate: string;
+  toDate: string;
+  summary: CancelledBookingsSummary;
+  items: CancelledBookingItem[];
+  pageNumber: number | null;
+  pageSize: number | null;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}

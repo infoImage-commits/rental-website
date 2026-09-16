@@ -14,7 +14,7 @@ export interface TransferBookingRequest {
   phone: string;
 }
 
-export const BOOKING_SOURCES = ["Website", "PMP", "Booking", "Other"] as const;
+export const BOOKING_SOURCES = ["Website", "AirPnP", "Booking", "Hotelcom", "Expedia", "Other"] as const;
 
 export type BookingSource = (typeof BOOKING_SOURCES)[number];
 
@@ -36,9 +36,10 @@ export interface AdminCreatePropertyBookingRequest {
   checkOut: string;
   bookingSource: BookingSource;
   fullName: string;
-  email: string;
-  phone: string;
+  email: string | null;
+  phone: string | null;
   person: number;
+  payAmount?: number;
 }
 
 export interface AdminCreatePropertyBookingResponse {
@@ -140,6 +141,10 @@ export interface AdminBookingDetails {
   requiredPaymentAmount?: number;
   paidAmount?: number;
   remainingAmount?: number;
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
+  hasExtensions?: boolean;
+  extensionsCount?: number;
   createdAtUtc: string;
   confirmedAt: string | null;
   completedAt: string | null;
@@ -151,8 +156,8 @@ export interface AdminBookingDetails {
   };
   guest: {
     fullName: string;
-    email: string;
-    phone: string;
+    email: string | null;
+    phone: string | null;
     person: number;
   };
   stay: {
@@ -164,6 +169,11 @@ export interface AdminBookingDetails {
     totalPrice: number;
     pricePerNight: number;
   };
+}
+
+export interface CancelBookingPayload {
+  cause: string;
+  reason: string;
 }
 
 export interface BookingExtensionRequest {

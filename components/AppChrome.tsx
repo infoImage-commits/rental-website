@@ -8,6 +8,7 @@ import Header from "./Header";
 export default function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith("/admin");
+  const isSinglePropertyRoute = pathname.startsWith("/rent/") && pathname !== "/rent";
 
   if (isAdminRoute) {
     return children;
@@ -17,7 +18,7 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
     <>
       <Header />
       {children}
-      <FloatingWhatsApp />
+      {!isSinglePropertyRoute && <FloatingWhatsApp />}
       <Footer />
     </>
   );

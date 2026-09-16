@@ -8,6 +8,7 @@ import ReviewsSection from "../components/ReviewsSection";
 import FeaturedPropertiesSection from "../components/FeaturedPropertiesSection";
 import HeroSection from "../components/HeroSection";
 import HowItWorksSection from "../components/HowItWorksSection";
+import InfoAreaHomeSection from "../components/InfoAreaHomeSection";
 import RentalCtaSection from "../components/RentalCtaSection";
 import WhoWeAreSection from "../components/WhoWeAreSection";
 import { siteConfig } from "@/lib/site";
@@ -35,6 +36,7 @@ export default function Home() {
       <FacilitiesSection />
       <FeaturedPropertiesSection />
       <BestLocationsSection />
+      <InfoAreaHomeSection />
       <BlogInsightsSection />
       <WhoWeAreSection />
       <FaqSection />

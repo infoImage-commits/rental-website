@@ -12,8 +12,12 @@ import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/stores/authStor
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow the login page through unconditionally
-  if (pathname === "/admin/login") {
+  // Allow public auth pages through unconditionally
+  if (
+    pathname === "/admin/login" ||
+    pathname === "/admin/forgot-password" ||
+    pathname === "/admin/reset-password"
+  ) {
     return NextResponse.next();
   }
 

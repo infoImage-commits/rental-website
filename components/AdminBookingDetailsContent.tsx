@@ -1,10 +1,11 @@
 "use client";
 
+import React, { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useAdminPropertyBooking, useMarkPropertyBookingAsPaidAll } from "@/lib/hooks/useBooking";
-import { useBookingPayments } from "@/lib/hooks/usePayment";
-import type { BookingPayment } from "@/lib/hooks/usePayment";
+import { useAdminPropertyBooking, useMarkPropertyBookingAsPaidAll, useCancelAdminBooking } from "@/lib/hooks/useBooking";
+import { useBookingPayments, useUpdateAdminPayment, usePaymentHistory } from "@/lib/hooks/usePayment";
+import type { BookingPayment, PaymentHistoryItem } from "@/lib/hooks/usePayment";
 import { formatUsd } from "@/lib/utils/currency";
 
 function formatDate(value?: string | null) {
@@ -59,6 +60,9 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
     refetch: refetchPayments,
   } = useBookingPayments(bookingId);
   const { mutate: markAsPaidAll, isPending: isMarkingPaid } = useMarkPropertyBookingAsPaidAll();
+  const { mutate: cancelBooking, isPending: isCancelling } = useCancelAdminBooking();
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   if (isLoading) {
     return (
@@ -99,6 +103,30 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
     });
   }
 
+  function handleCancel() {
+    if (!cancelReason.trim()) {
+      toast.error("Please enter a cancellation reason.");
+      return;
+    }
+    cancelBooking(
+      { bookingId, payload: { cause: cancelReason.trim(), reason: cancelReason.trim() } },
+      {
+        onSuccess: () => {
+          toast.success("Booking cancelled successfully.");
+          setShowCancelForm(false);
+          setCancelReason("");
+          refetchBooking();
+        },
+        onError: (error) => {
+          toast.error(getApiErrorMessage(error, "Could not cancel this booking."));
+        },
+      }
+    );
+  }
+
+  const isCancelled = booking.statusName.toLowerCase().includes("cancel");
+  const canCancel = !isCancelled && booking.bookingSource !== "Website";
+
   return (
     <div className="w-full min-w-0">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -113,6 +141,15 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
             Property booking details, guest stay, and deposit balance.
           </p>
         </div>
+        {canCancel && (
+          <button
+            type="button"
+            onClick={() => setShowCancelForm(true)}
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-white px-5 text-[13px] font-semibold text-red-600 shadow-sm transition hover:border-red-300 hover:bg-red-50"
+          >
+            Cancel Booking
+          </button>
+        )}
       </header>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.8fr)]">
@@ -127,6 +164,15 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
               <Detail label="Created" value={formatDateTime(booking.createdAtUtc)} />
               <Detail label="Confirmed" value={formatDateTime(booking.confirmedAt)} />
               <Detail label="Completed" value={formatDateTime(booking.completedAt)} />
+              {isCancelled && booking.cancelledAt && (
+                <Detail label="Cancelled" value={formatDateTime(booking.cancelledAt)} />
+              )}
+              {isCancelled && booking.cancellationReason && (
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <dt className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#8a9a94]">Cancellation Reason</dt>
+                  <dd className="mt-1 text-[14px] text-[#414847]">{booking.cancellationReason}</dd>
+                </div>
+              )}
             </div>
           </Section>
 
@@ -141,8 +187,8 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
           <Section title="Guest">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Detail label="Full Name" value={booking.guest.fullName} strong />
-              <Detail label="Email" value={booking.guest.email} />
-              <Detail label="Phone" value={booking.guest.phone} />
+              <Detail label="Email" value={booking.guest.email ?? "-"} />
+              <Detail label="Phone" value={booking.guest.phone ?? "-"} />
               <Detail label="Guests" value={String(booking.guest.person)} />
             </div>
           </Section>
@@ -171,7 +217,57 @@ export default function AdminBookingDetailsContent({ id }: { id: string }) {
       </div>
 
       {(isLoadingPayments || isPaymentsError || payments.length > 0) && (
-        <PaymentsSection payments={payments} isLoading={isLoadingPayments} isError={isPaymentsError} />
+        <PaymentsSection 
+          payments={payments} 
+          isLoading={isLoadingPayments} 
+          isError={isPaymentsError} 
+          canEdit={booking.bookingSource !== "Website"}
+        />
+      )}
+
+      {/* ─── Cancel Booking Modal ─── */}
+      {showCancelForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#183c2f]/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-[18px] font-semibold text-[#183c2f]">Cancel Booking</h3>
+            <p className="mt-2 text-[14px] text-[#667c74]">
+              Are you sure you want to cancel this booking? Please provide a reason.
+            </p>
+            <div className="mt-5">
+              <label className="block">
+                <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Reason</span>
+                <input
+                  type="text"
+                  required
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="e.g., Guest requested cancellation"
+                  className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none placeholder:text-[#b8c8de] transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+                />
+              </label>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelForm(false);
+                    setCancelReason("");
+                  }}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-[#dfe8e4] px-5 text-[13px] font-semibold text-[#667c74] transition hover:bg-[#f5f7f6]"
+                >
+                  Nevermind
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={isCancelling}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
+                >
+                  {isCancelling ? "Cancelling..." : "Confirm Cancel"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -288,11 +384,46 @@ function PaymentsSection({
   payments,
   isLoading,
   isError,
+  canEdit,
 }: {
   payments: BookingPayment[];
   isLoading: boolean;
   isError: boolean;
+  canEdit: boolean;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState<number | "">("");
+  const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
+  const { mutate: updatePayment, isPending } = useUpdateAdminPayment();
+
+  function handleEdit(payment: BookingPayment) {
+    setEditingId(payment.id);
+    setEditAmount(payment.amount);
+  }
+
+  function handleSave(payment: BookingPayment) {
+    const amount = Number(editAmount) || 0;
+    updatePayment(
+      {
+        paymentId: payment.id,
+        payload: {
+          bookingId: payment.bookingId,
+          payAmount: amount,
+          paidAmount: amount,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Payment updated successfully.");
+          setEditingId(null);
+        },
+        onError: (error) => {
+          toast.error(getApiErrorMessage(error, "Could not update this payment."));
+        },
+      }
+    );
+  }
+
   return (
     <div className="mt-6">
       <Section title="Payments">
@@ -313,30 +444,118 @@ function PaymentsSection({
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Created</th>
                   <th className="px-4 py-3">Paid</th>
+                  {canEdit && <th className="px-4 py-3 text-right">Actions</th>}
+                  <th className="px-4 py-3 text-right">History</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#edf2ef] text-[13px]">
-                {payments.map((payment) => (
-                  <tr key={payment.id} className="transition hover:bg-[#f8faf9]">
-                    <td className="px-4 py-3 font-semibold text-[#183c2f]">{payment.paymentTypeName}</td>
-                    <td className="px-4 py-3 font-semibold text-[#183c2f]">{money(payment.amount)}</td>
-                    <td className="px-4 py-3 text-[#414847]">{payment.providerName}</td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-[#414847]">{payment.payPalOrderId || "-"}</td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-[#414847]">{payment.transactionId || "-"}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold ${statusClass(payment.statusName)}`}>
-                        {payment.statusName}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[#667c74]">{formatDateTime(payment.createdAtUtc)}</td>
-                    <td className="px-4 py-3 text-[#667c74]">{formatDateTime(payment.paidAt)}</td>
-                  </tr>
-                ))}
+                  {payments.map((payment) => {
+                  const isEditing = editingId === payment.id;
+                  const isViewingHistory = viewingHistoryId === payment.id;
+                  return (
+                    <React.Fragment key={payment.id}>
+                    <tr className="transition hover:bg-[#f8faf9]">
+                      <td className="px-4 py-3 font-semibold text-[#183c2f]">{payment.paymentTypeName}</td>
+                      <td className="px-4 py-3 font-semibold text-[#183c2f]">
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={editAmount.toString()}
+                            onChange={(e) => setEditAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                            className="h-8 w-24 rounded-lg border border-[#dfe8e4] bg-white px-2 text-[13px] text-[#183c2f] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+                            autoFocus
+                          />
+                        ) : (
+                          money(payment.amount)
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-[#414847]">{payment.providerName}</td>
+                      <td className="px-4 py-3 font-mono text-[12px] text-[#414847]">{payment.payPalOrderId || "-"}</td>
+                      <td className="px-4 py-3 font-mono text-[12px] text-[#414847]">{payment.transactionId || "-"}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold ${statusClass(payment.statusName)}`}>
+                          {payment.statusName}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[#667c74]">{formatDateTime(payment.createdAtUtc)}</td>
+                      <td className="px-4 py-3 text-[#667c74]">{formatDateTime(payment.paidAt)}</td>
+                      {canEdit && (
+                        <td className="px-4 py-3 text-right">
+                          {isEditing ? (
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => setEditingId(null)}
+                                disabled={isPending}
+                                className="text-[12px] font-semibold text-[#667c74] hover:underline"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleSave(payment)}
+                                disabled={isPending}
+                                className="text-[12px] font-semibold text-[#2e6f57] hover:underline disabled:opacity-50"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleEdit(payment)}
+                              className="text-[12px] font-semibold text-[#2e6f57] hover:underline"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </td>
+                      )}
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => setViewingHistoryId(isViewingHistory ? null : payment.id)}
+                          className="text-[12px] font-semibold text-[#667c74] hover:underline"
+                        >
+                          {isViewingHistory ? "Hide" : "History"}
+                        </button>
+                      </td>
+                    </tr>
+                    {isViewingHistory && (
+                      <tr key={`history-${payment.id}`}>
+                        <td colSpan={canEdit ? 10 : 9} className="bg-[#f8faf9] px-4 py-3">
+                          <PaymentHistoryRows paymentId={payment.id} />
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </Section>
+    </div>
+  );
+}
+
+function PaymentHistoryRows({ paymentId }: { paymentId: string }) {
+  const { data: history = [], isLoading, isError } = usePaymentHistory(paymentId);
+
+  if (isLoading) return <p className="text-[12px] text-[#8a9a94]">Loading history...</p>;
+  if (isError) return <p className="text-[12px] text-red-600">Could not load history.</p>;
+  if (history.length === 0) return <p className="text-[12px] text-[#8a9a94]">No history available.</p>;
+
+  return (
+    <div className="space-y-1">
+      {history.map((item: PaymentHistoryItem) => (
+        <div key={item.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-white px-3 py-2 text-[12px]">
+          <span className="font-semibold text-[#183c2f]">
+            {formatUsd(item.previousAmount)} → {formatUsd(item.newAmount)}
+          </span>
+          <span className="text-[#667c74]">by <span className="font-medium text-[#414847]">{item.changedBy}</span></span>
+          <span className="text-[#8a9a94]">
+            {new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(item.changedAt))}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
