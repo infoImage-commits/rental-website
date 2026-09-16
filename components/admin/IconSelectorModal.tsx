@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import * as LucideIcons from "lucide-react";
+import DynamicAmenityIcon from "@/components/DynamicAmenityIcon";
 
-const AVAILABLE_ICONS = [
+const SVG_ICONS = [
   "air-conditioner",
   "amenities-title",
   "bar-restaurant",
@@ -39,6 +40,14 @@ const AVAILABLE_ICONS = [
   "wireless-internet",
 ];
 
+// Extract valid Lucide icon components
+const LUCIDE_ICON_KEYS = Object.keys(LucideIcons).filter(
+  (key) => typeof (LucideIcons as any)[key] === "function" && key !== "createLucideIcon" && key !== "icons" && key !== "useLucideContext"
+);
+const LUCIDE_ICONS = LUCIDE_ICON_KEYS.map((key) => `lucide:${key}`);
+
+const AVAILABLE_ICONS = [...SVG_ICONS, ...LUCIDE_ICONS];
+
 export default function IconSelectorModal({
   isOpen,
   onClose,
@@ -57,6 +66,9 @@ export default function IconSelectorModal({
   const filteredIcons = AVAILABLE_ICONS.filter((icon) =>
     icon.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Limit to 100 icons for performance, user can search to narrow down
+  const visibleIcons = filteredIcons.slice(0, 100);
 
   return (
     <>
@@ -81,25 +93,30 @@ export default function IconSelectorModal({
           </button>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-2">
           <input
             type="text"
-            placeholder="Search icons..."
+            placeholder="Search icons... (e.g. bed, tv, lucide:wifi)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 w-full rounded-lg border border-[#e6ece9] bg-white px-3 text-[14px] text-[#1F4D3D] outline-none transition placeholder:text-[#aab4b0] focus:border-[#1F4D3D] focus:ring-2 focus:ring-[#1F4D3D]/10"
           />
         </div>
 
+        {filteredIcons.length > 100 && (
+          <p className="mb-4 text-xs text-gray-500 text-center">
+            Showing 100 of {filteredIcons.length} matching icons. Keep typing to search.
+          </p>
+        )}
+
         <div className="flex-1 overflow-y-auto pr-2">
-          {filteredIcons.length === 0 ? (
+          {visibleIcons.length === 0 ? (
             <p className="py-8 text-center text-[14px] text-gray-500">
               No icons found.
             </p>
           ) : (
             <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
-              {/* Add a default star icon option if they want one */}
-              {filteredIcons.map((icon) => (
+              {visibleIcons.map((icon) => (
                 <button
                   key={icon}
                   type="button"
@@ -110,16 +127,11 @@ export default function IconSelectorModal({
                       : "border-[#e6ece9]"
                   }`}
                 >
-                  <div className="relative size-8 shrink-0">
-                    <Image
-                      src={`/icons/amenities/${icon}.svg`}
-                      alt={icon}
-                      fill
-                      className="object-contain"
-                    />
+                  <div className="relative size-8 shrink-0 flex items-center justify-center text-[#667c74]">
+                    <DynamicAmenityIcon icon={icon} width={28} height={28} />
                   </div>
                   <span className="text-center text-[11px] font-medium text-[#667c74] break-all">
-                    {icon.replace(/-/g, " ")}
+                    {icon.replace("lucide:", "").replace(/-/g, " ")}
                   </span>
                 </button>
               ))}

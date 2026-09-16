@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import * as LucideIcons from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import PropertyImageGallery from "./PropertyImageGallery";
 import PropertyBookingCard from "./PropertyBookingCard";
@@ -88,12 +89,7 @@ function normalizeLookupKey(value: string) {
   return value.trim().toLowerCase();
 }
 
-function resolveAmenityIcon(icon?: string | null) {
-  if (!icon || icon.trim() === "") return "/icons/amenities/amenities-title.svg";
-  const trimmed = icon.trim();
-  if (trimmed.startsWith("http") || trimmed.startsWith("/")) return trimmed;
-  return `/icons/amenities/${trimmed}.svg`;
-}
+import DynamicAmenityIcon from "./DynamicAmenityIcon";
 
 export default function SinglePropertyPageContent({ id }: { id: string }) {
   const { data: property, isLoading } = usePropertyById(id);
@@ -859,9 +855,8 @@ function AmenitiesSection({
         {categories?.map((cat) => (
           <div key={cat.categoryName}>
             <h3 className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-[#f5f7f6] px-3 text-[14px] font-semibold text-[#183c2f]">
-              <Image
-                src={resolveAmenityIcon(categoryIconByName.get(normalizeLookupKey(cat.categoryName)))}
-                alt=""
+              <DynamicAmenityIcon
+                icon={categoryIconByName.get(normalizeLookupKey(cat.categoryName))}
                 width={18}
                 height={18}
                 className="size-[18px] object-contain"
@@ -876,9 +871,8 @@ function AmenitiesSection({
 
                 return (
                   <li key={item} className="flex items-center gap-2.5">
-                    <Image
-                      src={resolveAmenityIcon(icon)}
-                      alt=""
+                    <DynamicAmenityIcon
+                      icon={icon}
                       width={16}
                       height={16}
                       className="size-4 shrink-0 object-contain"

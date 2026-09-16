@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import DynamicAmenityIcon from "./DynamicAmenityIcon";
 import IconSelectorModal from "@/components/admin/IconSelectorModal";
 import {
   usePropertyBuyingCategories,
@@ -176,7 +177,7 @@ function CategoryFormPanel({
               </button>
               {icon && (
                 <div className="flex items-center gap-2 rounded-full border border-[#dfe8e4] bg-white px-3 py-1">
-                  <img src={`/icons/amenities/${icon}.svg`} alt="icon" className="h-5 w-5 object-contain" />
+                  <DynamicAmenityIcon icon={icon} className="h-5 w-5 object-contain" />
                   <span className="text-[12px] text-[#667c74]">{icon}</span>
                   <button type="button" onClick={() => setIcon("")} className="ml-1 text-[#8a9a94] hover:text-red-500">✕</button>
                 </div>
@@ -208,7 +209,7 @@ function CategoryFormPanel({
               </button>
               {defaultIcon && (
                 <div className="flex items-center gap-2 rounded-full border border-[#dfe8e4] bg-white px-3 py-1">
-                  <img src={`/icons/amenities/${defaultIcon}.svg`} alt="icon" className="h-5 w-5 object-contain" />
+                  <DynamicAmenityIcon icon={defaultIcon} className="h-5 w-5 object-contain" />
                   <span className="text-[12px] text-[#667c74]">{defaultIcon}</span>
                   <button type="button" onClick={() => setDefaultIcon("")} className="ml-1 text-[#8a9a94] hover:text-red-500">✕</button>
                 </div>
@@ -412,7 +413,7 @@ export default function PropertyBuyingCategoriesContent() {
                       <span className="flex h-8 min-w-[68px] items-center justify-center rounded-lg bg-[#f5f7f6] font-mono text-[11px] text-[#2e6f57]">
                         {cat.defaultIcon || cat.icon ? (
                           <div className="flex justify-center">
-                            <img src={`/icons/amenities/${cat.defaultIcon || cat.icon}.svg`} alt="icon" className="h-5 w-5 object-contain" />
+                            <DynamicAmenityIcon icon={cat.defaultIcon || cat.icon} className="h-5 w-5 object-contain" />
                           </div>
                         ) : (
                           "—"
