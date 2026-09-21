@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useCreateAdminPropertyBooking, useInHouseBookings } from "@/lib/hooks/useBooking";
-import { useProperties, usePropertyDailyPrices } from "@/lib/hooks/useProperties";
+import { useBulkConfigureDailyPrices, useProperties, usePropertyDailyPrices } from "@/lib/hooks/useProperties";
 import { BOOKING_SOURCES } from "@/lib/types/booking";
 import type { BookingSource } from "@/lib/types/booking";
 import { formatUsd } from "@/lib/utils/currency";
@@ -14,6 +14,26 @@ function getDateOffset(days: number) {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return date.toISOString().slice(0, 10);
+}
+
+function formatLocalDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return year + "-" + month + "-" + day;
+}
+
+function addDays(dateString: string, days: number) {
+  const date = new Date(dateString + "T00:00:00");
+  date.setDate(date.getDate() + days);
+  return formatLocalDate(date);
+}
+
+function getStayNights(checkIn: string, checkOut: string) {
+  if (!checkIn || !checkOut || checkOut <= checkIn) return 0;
+  const start = new Date(checkIn + "T00:00:00");
+  const end = new Date(checkOut + "T00:00:00");
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 86_400_000));
 }
 
 function getApiErrorMessage(error: unknown, fallback: string) {
@@ -47,6 +67,10 @@ export default function AdminCreateBookingContent() {
   const [phone, setPhone] = useState("");
   const [person, setPerson] = useState(1);
   const [payAmount, setPayAmount] = useState<number | "">("");
+  const [stayNightlyPrice, setStayNightlyPrice] = useState<number | "">("");
+  const [stayPriceDirty, setStayPriceDirty] = useState(false);
+  const [priceMessage, setPriceMessage] = useState("");
+  const [priceError, setPriceError] = useState("");
   const [formError, setFormError] = useState("");
 
   const { data: propertiesResponse, isLoading: isLoadingProperties } = useProperties({
@@ -55,7 +79,7 @@ export default function AdminCreateBookingContent() {
   });
 
   // Only fetch in-house data when dates are valid to avoid repeated bad requests
-  const validDates = checkIn && checkOut && checkOut > checkIn;
+  const validDates = Boolean(checkIn && checkOut && checkOut > checkIn);
   const { data: operationalData, isLoading: isLoadingStatus } = useInHouseBookings(
     validDates ? { from: checkIn, to: checkOut } : {}
   );
@@ -68,6 +92,7 @@ export default function AdminCreateBookingContent() {
   });
 
   const { mutate: createBooking, isPending } = useCreateAdminPropertyBooking();
+  const { mutateAsync: updateStayPrices, isPending: isUpdatingStayPrices } = useBulkConfigureDailyPrices();
 
   const properties = propertiesResponse?.items ?? [];
   const selectedProperty = properties.find((property) => property.id === propertyId);
@@ -115,8 +140,42 @@ export default function AdminCreateBookingContent() {
     return total > 0 ? total : null;
   }, [dailyPricesData, checkIn, checkOut]);
 
+  const stayNights = useMemo(() => getStayNights(checkIn, checkOut), [checkIn, checkOut]);
+  const stayPriceEndDate = validDates ? addDays(checkOut, -1) : "";
+  const savedStayNightlyPrice = useMemo(() => {
+    if (!dailyPricesData?.prices?.length || !validDates || stayNights === 0) return null;
+
+    const checkInDate = new Date(checkIn + "T00:00:00");
+    const checkOutDate = new Date(checkOut + "T00:00:00");
+    const stayPrices = dailyPricesData.prices.filter((price) => {
+      const priceDate = new Date(price.date);
+      return priceDate >= checkInDate && priceDate < checkOutDate;
+    });
+    const firstPrice = stayPrices[0]?.price;
+
+    if (stayPrices.length !== stayNights || firstPrice === undefined) return null;
+    return stayPrices.every((price) => price.price === firstPrice) ? firstPrice : null;
+  }, [dailyPricesData, checkIn, checkOut, validDates, stayNights]);
   const paidAmountNum = Number(payAmount) || 0;
   const remaining = computedTotal !== null ? Math.max(0, computedTotal - paidAmountNum) : null;
+
+  useEffect(() => {
+    setStayPriceDirty(false);
+    setPriceMessage("");
+    setPriceError("");
+  }, [selectedProperty?.id, checkIn, checkOut]);
+
+  useEffect(() => {
+    if (stayPriceDirty || isLoadingPrices) return;
+    setStayNightlyPrice(savedStayNightlyPrice ?? selectedProperty?.basePrice ?? "");
+    setPriceMessage("");
+    setPriceError("");
+  }, [isLoadingPrices, savedStayNightlyPrice, selectedProperty?.basePrice, stayPriceDirty]);
+
+  useEffect(() => {
+    setPriceMessage("");
+    setPriceError("");
+  }, [checkIn, checkOut]);
 
   function validateForm() {
     if (!propertyId) return "Choose a property.";
@@ -167,6 +226,54 @@ export default function AdminCreateBookingContent() {
         },
       }
     );
+  }
+
+  async function handleUpdateStayPrices() {
+    setPriceMessage("");
+    setPriceError("");
+
+    if (!propertyId) {
+      setPriceError("Choose a property first.");
+      return;
+    }
+
+    if (!validDates || !stayPriceEndDate) {
+      setPriceError("Choose a valid check-in and check-out date.");
+      return;
+    }
+
+    const price = Number(stayNightlyPrice);
+    if (!Number.isFinite(price) || price < 0) {
+      setPriceError("Enter a valid nightly price.");
+      return;
+    }
+
+    try {
+      const result = await updateStayPrices({
+        propertyId,
+        payload: {
+          startDate: checkIn,
+          durationInMonths: null,
+          endDate: stayPriceEndDate,
+          price,
+        },
+      });
+
+      if (!result.isSuccess) {
+        const message = result.errors?.[0] || result.message || "Could not update prices for these dates.";
+        setPriceError(message);
+        toast.error(message);
+        return;
+      }
+
+      const message = result.message || "Prices updated for the selected stay dates.";
+      setPriceMessage(message);
+      toast.success(message);
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Could not update prices for these dates.");
+      setPriceError(message);
+      toast.error(message);
+    }
   }
 
   return (
@@ -281,6 +388,64 @@ export default function AdminCreateBookingContent() {
             />
           </label>
         </section>
+
+        {selectedProperty && (
+          <section className="grid gap-4 rounded-xl border border-[#dfe8e4] bg-[#f8fbfa] p-4 lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end">
+            <div>
+              <h2 className="text-[15px] font-semibold text-[#183c2f]">Update Stay Prices</h2>
+              <p className="mt-1 text-[13px] leading-5 text-[#667c74]">
+                Apply a nightly price from {checkIn || "check-in"} to {stayPriceEndDate || "the last night"} before
+                creating this booking. Checkout stays exclusive.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-[12px] font-semibold text-[#667c74]">
+                <span className="rounded-full bg-white px-3 py-1 ring-1 ring-[#dfe8e4]">
+                  {stayNights || 0} night{stayNights === 1 ? "" : "s"}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 ring-1 ring-[#dfe8e4]">
+                  Current total: {isLoadingPrices && validDates ? "Loading..." : computedTotal !== null ? formatUsd(computedTotal) : "Not set"}
+                </span>
+              </div>
+            </div>
+            <label className="block">
+              <span className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Nightly Price</span>
+              <input
+                type="number"
+                min={0}
+                value={stayNightlyPrice.toString()}
+                onChange={(event) => {
+                  setStayPriceDirty(true);
+                  setStayNightlyPrice(event.target.value === "" ? "" : Number(event.target.value));
+                }}
+                placeholder="0"
+                className="h-11 w-full rounded-xl border border-[#dfe8e4] bg-white px-4 text-[14px] text-[#183c2f] outline-none placeholder:text-[#b8c8de] transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
+              />
+              <span className="mt-1.5 block text-[12px] text-[#8a9a94]">
+                {savedStayNightlyPrice !== null
+                  ? "Loaded from the selected stay dates."
+                  : "Using the base price until every selected night has one saved price."}
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={handleUpdateStayPrices}
+              disabled={isUpdatingStayPrices || !validDates}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-[#183c2f] px-5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isUpdatingStayPrices ? "Updating..." : "Update Prices"}
+            </button>
+            {(priceMessage || priceError) && (
+              <p
+                className={`rounded-xl px-4 py-3 text-[13px] leading-5 lg:col-span-3 ${
+                  priceError
+                    ? "border border-red-100 bg-red-50 text-red-600"
+                    : "border border-emerald-100 bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                {priceError || priceMessage}
+              </p>
+            )}
+          </section>
+        )}
 
         <section className="grid gap-4 lg:grid-cols-4">
           <TextField label="Guest Name" value={fullName} onChange={setFullName} placeholder="Full name" />

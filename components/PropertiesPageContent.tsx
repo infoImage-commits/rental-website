@@ -1,9 +1,10 @@
 "use client";
 
 import { usePublicRentProperties } from "@/lib/hooks/useProperties";
-import type { PropertyListItem } from "@/lib/types/property";
+import { PropertyType, type PropertyListItem } from "@/lib/types/property";
 import { slugify } from "@/lib/utils/slugify";
 import { API_BASE_URL } from "@/lib/api/config";
+import { useCategories } from "@/lib/hooks/useCategory";
 import { formatUsd } from "@/lib/utils/currency";
 import Image from "next/image";
 import Link from "next/link";
@@ -64,6 +65,10 @@ function PropertiesPageInner() {
     const from = (formData.get("from") as string)?.trim();
     const to = (formData.get("to") as string)?.trim();
     const minCapacity = (formData.get("minCapacity") as string)?.trim();
+    const city = formData.get("city") as string;
+    const minPrice = formData.get("minPrice") as string;
+    const maxPrice = formData.get("maxPrice") as string;
+    const propertyType = formData.get("propertyType") as string;
 
     if (from && to) {
       newParams.append("from", from);
@@ -76,6 +81,18 @@ function PropertiesPageInner() {
     }
 
     if (minCapacity) newParams.append("MinCapacity", minCapacity);
+    if (city) newParams.append("CategoryId", city);
+    if (propertyType) newParams.append("PropertyType", propertyType);
+    if (minPrice) newParams.append("MinPrice", minPrice);
+    if (maxPrice) newParams.append("MaxPrice", maxPrice);
+
+    const isAvailable = formData.get("isAvailable") === "on";
+    if (isAvailable) newParams.append("IsAvailable", "true");
+
+    const views = ["SeaView", "PoolView", "GardenView", "MountainView", "CityView"];
+    views.forEach((view) => {
+      if (formData.get(`has${view}`) === "on") newParams.append(`Has${view}`, "true");
+    });
 
     router.push(href(`/rent?${newParams.toString()}`));
     setMobileFiltersOpen(false);
@@ -232,7 +249,19 @@ function FilterForm({
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const { t } = useI18n();
+  const { data: categories } = useCategories();
   const minCapacityVal = paramsObj.MinCapacity || "";
+  const categoryIdParam = paramsObj.CategoryId || paramsObj.categoryId || "";
+  const cityVal = categoryIdParam;
+  const propertyTypeVal = paramsObj.PropertyType || paramsObj.propertyType || "";
+  const minPriceVal = paramsObj.MinPrice || "";
+  const maxPriceVal = paramsObj.MaxPrice || "";
+  const isAvailableVal = paramsObj.IsAvailable === "true";
+  const hasSeaViewVal = paramsObj.HasSeaView === "true";
+  const hasPoolViewVal = paramsObj.HasPoolView === "true";
+  const hasGardenViewVal = paramsObj.HasGardenView === "true";
+  const hasMountainViewVal = paramsObj.HasMountainView === "true";
+  const hasCityViewVal = paramsObj.HasCityView === "true";
 
   const fromVal = paramsObj.from || "";
   const toVal = paramsObj.to || "";
@@ -271,6 +300,15 @@ function FilterForm({
     setFromDate("");
     setToDate("");
   };
+
+  const checkboxes = [
+    { name: "isAvailable", label: t("rent.availableNow"), defaultChecked: isAvailableVal },
+    { name: "hasSeaView", label: t("rent.seaView"), defaultChecked: hasSeaViewVal },
+    { name: "hasPoolView", label: t("rent.poolView"), defaultChecked: hasPoolViewVal },
+    { name: "hasGardenView", label: t("rent.gardenView"), defaultChecked: hasGardenViewVal },
+    { name: "hasMountainView", label: t("rent.mountainView"), defaultChecked: hasMountainViewVal },
+    { name: "hasCityView", label: t("rent.cityView"), defaultChecked: hasCityViewVal },
+  ];
 
   return (
     <form onSubmit={onSubmit} className="rounded-[20px] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)] lg:p-6">
@@ -319,9 +357,49 @@ function FilterForm({
         </div>
 
         <label className="block">
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">{t("rent.location")}</span>
+          <select name="city" defaultValue={cityVal} className={inputCls}>
+            <option value="">{t("rent.anyLocation")}</option>
+            {categories?.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">{t("rent.propertyType")}</span>
+          <select name="propertyType" defaultValue={propertyTypeVal} className={inputCls}>
+            <option value="">{t("rent.all")}</option>
+            <option value={PropertyType.Studio}>{t("home.categories.studio")}</option>
+            <option value={PropertyType.oneBedroom}>{t("home.categories.oneBedroom")}</option>
+            <option value={PropertyType.twoBedroom}>{t("home.categories.twoBedroom")}</option>
+          </select>
+        </label>
+        <div>
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">{t("rent.priceNight")}</span>
+          <div className="flex items-center gap-2">
+            <input type="number" name="minPrice" defaultValue={minPriceVal} placeholder={t("rent.min")} min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
+            <span className="shrink-0 text-[#bbb]">-</span>
+            <input type="number" name="maxPrice" defaultValue={maxPriceVal} placeholder={t("rent.max")} min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
+          </div>
+        </div>
+        <label className="block">
           <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">{t("rent.adults")}</span>
           <input type="number" name="minCapacity" defaultValue={minCapacityVal} placeholder={t("rent.any")} min="1" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
         </label>
+        <div className="flex flex-col gap-2.5 border-t border-[#f0f0f0] pt-4">
+          <span className="text-[12px] font-semibold uppercase tracking-wide text-[#656566]">{t("rent.amenitiesViews")}</span>
+          {checkboxes.map(({ name, label, defaultChecked }) => (
+            <label key={name} className="flex cursor-pointer items-center gap-2.5 text-[14px] text-[#414847]">
+              <input
+                type="checkbox"
+                name={name}
+                defaultChecked={defaultChecked}
+                className="size-4 rounded border-[#d0d0d0] accent-[#2e6f57]"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
         <button
           type="submit"
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2e6f57] text-[15px] font-bold text-white transition hover:bg-[#255f49] active:scale-[0.98]"
