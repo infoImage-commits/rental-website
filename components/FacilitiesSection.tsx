@@ -1,19 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useI18n } from "./I18nProvider";
 
 interface FacilityItem {
   id: string;
-  title: string;
-  subtitle: string;
+  translationIndex: number;
   icon: (props: { className?: string }) => React.JSX.Element;
 }
 
 const facilities: FacilityItem[] = [
   {
     id: "wifi",
-    title: "Free High-Speed Wi-Fi",
-    subtitle: "Fast coverage in all rooms",
+    translationIndex: 0,
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
@@ -34,8 +33,7 @@ const facilities: FacilityItem[] = [
   },
   {
     id: "security",
-    title: "24/7 Security & Support",
-    subtitle: "Round-the-clock peace of mind",
+    translationIndex: 1,
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
@@ -54,8 +52,7 @@ const facilities: FacilityItem[] = [
   },
   {
     id: "ac",
-    title: "Air Conditioning",
-    subtitle: "Climate control in every unit",
+    translationIndex: 2,
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
@@ -78,8 +75,7 @@ const facilities: FacilityItem[] = [
   },
   {
     id: "beach",
-    title: "Nearby Beaches",
-    subtitle: "Only 10-15 minutes walk",
+    translationIndex: 3,
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
@@ -101,8 +97,7 @@ const facilities: FacilityItem[] = [
   },
   {
     id: "pool",
-    title: "Swimming Pool",
-    subtitle: "Crystal clean resort pools",
+    translationIndex: 4,
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
@@ -127,8 +122,7 @@ const facilities: FacilityItem[] = [
   },
   {
     id: "parking",
-    title: "Free On-Site Parking",
-    subtitle: "Dedicated vehicle parking",
+    translationIndex: 5,
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
@@ -147,8 +141,7 @@ const facilities: FacilityItem[] = [
   },
   {
     id: "shuttle",
-    title: "Airport Shuttle Available",
-    subtitle: "Private airport transfers",
+    translationIndex: 6,
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
@@ -171,8 +164,7 @@ const facilities: FacilityItem[] = [
   },
   {
     id: "kitchen",
-    title: "Fully Equipped Kitchen",
-    subtitle: "Cookware, fridge & stove",
+    translationIndex: 7,
     icon: ({ className = "size-6" }) => (
       <svg
         className={className}
@@ -194,6 +186,9 @@ const facilities: FacilityItem[] = [
 ];
 
 export default function FacilitiesSection() {
+  const { t, tArray } = useI18n();
+  const facilityCopy = tArray<[string, string]>("home.facilities.items");
+
   return (
     <section className="relative z-20 bg-white px-5 py-12 font-[var(--font-poppins)] sm:px-8 sm:py-16 lg:px-20 lg:py-20">
       <div className="mx-auto max-w-[1280px]">
@@ -206,14 +201,14 @@ export default function FacilitiesSection() {
           className="mx-auto max-w-3xl text-center"
         >
           <p className="text-[13px] font-semibold uppercase tracking-[0.25em] text-[#d59e52] sm:text-[14px]">
-            Every Stay Includes
+            {t("home.facilities.eyebrow")}
           </p>
           <h2 className="mt-2 text-[26px] font-bold leading-tight text-[#183c2f] sm:text-[32px] lg:text-[38px]">
-            Standard Facilities &amp; Amenities
+            {t("home.facilities.title")}
           </h2>
           <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-[#cfb072]" />
           <p className="mt-3 text-[14px] leading-relaxed text-[#667c74] sm:text-[15px]">
-            All our vacation homes and holiday apartments are furnished with top-tier comforts so you can unwind and enjoy Hurghada worry-free.
+            {t("home.facilities.body")}
           </p>
         </motion.div>
 
@@ -230,6 +225,7 @@ export default function FacilitiesSection() {
         >
           {facilities.map((facility) => {
             const IconComponent = facility.icon;
+            const copy = facilityCopy[facility.translationIndex] ?? ["", ""];
 
             return (
               <motion.div
@@ -248,10 +244,10 @@ export default function FacilitiesSection() {
                 {/* Content */}
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-[15px] font-bold text-[#183c2f] transition-colors duration-200 group-hover:text-[#2e6f57]">
-                    {facility.title}
+                    {copy[0]}
                   </h3>
                   <p className="mt-1 text-[12.5px] leading-snug text-[#667c74]">
-                    {facility.subtitle}
+                    {copy[1]}
                   </p>
                 </div>
               </motion.div>

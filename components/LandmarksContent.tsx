@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useCreateAttributeGroupItem,
   useDeleteAttributeGroupItem,
+  useAttributeGroupItemTranslations,
   useLandmarks,
   useUpdateAttributeGroupItem,
 } from "@/lib/hooks/useAttributeGroupItem";
 import type { AttributeGroupItem, AttributeGroupItemRequest } from "@/lib/types/attributeGroupItem";
 import ConfirmModal from "./ConfirmModal";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 function LandmarkFormPanel({
   landmark,
@@ -24,23 +32,47 @@ function LandmarkFormPanel({
   const isEditing = Boolean(landmark);
   const { mutate: createLandmark, isPending: isCreating } = useCreateAttributeGroupItem();
   const { mutate: updateLandmark, isPending: isUpdating } = useUpdateAttributeGroupItem();
+  const translationsQuery = useAttributeGroupItemTranslations(
+    landmark?.id ?? "",
+    isOpen && isEditing
+  );
 
-  const [key, setKey] = useState(landmark?.key ?? "");
-  const [value, setValue] = useState(landmark?.value ?? "");
+  const [key, setKey] = useState<TranslationInput>(emptyTranslation());
+  const [value, setValue] = useState<TranslationInput>(emptyTranslation());
   const [displayOrder, setDisplayOrder] = useState<number | "">(landmark?.displayOrder ?? "");
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (!isEditing) {
+      setKey(emptyTranslation());
+      setValue(emptyTranslation());
+      setDisplayOrder("");
+      return;
+    }
+
+    if (translationsQuery.data) {
+      setKey(translationsQuery.data.key);
+      setValue(translationsQuery.data.value);
+      setDisplayOrder(translationsQuery.data.displayOrder ?? "");
+    }
+  }, [isOpen, isEditing, translationsQuery.data]);
 
   if (!isOpen) return null;
 
   const isSaving = isCreating || isUpdating;
-  const isFormValid = key.trim().length > 0 && value.trim().length > 0;
+  const isHydrating = isEditing && translationsQuery.isLoading;
+  const canEdit = !isEditing || translationsQuery.isSuccess;
+  const isFormValid =
+    canEdit && hasRequiredBaseTranslation(key) && hasRequiredBaseTranslation(value);
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!isFormValid) return;
 
     const payload: AttributeGroupItemRequest = {
-      key: key.trim(),
-      value: value.trim(),
+      key: trimTranslation(key),
+      value: trimTranslation(value),
       displayOrder: displayOrder !== "" ? Number(displayOrder) : undefined,
       attributeGroupId: landmark?.attributeGroupId,
     };
@@ -55,7 +87,7 @@ function LandmarkFormPanel({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#dfe8e4] px-6 py-4">
           <h2 className="text-[18px] font-semibold text-[#183c2f]">
             {isEditing ? "Edit Info Area" : "New Info Area"}
@@ -73,33 +105,35 @@ function LandmarkFormPanel({
         </div>
 
         <form onSubmit={handleSave} className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Info Area Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              placeholder="e.g. Abo 3shar super market"
-              className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          {isHydrating && (
+            <div className="rounded-xl border border-[#dfe8e4] bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#667c74]">
+              Loading all language versions before editing...
+            </div>
+          )}
 
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Distance <span className="text-red-500">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="e.g. 50 m"
-              className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          {translationsQuery.isError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+              Could not load every language. Editing stays locked until all four versions load.
+            </div>
+          )}
+
+          <TranslationFields
+            label="Info Area Name"
+            value={key}
+            onChange={setKey}
+            required
+            placeholder="e.g. Abo 3shar super market"
+            disabled={!canEdit || isSaving}
+          />
+
+          <TranslationFields
+            label="Distance"
+            value={value}
+            onChange={setValue}
+            required
+            placeholder="e.g. 50 m"
+            disabled={!canEdit || isSaving}
+          />
 
           <div>
             <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Display Order</label>
@@ -109,6 +143,7 @@ function LandmarkFormPanel({
               value={displayOrder}
               onChange={(e) => setDisplayOrder(e.target.value === "" ? "" : Number(e.target.value))}
               placeholder="e.g. 1"
+              disabled={!canEdit || isSaving}
               className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
             />
           </div>

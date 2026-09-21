@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  usePropertyById,
+  usePropertyTranslations,
   useUpdateProperty,
   useUpdatePropertyAddress,
   useUpdatePropertyListingDetails,
@@ -27,6 +27,13 @@ import type { AdminBookingListItem } from "@/lib/types/booking";
 import { formatUsd } from "@/lib/utils/currency";
 import { getPropertyLandmarks, sortLandmarks } from "@/lib/utils/landmarks";
 import { getSelectedPropertyCategoryItemIds } from "@/lib/utils/propertyCategoryValues";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 type Tab = "basic" | "features" | "beds" | "address" | "details" | "images" | "prices";
 
@@ -161,7 +168,8 @@ function buildPutPayload(
 
 export default function PropertyEditContent({ id }: { id: string }) {
   const [activeTab, setActiveTab] = useState<Tab>("basic");
-  const { data: property, isLoading } = usePropertyById(id);
+  const { data: translations, isLoading, isError } = usePropertyTranslations(id, true);
+  const property = translations?.property;
   // Fetch items once at top level so all tabs can derive current category item IDs
   const { data: includeItems = [] } = usePropertyCategoryItems();
   const { data: landmarkItems = [] } = useLandmarks();
@@ -186,10 +194,11 @@ export default function PropertyEditContent({ id }: { id: string }) {
     );
   }
 
-  if (!property) {
+  if (isError || !property || !translations) {
     return (
       <div className="py-20 text-center">
-        <h2 className="text-[18px] font-semibold text-[#183c2f]">Property not found</h2>
+        <h2 className="text-[18px] font-semibold text-[#183c2f]">Property languages could not be loaded</h2>
+        <p className="mt-2 text-[14px] text-[#667c74]">Editing is locked until all four localized versions are available.</p>
         <Link href="/admin/properties" className="mt-4 inline-block text-[#2e6f57] hover:underline">Back to list</Link>
       </div>
     );
@@ -205,7 +214,7 @@ export default function PropertyEditContent({ id }: { id: string }) {
     { key: "prices", label: "Prices" },
   ];
 
-  const sharedProps = { property, currentItemIds, currentLandmarkIds };
+  const sharedProps = { property, translations, currentItemIds, currentLandmarkIds };
 
   return (
     <div className="mx-auto max-w-5xl min-w-0">
@@ -235,8 +244,8 @@ export default function PropertyEditContent({ id }: { id: string }) {
         {activeTab === "basic"   && <BasicInfoTab   {...sharedProps} />}
         {activeTab === "features"&& <FeaturesTab    {...sharedProps} includeItems={includeItems} />}
         {activeTab === "beds"    && <BedsTab        {...sharedProps} />}
-        {activeTab === "address" && <AddressTab     property={property} />}
-        {activeTab === "details" && <ListingDetailsTab property={property} />}
+        {activeTab === "address" && <AddressTab     property={property} translations={translations} />}
+        {activeTab === "details" && <ListingDetailsTab property={property} translations={translations} />}
         {activeTab === "images"  && <ImagesTab      property={property} />}
         {activeTab === "prices"  && <PricesTab      property={property} />}
       </div>
@@ -247,10 +256,12 @@ export default function PropertyEditContent({ id }: { id: string }) {
 // ── 1. Basic Info — PUT /api/properties/{id} ─────────────────────────────────
 function BasicInfoTab({
   property,
+  translations,
   currentItemIds,
   currentLandmarkIds,
 }: {
   property: any;
+  translations: NonNullable<ReturnType<typeof usePropertyTranslations>["data"]>;
   currentItemIds: string[];
   currentLandmarkIds: string[];
 }) {
@@ -258,8 +269,8 @@ function BasicInfoTab({
   const { data: locationCategories = [] } = useCategories();
 
   const [form, setForm] = useState({
-    name: property.name,
-    description: property.description,
+    name: translations.name,
+    description: translations.description,
     bedroomNo: property.bedroomNo,
     bathroomNo: property.bathroomNo,
     roomNo: property.roomNo,
@@ -277,6 +288,14 @@ function BasicInfoTab({
     notes: property.notes || "",
   });
 
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      name: translations.name,
+      description: translations.description,
+    }));
+  }, [translations.name, translations.description]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // PUT /api/properties/{id} — pass currentItemIds and current beds unchanged
@@ -284,6 +303,8 @@ function BasicInfoTab({
       id: property.id,
       payload: buildPutPayload(property, currentItemIds, currentLandmarkIds, {
         ...form,
+        name: trimTranslation(form.name),
+        description: trimTranslation(form.description),
         // Preserve existing sleeping arrangements (stripped of IDs)
         sleepingArrangements: stripArrangements(property.sleepingArrangements || []),
       }),
@@ -318,8 +339,13 @@ function BasicInfoTab({
   return (
     <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in">
       <div>
-        <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Property Name</label>
-        <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]/20" />
+        <TranslationFields
+          label="Property Name"
+          value={form.name}
+          onChange={(value) => setForm({ ...form, name: value })}
+          required
+          disabled={isPending}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -333,8 +359,15 @@ function BasicInfoTab({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Description</label>
-        <textarea rows={4} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
+        <TranslationFields
+          label="Description"
+          value={form.description}
+          onChange={(value) => setForm({ ...form, description: value })}
+          required
+          textarea
+          rows={4}
+          disabled={isPending}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-5">
@@ -641,45 +674,57 @@ function BedsTab({
 
 // ── 4. Address — PUT /api/properties/{propertyId}/address ────────────────────
 // Schema: { country, city, area, zipCode, street }  (no state field)
-function AddressTab({ property }: { property: any }) {
+function AddressTab({
+  property,
+  translations,
+}: {
+  property: any;
+  translations: NonNullable<ReturnType<typeof usePropertyTranslations>["data"]>;
+}) {
   const { mutate: updateAddress, isPending } = useUpdatePropertyAddress();
   const [address, setAddress] = useState({
-    country: property.address?.country || "",
-    city: property.address?.city || "",
-    area: property.address?.area || "",
+    country: translations.address.country,
+    city: translations.address.city,
+    area: translations.address.area,
     zipCode: property.address?.zipCode || "",
-    street: property.address?.street || "",
+    street: translations.address.street,
   });
+
+  useEffect(() => {
+    setAddress((current) => ({
+      ...current,
+      country: translations.address.country,
+      city: translations.address.city,
+      area: translations.address.area,
+      street: translations.address.street,
+    }));
+  }, [translations.address]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Exactly matches PUT /api/properties/{propertyId}/address schema
-    updateAddress({ id: property.id, payload: address });
+    updateAddress({
+      id: property.id,
+      payload: {
+        ...address,
+        country: trimTranslation(address.country),
+        city: trimTranslation(address.city),
+        area: trimTranslation(address.area),
+        street: trimTranslation(address.street),
+      },
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Country</label>
-          <input type="text" value={address.country} onChange={e => setAddress({ ...address, country: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">City</label>
-          <input type="text" value={address.city} onChange={e => setAddress({ ...address, city: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Area / District</label>
-          <input type="text" value={address.area} onChange={e => setAddress({ ...address, area: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
-        </div>
+      <div className="grid grid-cols-1 gap-6">
+        <TranslationFields label="Country" value={address.country} onChange={(value) => setAddress({ ...address, country: value })} disabled={isPending} />
+        <TranslationFields label="City" value={address.city} onChange={(value) => setAddress({ ...address, city: value })} disabled={isPending} />
+        <TranslationFields label="Area / District" value={address.area} onChange={(value) => setAddress({ ...address, area: value })} disabled={isPending} />
         <div>
           <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Zip Code</label>
           <input type="text" value={address.zipCode} onChange={e => setAddress({ ...address, zipCode: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
         </div>
-        <div className="sm:col-span-2">
-          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Street</label>
-          <input type="text" value={address.street} onChange={e => setAddress({ ...address, street: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
-        </div>
+        <TranslationFields label="Street" value={address.street} onChange={(value) => setAddress({ ...address, street: value })} disabled={isPending} />
       </div>
       <div className="flex justify-end pt-4 border-t border-[#dfe8e4]">
         <button type="submit" disabled={isPending} className="rounded-full bg-[#2e6f57] px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#255f49] disabled:opacity-50">
@@ -694,13 +739,19 @@ function AddressTab({ property }: { property: any }) {
 // Schema: lateCheckIn, outdoorFacility, originalService, cancellation,
 //         extraPeopleFee, privateBathroom (capital B!), checkInHour, checkOutHour,
 //         familyFriendly, privateEntrance, extraPeople
-function ListingDetailsTab({ property }: { property: any }) {
+function ListingDetailsTab({
+  property,
+  translations,
+}: {
+  property: any;
+  translations: NonNullable<ReturnType<typeof usePropertyTranslations>["data"]>;
+}) {
   const { mutate: updateDetails, isPending } = useUpdatePropertyListingDetails();
   const [d, setD] = useState({
     lateCheckIn: property.listingDetails?.lateCheckIn || "",
-    outdoorFacility: property.listingDetails?.outdoorFacility || "",
+    outdoorFacility: translations.listingDetails.outdoorFacility,
     originalService: property.listingDetails?.originalService || "",
-    cancellation: property.listingDetails?.cancellation || "",
+    cancellation: translations.listingDetails.cancellation,
     extraPeopleFee: hiddenListingDefaults.extraPeopleFee,
     extraPeople: hiddenListingDefaults.extraPeople,
     checkInHour: property.listingDetails?.checkInHour || "14:00:00",
@@ -711,10 +762,25 @@ function ListingDetailsTab({ property }: { property: any }) {
     privateEntrance: property.listingDetails?.privateEntrance || false,
   });
 
+  useEffect(() => {
+    setD((current) => ({
+      ...current,
+      outdoorFacility: translations.listingDetails.outdoorFacility,
+      cancellation: translations.listingDetails.cancellation,
+    }));
+  }, [translations.listingDetails]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Exactly matches PUT /api/properties/{propertyId}/listing-details schema
-    updateDetails({ id: property.id, payload: { ...d, ...hiddenListingDefaults } });
+    updateDetails({
+      id: property.id,
+      payload: {
+        ...d,
+        outdoorFacility: trimTranslation(d.outdoorFacility),
+        cancellation: trimTranslation(d.cancellation),
+        ...hiddenListingDefaults,
+      },
+    });
   };
 
   return (
@@ -732,13 +798,11 @@ function ListingDetailsTab({ property }: { property: any }) {
           <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Late Check-In Policy</label>
           <input type="text" value={d.lateCheckIn} onChange={e => setD({ ...d, lateCheckIn: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
         </div>
-        <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Cancellation Policy</label>
-          <input type="text" value={d.cancellation} onChange={e => setD({ ...d, cancellation: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
+        <div className="sm:col-span-2">
+          <TranslationFields label="Cancellation Policy" value={d.cancellation} onChange={(value) => setD({ ...d, cancellation: value })} disabled={isPending} />
         </div>
-        <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Outdoor Facility</label>
-          <input type="text" value={d.outdoorFacility} onChange={e => setD({ ...d, outdoorFacility: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57]" />
+        <div className="sm:col-span-2">
+          <TranslationFields label="Outdoor Facility" value={d.outdoorFacility} onChange={(value) => setD({ ...d, outdoorFacility: value })} disabled={isPending} />
         </div>
         <div>
           <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Original Service</label>

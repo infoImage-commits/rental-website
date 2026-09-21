@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLandmarks } from "@/lib/hooks/useAttributeGroupItem";
 import type { AttributeGroupItem } from "@/lib/types/attributeGroupItem";
+import { useI18n } from "./I18nProvider";
 
 const INITIAL_DISPLAY_COUNT = 10;
 
@@ -31,6 +32,7 @@ function LandmarkRow({ item, index }: { item: AttributeGroupItem; index: number 
 }
 
 export default function InfoAreaHomeSection() {
+  const { t } = useI18n();
   const { data: landmarks = [], isLoading, isError } = useLandmarks();
   const [isExpanded, setIsExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -71,15 +73,14 @@ export default function InfoAreaHomeSection() {
           className="mx-auto max-w-3xl text-center"
         >
           <p className="text-[13px] font-semibold uppercase tracking-[0.25em] text-[#d59e52] sm:text-[14px]">
-            Info Area &amp; Nearby Highlights
+            {t("home.infoArea.eyebrow")}
           </p>
           <h2 className="mt-2 text-[26px] font-bold leading-tight text-[#183c2f] sm:text-[32px] lg:text-[38px]">
-            Everything You Need, Right Next Door
+            {t("home.infoArea.title")}
           </h2>
           <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-[#cfb072]" />
           <p className="mt-3 text-[14px] leading-relaxed text-[#667c74] sm:text-[15px]">
-            Our properties are centrally located in Hurghada, placing top beaches, dining, shopping,
-            and essential services just moments from your stay.
+            {t("home.infoArea.body")}
           </p>
         </motion.div>
 
@@ -92,16 +93,16 @@ export default function InfoAreaHomeSection() {
           <div className="flex flex-col gap-2 border-b border-[#edf2ef] pb-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-[17px] font-bold text-[#183c2f] sm:text-[19px]">
-                Nearby Destinations &amp; Distances
+                {t("home.infoArea.destinations")}
               </h3>
               <p className="text-[13px] text-[#6e847c]">
-                Calculated from our central Hurghada properties
+                {t("home.infoArea.calculated")}
               </p>
             </div>
             {!isLoading && (
               <div className="self-start sm:self-auto inline-flex items-center gap-2 rounded-full border border-[#d6e8de] bg-[#f2f8f5] px-3.5 py-1.5 text-[12px] font-semibold text-[#2e6f57]">
                 <span className="size-2 rounded-full bg-[#2e6f57]" />
-                <span>{landmarks.length} Verified Locations</span>
+                <span>{t("home.infoArea.verified", { count: landmarks.length })}</span>
               </div>
             )}
           </div>
@@ -161,8 +162,8 @@ export default function InfoAreaHomeSection() {
               >
                 <span>
                   {isExpanded
-                    ? "Show Fewer Locations"
-                    : `View All ${sortedLandmarks.length} Nearby Locations`}
+                    ? t("home.infoArea.showFewer")
+                    : t("home.infoArea.viewAll", { count: sortedLandmarks.length })}
                 </span>
                 <svg
                   className={`size-4 text-[#cfb072] transition-transform duration-300 group-hover:text-white ${
@@ -178,8 +179,8 @@ export default function InfoAreaHomeSection() {
               </button>
               <p className="mt-2.5 text-[12px] text-[#7a9187]">
                 {isExpanded
-                  ? `Displaying all ${sortedLandmarks.length} nearby destinations`
-                  : `Showing ${INITIAL_DISPLAY_COUNT} of ${sortedLandmarks.length} top nearby destinations`}
+                    ? t("home.infoArea.displayingAll", { count: sortedLandmarks.length })
+                    : t("home.infoArea.showingTop", { shown: INITIAL_DISPLAY_COUNT, total: sortedLandmarks.length })}
               </p>
             </div>
           )}

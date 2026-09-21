@@ -7,6 +7,7 @@ import { useJourneys } from "@/lib/hooks/useJourney";
 import { slugify } from "@/lib/utils/slugify";
 import { API_BASE_URL } from "@/lib/api/config";
 import { formatUsd } from "@/lib/utils/currency";
+import { useI18n } from "./I18nProvider";
 
 function resolveImageUrl(url: string): string {
   if (!url || url.trim() === "") return "";
@@ -16,6 +17,7 @@ function resolveImageUrl(url: string): string {
 }
 
 export default function TransferPageContent() {
+  const { t, href } = useI18n();
   const { data, isLoading, isError } = useJourneys({ pageSize: 100, isActive: true });
   const journeys = data?.items || [];
 
@@ -25,19 +27,19 @@ export default function TransferPageContent() {
       
       <section className="px-5 pt-5 text-center lg:px-20 lg:pt-[47px]">
         <p className="text-[14px] font-medium leading-6 text-[#656566] lg:text-[20px] lg:leading-9">
-          Home &gt; Transfer Journeys
+          {t("transfer.breadcrumb")}
         </p>
         <h1 className="mt-2 text-[16px] font-semibold leading-7 text-[#183c2f] lg:mt-4 lg:text-[36px] lg:leading-[60px]">
-          Available Transfers
+          {t("transfer.available")}
         </h1>
       </section>
 
       <section className="px-5 pb-12 pt-5 lg:px-20 lg:pb-20 lg:pt-[50px]">
         <div className="mx-auto max-w-[335px] lg:max-w-[1280px]">
-          {isLoading && <p className="text-center text-gray-500">Loading transfers...</p>}
-          {isError && <p className="text-center text-red-500">Failed to load transfers.</p>}
+          {isLoading && <p className="text-center text-gray-500">{t("transfer.loading")}</p>}
+          {isError && <p className="text-center text-red-500">{t("transfer.failed")}</p>}
           {!isLoading && !isError && journeys.length === 0 && (
-            <p className="text-center text-gray-500">No transfers currently available.</p>
+            <p className="text-center text-gray-500">{t("transfer.empty")}</p>
           )}
 
           {!isLoading && !isError && journeys.length > 0 && (
@@ -57,7 +59,7 @@ export default function TransferPageContent() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-[#f5f7f6] text-[#183c2f]/50">
-                        No Image Available
+                        {t("transfer.noImage")}
                       </div>
                     )}
                     <div className="absolute left-4 top-4 flex flex-col gap-2">
@@ -77,24 +79,24 @@ export default function TransferPageContent() {
 
                     <div className="mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4 text-[14px] font-medium text-[#183c2f]">
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500">From:</span>
+                        <span className="text-gray-500">{t("transfer.from")}</span>
                         <span>{journey.fromLocationName}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500">To:</span>
+                        <span className="text-gray-500">{t("transfer.to")}</span>
                         <span>{journey.toLocationName}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500">Duration:</span>
-                        <span>{journey.estimatedDurationMinutes} mins</span>
+                        <span className="text-gray-500">{t("transfer.duration")}</span>
+                        <span>{journey.estimatedDurationMinutes} {t("transfer.mins")}</span>
                       </div>
                     </div>
 
                     <Link
-                      href={`/transfer/${slugify(journey.name) || journey.id}`}
+                      href={href(`/transfer/${slugify(journey.name) || journey.id}`)}
                       className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-[#2e6f57] text-[16px] font-semibold text-white transition hover:bg-[#255f49]"
                     >
-                      Book Now
+                      {t("common.bookNow")}
                     </Link>
                   </div>
                 </article>
@@ -108,11 +110,13 @@ export default function TransferPageContent() {
 }
 
 function TransferHero() {
+  const { t } = useI18n();
+
   return (
     <section className="relative w-full h-[400px] lg:h-[600px] overflow-hidden">
       <Image
         src="/transfer/heroTransfer2.jpg"
-        alt="Premium Transfer Service in Hurghada"
+        alt={t("transfer.heroAlt")}
         fill
         priority
         className="object-cover object-center"
@@ -130,7 +134,7 @@ function TransferHero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="max-w-[700px] text-[36px] font-semibold leading-tight text-white lg:text-[64px] lg:leading-[1.1]"
         >
-          Seamless Airport Transfers
+          {t("transfer.heroTitle")}
         </motion.h1>
         
         <motion.div
@@ -146,7 +150,7 @@ function TransferHero() {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="mt-6 max-w-[560px] text-[16px] leading-relaxed text-white/90 lg:text-[20px]"
         >
-          Book your private, comfortable, and reliable transfer across our destinations. Get from A to B with ease.
+          {t("transfer.heroBody")}
         </motion.p>
       </div>
     </section>

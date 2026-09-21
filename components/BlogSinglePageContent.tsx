@@ -7,6 +7,7 @@ import Link from "next/link";
 import type { BlogItem, BlogSection } from "@/lib/types/blog";
 import { getBlogSlug } from "@/lib/utils/blogSlug";
 import { resolveApiImageUrl } from "@/lib/utils/imageUrl";
+import { useI18n } from "./I18nProvider";
 
 const fallbackHeroImage = "/blog-single/hero.png";
 const fallbackCardImage = "/blogs/articles.png";
@@ -39,6 +40,7 @@ export default function BlogSinglePageContent({
   relatedBlogs?: BlogItem[];
 }) {
   const shouldReduceMotion = useReducedMotion();
+  const { locale } = useI18n();
   const heroImage = resolveApiImageUrl(blog.featuredImageUrl) || fallbackHeroImage;
   const sections = [...(blog.blogSections ?? [])].sort((a, b) => a.displayOrder - b.displayOrder);
   const introParagraphs = splitParagraphs(blog.content || blog.summary || "No article content has been added yet.");
@@ -69,7 +71,7 @@ export default function BlogSinglePageContent({
               )}
             </div>
 
-            <ArticleMeta date={blog.createdAtUtc} />
+            <ArticleMeta date={blog.createdAtUtc} locale={locale} />
 
             <motion.div
               variants={fadeUp}
@@ -114,18 +116,20 @@ export default function BlogSinglePageContent({
 }
 
 function BlogBreadcrumb({ title }: { title: string }) {
+  const { t, href } = useI18n();
+
   return (
     <nav
       aria-label="Breadcrumb"
       className="flex min-w-0 flex-wrap items-center gap-2 text-[13px] font-medium leading-6 text-[#667c74] sm:text-[15px]"
     >
       <Image src="/blog-single/icons/bookmark.svg" alt="" width={20} height={20} className="size-5 shrink-0" />
-      <Link href="/" className="transition hover:text-[#2e6f57]">
-        Home
+      <Link href={href("/")} className="transition hover:text-[#2e6f57]">
+        {t("common.home")}
       </Link>
       <span>/</span>
-      <Link href="/blogs" className="transition hover:text-[#2e6f57]">
-        Blogs
+      <Link href={href("/blogs")} className="transition hover:text-[#2e6f57]">
+        {t("common.blogs")}
       </Link>
       <span>/</span>
       <span className="min-w-0 max-w-full truncate text-[#183c2f]">{title}</span>
@@ -133,11 +137,13 @@ function BlogBreadcrumb({ title }: { title: string }) {
   );
 }
 
-function ArticleMeta({ date }: { date: string }) {
+function ArticleMeta({ date, locale }: { date: string; locale: string }) {
+  const { t } = useI18n();
+
   return (
     <div className="inline-flex w-fit items-center gap-2 rounded-full bg-[#f5f7f6] px-4 py-2 text-[13px] font-medium text-[#667c74] sm:text-[14px]">
       <Image src="/blog-single/icons/calendar.svg" alt="" width={18} height={18} className="size-[18px] shrink-0" />
-      <span>{formatDate(date)}</span>
+      <span>{formatDate(date, locale, t("common.recently"))}</span>
     </div>
   );
 }
@@ -207,6 +213,8 @@ function RelatedBlogs({
   blogs: BlogItem[];
   shouldReduceMotion: boolean | null;
 }) {
+  const { t } = useI18n();
+
   if (blogs.length === 0) return null;
 
   return (
@@ -218,9 +226,9 @@ function RelatedBlogs({
       className="mt-16 border-t border-[#e8f0ec] pt-10 lg:mt-20 lg:pt-14"
     >
       <motion.div variants={fadeUp} className="flex flex-col gap-2">
-        <p className="text-[13px] font-semibold uppercase text-[#cfb072]">Related Blogs</p>
+        <p className="text-[13px] font-semibold uppercase text-[#cfb072]">{t("common.blogs")}</p>
         <h2 className="text-[26px] font-semibold leading-tight text-[#2e6f57] sm:text-[32px]">
-          Keep Reading
+          {t("common.readArticle")}
         </h2>
       </motion.div>
 
@@ -240,8 +248,9 @@ function RelatedBlogCard({
   blog: BlogItem;
   shouldReduceMotion: boolean | null;
 }) {
+  const { t, href, locale } = useI18n();
   const imageSrc = resolveApiImageUrl(blog.featuredImageUrl) || fallbackCardImage;
-  const excerpt = blog.summary || blog.content || "Explore the latest rental insights and local property guidance.";
+  const excerpt = blog.summary || blog.content || t("seo.siteDescription");
 
   return (
     <motion.article
@@ -249,7 +258,7 @@ function RelatedBlogCard({
       whileHover={shouldReduceMotion ? undefined : { y: -6 }}
       className="group flex min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_4px_18px_rgba(31,77,61,0.1)] transition-shadow duration-300 hover:shadow-[0_16px_34px_rgba(31,77,61,0.16)]"
     >
-      <Link href={`/blogs/${getBlogSlug(blog)}`} className="flex h-full flex-col">
+      <Link href={href(`/blogs/${getBlogSlug(blog)}`)} className="flex h-full flex-col">
         <div className="relative aspect-[16/10] overflow-hidden bg-[#e4e0da]">
           <Image
             src={imageSrc}
@@ -261,7 +270,7 @@ function RelatedBlogCard({
         </div>
 
         <div className="flex flex-1 flex-col p-5">
-          <p className="text-[12px] font-medium text-[#8a9a94]">{formatDate(blog.createdAtUtc)}</p>
+          <p className="text-[12px] font-medium text-[#8a9a94]">{formatDate(blog.createdAtUtc, locale, t("common.recently"))}</p>
           <h3 className="mt-3 line-clamp-2 text-[18px] font-semibold leading-snug text-[#183c2f]">
             {blog.title}
           </h3>
@@ -269,7 +278,7 @@ function RelatedBlogCard({
             {excerpt}
           </p>
           <span className="mt-5 inline-flex text-[14px] font-semibold text-[#2e6f57]">
-            Read Article
+            {t("common.readArticle")}
           </span>
         </div>
       </Link>
@@ -284,11 +293,11 @@ function splitParagraphs(text: string) {
     .filter(Boolean);
 }
 
-function formatDate(value: string) {
+function formatDate(value: string, locale: string, fallback: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Recently";
+  if (Number.isNaN(date.getTime())) return fallback;
 
-  return new Intl.DateTimeFormat("en", {
+  return new Intl.DateTimeFormat(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",

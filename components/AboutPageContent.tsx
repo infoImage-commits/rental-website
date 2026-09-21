@@ -4,38 +4,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
-
-const summaryPoints = ["Verified Properties", "Expert Local Knowledge", "Dedicated Support"];
+import { useI18n } from "@/components/I18nProvider";
 
 const stats = [
-  { value: "10+", label: "Years Experience", icon: "/about/icons/experience.svg", iconClassName: "h-7 w-[21px]" },
-  { value: "2,500+", label: "Happy Guests", icon: "/about/icons/clients.svg", iconClassName: "h-[21px] w-[29px]" },
-  { value: "1,200+", label: "Holiday Homes", icon: "/about/icons/properties.svg", iconClassName: "size-6" },
-  { value: "20+", label: "Dedicated Hosts", icon: "/about/icons/agents.svg", iconClassName: "h-6 w-[27px]" },
+  { value: "10+", key: "experience", icon: "/about/icons/experience.svg", iconClassName: "h-7 w-[21px]" },
+  { value: "2,500+", key: "guests", icon: "/about/icons/clients.svg", iconClassName: "h-[21px] w-[29px]" },
+  { value: "1,200+", key: "homes", icon: "/about/icons/properties.svg", iconClassName: "size-6" },
+  { value: "20+", key: "hosts", icon: "/about/icons/agents.svg", iconClassName: "h-6 w-[27px]" },
 ];
 
 const reasons = [
   {
-    title: "Wide Range of Vacation Homes",
-    description: "Chalets, resort apartments, and studios handpicked for every travel style and budget.",
+    key: "wideRange",
     icon: "/about/icons/wide-range.svg",
     iconClassName: "size-7",
   },
   {
-    title: "Prime Coastal Locations",
-    description: "We focus on prime Hurghada spots that make beach access, dining, and holiday relaxation effortless.",
+    key: "locations",
     icon: "/about/icons/prime-location.svg",
     iconClassName: "h-[27px] w-[21px]",
   },
   {
-    title: "Transparent Booking",
-    description: "Clear nightly pricing, accurate photos, verified amenities, and a simple 10% online deposit.",
+    key: "transparent",
     icon: "/about/icons/transparent.svg",
     iconClassName: "h-[27px] w-[29px]",
   },
   {
-    title: "Local Host Care",
-    description: "A friendly, responsive local team ready to help before, during, and after your holiday stay.",
+    key: "hostCare",
     icon: "/about/icons/agents.svg",
     iconClassName: "h-6 w-[27px]",
   },
@@ -91,24 +86,29 @@ export default function AboutPageContent() {
 }
 
 function PageHeader() {
+  const { t, href } = useI18n();
+
   return (
     <motion.div variants={fadeUp} className="flex flex-col items-start gap-2">
       <nav aria-label="Breadcrumb" className="flex items-center gap-3 text-[14px] leading-5 lg:text-[16px]">
-        <Link href="/" className="font-semibold text-[#414847] transition hover:text-[#2e6f57]">
-          Home
+        <Link href={href("/")} className="font-semibold text-[#414847] transition hover:text-[#2e6f57]">
+          {t("common.home")}
         </Link>
         <span className="text-[#8a9a94]">/</span>
-        <span className="text-[#183c2f]">About Us</span>
+        <span className="text-[#183c2f]">{t("common.about")}</span>
       </nav>
 
       <h1 className="text-[28px] font-semibold leading-tight text-[#2e6f57] lg:text-[42px]">
-        About Us
+        {t("common.about")}
       </h1>
     </motion.div>
   );
 }
 
 function AboutCopy({ shouldReduceMotion, viewport }: MotionProps) {
+  const { t, tArray } = useI18n();
+  const summaryPoints = tArray<string>("about.summaryPoints");
+
   return (
     <motion.div
       variants={shouldReduceMotion ? undefined : container}
@@ -118,12 +118,12 @@ function AboutCopy({ shouldReduceMotion, viewport }: MotionProps) {
       className="flex flex-col items-start gap-7"
     >
       <motion.div variants={fadeUp} className="flex flex-col gap-4">
-        <p className="text-[13px] font-semibold uppercase text-[#cfb072]">Who we are</p>
+        <p className="text-[13px] font-semibold uppercase text-[#cfb072]">{t("about.eyebrow")}</p>
         <h2 className="max-w-[670px] text-[28px] font-semibold leading-[1.18] text-[#183c2f] sm:text-[34px] lg:text-[48px]">
-          Your home away from home on the Red Sea.
+          {t("about.title")}
         </h2>
         <p className="max-w-[614px] text-[14px] leading-7 text-[#5d6965] lg:text-[18px] lg:leading-8">
-          We help travelers and holidaymakers discover comfortable, handpicked vacation homes and private airport transfers across Hurghada with verified details and dedicated local host care.
+          {t("about.body")}
         </p>
       </motion.div>
 
@@ -143,12 +143,12 @@ function AboutCopy({ shouldReduceMotion, viewport }: MotionProps) {
 
       <motion.div variants={container} className="grid gap-5">
         <TextBlock
-          title="Our Mission"
-          body="To provide every guest with reliable, transparent, and welcoming hospitality so booking a vacation stay in Hurghada is completely stress-free."
+          title={t("about.missionTitle")}
+          body={t("about.missionBody")}
         />
         <TextBlock
-          title="What We Help With"
-          body="From beachside apartments and resort chalets to private airport transfers and local recommendations, our team brings the details together so you can relax and enjoy your holiday."
+          title={t("about.helpTitle")}
+          body={t("about.helpBody")}
         />
       </motion.div>
     </motion.div>
@@ -167,6 +167,8 @@ function TextBlock({ title, body }: { title: string; body: string }) {
 }
 
 function AboutImage({ shouldReduceMotion, viewport }: MotionProps) {
+  const { t } = useI18n();
+
   return (
     <motion.div
       variants={shouldReduceMotion ? undefined : fadeUp}
@@ -178,7 +180,7 @@ function AboutImage({ shouldReduceMotion, viewport }: MotionProps) {
     >
       <Image
         src="/about/living-room.png"
-        alt="Bright rental living room with large windows"
+        alt={t("about.imageAlt")}
         fill
         priority
         sizes="(min-width: 1024px) 623px, 100vw"
@@ -186,7 +188,7 @@ function AboutImage({ shouldReduceMotion, viewport }: MotionProps) {
       />
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#183c2f]/70 to-transparent p-5 text-white lg:p-8">
         <p className="max-w-sm text-[18px] font-semibold leading-7 lg:text-[24px]">
-          Thoughtfully selected homes, explained clearly.
+          {t("about.imageCaption")}
         </p>
       </div>
     </motion.div>
@@ -194,6 +196,8 @@ function AboutImage({ shouldReduceMotion, viewport }: MotionProps) {
 }
 
 function StatsSection({ shouldReduceMotion, viewport }: MotionProps) {
+  const { t } = useI18n();
+
   return (
     <motion.section
       variants={shouldReduceMotion ? undefined : container}
@@ -205,7 +209,7 @@ function StatsSection({ shouldReduceMotion, viewport }: MotionProps) {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
           <motion.div
-            key={stat.label}
+            key={stat.key}
             variants={fadeUp}
             whileHover={shouldReduceMotion ? undefined : { y: -4 }}
             className="flex min-h-[132px] min-w-0 flex-col items-center justify-center gap-2 rounded-lg bg-white px-4 text-center shadow-[0_6px_18px_rgba(31,77,61,0.04)]"
@@ -217,7 +221,7 @@ function StatsSection({ shouldReduceMotion, viewport }: MotionProps) {
               </div>
             </div>
             <div className="text-[11px] font-semibold uppercase leading-4 text-[#5d6965] lg:text-[14px]">
-              {stat.label}
+              {t(`about.stats.${stat.key}`)}
             </div>
           </motion.div>
         ))}
@@ -227,6 +231,8 @@ function StatsSection({ shouldReduceMotion, viewport }: MotionProps) {
 }
 
 function WhyChooseUs({ shouldReduceMotion, viewport }: MotionProps) {
+  const { t } = useI18n();
+
   return (
     <motion.section
       variants={shouldReduceMotion ? undefined : container}
@@ -236,16 +242,16 @@ function WhyChooseUs({ shouldReduceMotion, viewport }: MotionProps) {
       className="mt-10 lg:mt-16"
     >
       <motion.div variants={fadeUp} className="max-w-2xl">
-        <p className="text-[13px] font-semibold uppercase text-[#cfb072]">Why people trust us</p>
+        <p className="text-[13px] font-semibold uppercase text-[#cfb072]">{t("about.trustEyebrow")}</p>
         <h2 className="mt-2 text-[26px] font-semibold leading-tight text-[#2e6f57] lg:text-[36px]">
-          Practical help at every step.
+          {t("about.trustTitle")}
         </h2>
       </motion.div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:mt-10 lg:grid-cols-4">
         {reasons.map((reason) => (
           <motion.article
-            key={reason.title}
+            key={reason.key}
             variants={fadeUp}
             whileHover={shouldReduceMotion ? undefined : { y: -6 }}
             className="flex min-h-[220px] flex-col rounded-lg border border-[#dfe8e4] bg-white px-6 py-7 shadow-[0_8px_24px_rgba(31,77,61,0.05)]"
@@ -256,8 +262,12 @@ function WhyChooseUs({ shouldReduceMotion, viewport }: MotionProps) {
             >
               <Image src={reason.icon} alt="" width={29} height={29} className={reason.iconClassName} />
             </motion.div>
-            <h3 className="mt-5 text-[16px] font-semibold leading-6 text-[#183c2f]">{reason.title}</h3>
-            <p className="mt-2 text-[13px] leading-6 text-[#5d6965] lg:text-[14px]">{reason.description}</p>
+            <h3 className="mt-5 text-[16px] font-semibold leading-6 text-[#183c2f]">
+              {t(`about.reasons.${reason.key}.title`)}
+            </h3>
+            <p className="mt-2 text-[13px] leading-6 text-[#5d6965] lg:text-[14px]">
+              {t(`about.reasons.${reason.key}.description`)}
+            </p>
           </motion.article>
         ))}
       </div>
@@ -266,6 +276,8 @@ function WhyChooseUs({ shouldReduceMotion, viewport }: MotionProps) {
 }
 
 function AboutCta({ shouldReduceMotion, viewport }: MotionProps) {
+  const { t, href } = useI18n();
+
   return (
     <motion.section
       initial={shouldReduceMotion ? undefined : { opacity: 0 }}
@@ -292,17 +304,17 @@ function AboutCta({ shouldReduceMotion, viewport }: MotionProps) {
       >
         <div className="flex max-w-[760px] flex-col items-start gap-4">
           <motion.h2 variants={fadeUp} className="max-w-[680px] text-[32px] font-semibold leading-tight text-white lg:text-[56px]">
-            Ready to plan your Hurghada holiday?
+            {t("about.ctaTitle")}
           </motion.h2>
           <motion.p variants={fadeUp} className="max-w-[560px] text-[14px] leading-7 text-white/90 lg:text-[18px] lg:leading-8">
-            Tell us your travel dates and preferences, and our local team will help you find the ideal vacation home with effortless check-in and private airport transfers.
+            {t("about.ctaBody")}
           </motion.p>
           <motion.div variants={fadeUp}>
             <Link
-              href="/contact"
+              href={href("/contact")}
               className="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-[15px] font-semibold text-[#2e6f57] shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:bg-[#f5f7f6]"
             >
-              Contact Our Host Team
+              {t("about.ctaAction")}
             </Link>
           </motion.div>
         </div>

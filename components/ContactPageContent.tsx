@@ -6,17 +6,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
 import ContactForm from "./ContactForm";
+import { useI18n } from "./I18nProvider";
 
 const contactDetails = [
   {
-    label: "Email",
+    labelKey: "contact.labels.email",
     value: siteConfig.email,
     href: `mailto:${siteConfig.email}`,
     icon: "/contact/icons/email.svg",
     iconSize: "size-[18px]",
   },
   {
-    label: "WhatsApp",
+    labelKey: "contact.labels.whatsapp",
     value: siteConfig.displayPhone,
     href: siteConfig.whatsappUrl,
     external: true,
@@ -24,7 +25,7 @@ const contactDetails = [
     iconSize: "size-[18px]",
   },
   {
-    label: "Office",
+    labelKey: "contact.labels.office",
     value: siteConfig.address.label,
     href: "https://www.google.com/maps/search/?api=1&query=Hurghada%20El%20Kawther",
     external: true,
@@ -32,8 +33,8 @@ const contactDetails = [
     iconSize: "h-5 w-4",
   },
   {
-    label: "Working Hours",
-    value: "Sun - Thu: 9:00 AM - 6:00 PM",
+    labelKey: "contact.labels.hours",
+    valueKey: "contact.workingHours",
     icon: "/contact/icons/clock.svg",
     iconSize: "size-5",
   },
@@ -60,6 +61,7 @@ type MotionProps = {
 };
 
 export default function ContactPageContent() {
+  const { t, href } = useI18n();
   const shouldReduceMotion = useReducedMotion();
   const viewport = { once: true, amount: 0.2 };
 
@@ -73,17 +75,17 @@ export default function ContactPageContent() {
       >
         <div className="mx-auto max-w-[1280px]">
           <motion.nav variants={fadeUp} aria-label="Breadcrumb" className="mb-3 flex items-center gap-2 text-[13px] text-[#667c74]">
-            <Link href="/" className="font-medium transition hover:text-[#2e6f57]">
-              Home
+            <Link href={href("/")} className="font-medium transition hover:text-[#2e6f57]">
+              {t("common.home")}
             </Link>
             <span>/</span>
-            <span className="text-[#183c2f]">Contact Us</span>
+            <span className="text-[#183c2f]">{t("common.contact")}</span>
           </motion.nav>
           <motion.h1 variants={fadeUp} className="text-[30px] font-semibold leading-tight text-[#2e6f57] sm:text-[38px] lg:text-[48px]">
-            Contact Us
+            {t("contact.title")}
           </motion.h1>
           <motion.p variants={fadeUp} className="mt-3 max-w-[620px] text-[14px] leading-7 text-[#667c74] lg:text-[18px] lg:leading-8">
-            Have questions, need help choosing a vacation home, or want to arrange airport transfers? Send us a message and our local team will get back to you promptly.
+            {t("contact.body")}
           </motion.p>
         </div>
       </motion.div>
@@ -100,6 +102,8 @@ export default function ContactPageContent() {
   );
 }
 function ContactInfoPanel({ shouldReduceMotion, viewport }: MotionProps) {
+  const { t } = useI18n();
+
   return (
     <motion.aside
       variants={shouldReduceMotion ? undefined : container}
@@ -109,19 +113,19 @@ function ContactInfoPanel({ shouldReduceMotion, viewport }: MotionProps) {
       className="flex flex-col gap-6"
     >
       <motion.div variants={fadeUp}>
-        <p className="text-[13px] font-semibold uppercase text-[#cfb072]">Get in touch</p>
+        <p className="text-[13px] font-semibold uppercase text-[#cfb072]">{t("contact.getInTouch")}</p>
         <h2 className="mt-2 text-[24px] font-semibold leading-tight text-[#2e6f57] lg:text-[30px]">
-          We are here to help.
+          {t("contact.helpTitle")}
         </h2>
         <p className="mt-3 text-[14px] leading-7 text-[#667c74] lg:text-[16px]">
-          Reach us through any channel below, or use the form and we will route your message to the right person.
+          {t("contact.helpBody")}
         </p>
       </motion.div>
 
       <motion.div variants={container} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
         {contactDetails.map((detail) => (
           <motion.a
-            key={detail.label}
+            key={detail.labelKey}
             href={detail.href}
             target={detail.external ? "_blank" : undefined}
             rel={detail.external ? "noopener noreferrer" : undefined}
@@ -133,9 +137,9 @@ function ContactInfoPanel({ shouldReduceMotion, viewport }: MotionProps) {
               <Image src={detail.icon} alt="" width={20} height={20} className={detail.iconSize} />
             </div>
             <div className="min-w-0">
-              <p className="text-[12px] font-semibold uppercase text-[#8a9a94]">{detail.label}</p>
+              <p className="text-[12px] font-semibold uppercase text-[#8a9a94]">{t(detail.labelKey)}</p>
               <p className="mt-1 break-words text-[14px] leading-6 text-[#183c2f] lg:text-[15px]">
-                {detail.value}
+                {"valueKey" in detail && detail.valueKey ? t(detail.valueKey) : detail.value}
               </p>
             </div>
           </motion.a>

@@ -248,12 +248,24 @@ export interface PropertyListItem {
   createdAtUtc: string;
 }
 
+export interface PropertyAddressRequest extends Omit<PropertyAddress, "country" | "city" | "area" | "street"> {
+  country: TranslationInput;
+  city: TranslationInput;
+  area: TranslationInput;
+  street: TranslationInput;
+}
+
+export interface PropertyListingDetailsRequest extends Omit<PropertyListingDetails, "outdoorFacility" | "cancellation"> {
+  outdoorFacility: TranslationInput;
+  cancellation: TranslationInput;
+}
+
 // Request Payload (POST /api/properties or PUT /api/properties/{id})
 export interface PropertyRequest {
   categoryId: string;
   code: string;
-  name: string;
-  description: string;
+  name: TranslationInput;
+  description: TranslationInput;
   bedroomNo: number;
   bathroomNo: number;
   roomNo: number;
@@ -273,8 +285,8 @@ export interface PropertyRequest {
   longitude: number;
   rulesCancellation: string;
   notes: string;
-  address?: PropertyAddress;
-  listingDetails?: PropertyListingDetails;
+  address?: PropertyAddressRequest;
+  listingDetails?: PropertyListingDetailsRequest;
   sleepingArrangements?: PropertySleepingArrangement[];
   propertyCategoryItemIds?: string[];
   attributeGroupItemIds?: string[];
@@ -302,3 +314,4 @@ export interface PropertyTypeCount {
   name: string;
   count: number;
 }
+import type { TranslationInput } from "@/lib/i18n/adminTranslations";

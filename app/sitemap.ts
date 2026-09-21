@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/site";
+import { locales, localizePath } from "@/lib/i18n/config";
 
 const routes = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
@@ -19,10 +20,15 @@ const routes = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
-  return routes.map((route) => ({
-    url: absoluteUrl(route.path),
-    lastModified,
-    changeFrequency: route.changeFrequency,
-    priority: route.priority,
-  }));
+  return routes.flatMap((route) =>
+    locales.map((locale) => ({
+      url: absoluteUrl(localizePath(route.path, locale)),
+      lastModified,
+      changeFrequency: route.changeFrequency,
+      priority: route.priority,
+      alternates: {
+        languages: Object.fromEntries(locales.map((item) => [item, absoluteUrl(localizePath(route.path, item))])),
+      },
+    }))
+  );
 }

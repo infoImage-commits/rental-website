@@ -1,3 +1,5 @@
+import type { TranslationInput } from "@/lib/i18n/adminTranslations";
+
 export interface AttributeGroupItem {
   id: string;
   attributeGroupId: string;
@@ -8,8 +10,8 @@ export interface AttributeGroupItem {
 
 export interface AttributeGroupItemRequest {
   attributeGroupId?: string;
-  key: string;
-  value: string;
+  key: TranslationInput;
+  value: TranslationInput;
   displayOrder?: number;
 }
 

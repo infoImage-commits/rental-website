@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { formatUsd } from "@/lib/utils/currency";
+import { useI18n } from "./I18nProvider";
 
 interface PropertyBookingCardProps {
   idPrefix?: string;
@@ -70,6 +71,7 @@ export default function PropertyBookingCard({
   onSubmitBooking,
   onScrollToCalendar,
 }: PropertyBookingCardProps) {
+  const { t, href } = useI18n();
   const isFormValid =
     !isPending &&
     !isPriceUnavailable &&
@@ -93,7 +95,7 @@ export default function PropertyBookingCard({
           <span className="text-[26px] font-bold text-[#183c2f] lg:text-[28px]">
             {formatUsd(basePrice)}
           </span>
-          <span className="text-[13px] font-medium text-[#667c74]"> / night</span>
+          <span className="text-[13px] font-medium text-[#667c74]"> / {t("common.night")}</span>
         </div>
 
         {totalReviews > 0 ? (
@@ -117,7 +119,7 @@ export default function PropertyBookingCard({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-[#667c74]">
-                Check-in
+                {t("booking.checkIn")}
               </label>
               <input
                 type="date"
@@ -129,7 +131,7 @@ export default function PropertyBookingCard({
             </div>
             <div className="border-l border-[#dfe8e4] pl-2.5">
               <label className="block text-[10px] font-bold uppercase tracking-wider text-[#667c74]">
-                Checkout
+                {t("booking.checkout")}
               </label>
               <input
                 type="date"
@@ -144,10 +146,10 @@ export default function PropertyBookingCard({
           <div className="mt-2.5 flex items-center justify-between border-t border-[#edf2ef] pt-2 text-[11px]">
             <span className="text-[#667c74]">
               {checkIn && checkOut
-                ? `${nights} ${nights === 1 ? "night" : "nights"} selected`
+                ? t("booking.selectedRange", { count: nights, label: nights === 1 ? t("common.night") : t("common.nights") })
                 : checkIn
-                  ? "Select checkout date"
-                  : "Select dates"}
+                  ? t("booking.selectCheckout")
+                  : t("booking.selectDates")}
             </span>
             <div className="flex items-center gap-2">
               {onScrollToCalendar && (
@@ -156,7 +158,7 @@ export default function PropertyBookingCard({
                   onClick={onScrollToCalendar}
                   className="font-medium text-[#2e6f57] hover:underline"
                 >
-                  View calendar
+                  {t("property.viewCalendar")}
                 </button>
               )}
               {(checkIn || checkOut) && (
@@ -167,7 +169,7 @@ export default function PropertyBookingCard({
                     onClick={onClearDates}
                     className="font-medium text-[#cfb072] hover:underline"
                   >
-                    Clear
+                    {t("common.clear")}
                   </button>
                 </>
               )}
@@ -178,7 +180,7 @@ export default function PropertyBookingCard({
         {/* ─── Guests Selector ─── */}
         <div>
           <label className="block text-[12px] font-semibold text-[#183c2f]">
-            Guests
+            {t("common.guests")}
           </label>
           <select
             value={bookingForm.person}
@@ -195,8 +197,8 @@ export default function PropertyBookingCard({
               (_, index) => index + 1
             ).map((count) => (
               <option key={count} value={count}>
-                {count} {count === 1 ? "Guest" : "Guests"}{" "}
-                {count === capacity ? "(Max capacity)" : ""}
+                {count} {count === 1 ? t("common.guest") : t("common.guests")}{" "}
+                {count === capacity ? `(${t("common.maxCapacity")})` : ""}
               </option>
             ))}
           </select>
@@ -206,11 +208,11 @@ export default function PropertyBookingCard({
         <div className="space-y-3 pt-1">
           <div>
             <label className="block text-[12px] font-semibold text-[#183c2f]">
-              Full Name <span className="text-red-500">*</span>
+              {t("booking.fullName")} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              placeholder="e.g. John Doe"
+              placeholder={t("booking.fullNamePlaceholder")}
               value={bookingForm.fullName}
               onChange={(e) =>
                 setBookingForm((prev) => ({ ...prev, fullName: e.target.value }))
@@ -221,11 +223,11 @@ export default function PropertyBookingCard({
 
           <div>
             <label className="block text-[12px] font-semibold text-[#183c2f]">
-              Email Address <span className="text-red-500">*</span>
+              {t("booking.email")} <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
-              placeholder="e.g. john@example.com"
+              placeholder={t("booking.emailPlaceholder")}
               value={bookingForm.email}
               onChange={(e) =>
                 setBookingForm((prev) => ({ ...prev, email: e.target.value }))
@@ -236,11 +238,11 @@ export default function PropertyBookingCard({
 
           <div>
             <label className="block text-[12px] font-semibold text-[#183c2f]">
-              Phone Number <span className="text-red-500">*</span>
+              {t("booking.phone")} <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
-              placeholder="e.g. +20 123 456 7890"
+              placeholder={t("booking.phonePlaceholder")}
               value={bookingForm.phone}
               onChange={(e) =>
                 setBookingForm((prev) => ({
@@ -256,32 +258,32 @@ export default function PropertyBookingCard({
         {/* ─── Price Breakdown Summary ─── */}
         <div className="rounded-xl border border-[#edf2ef] bg-[#fbfdfc] p-4">
           <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#183c2f]">
-            Price Summary
+            {t("booking.priceSummary")}
           </h4>
           <dl className="mt-2.5 space-y-2 text-[13px]">
             <div className="flex justify-between text-[#667c74]">
               <span>
                 {formatUsd(basePrice)} × {nights || 0}{" "}
-                {nights === 1 ? "night" : "nights"}
+                {nights === 1 ? t("common.night") : t("common.nights")}
               </span>
               <span className="font-semibold text-[#183c2f]">
                 {isCheckingPrice && checkIn && checkOut
-                  ? "Checking..."
+                  ? t("common.checking")
                   : formatUsd(estimatedTotal)}
               </span>
             </div>
             <div className="flex justify-between border-t border-[#edf2ef] pt-2 text-[14px]">
-              <span className="font-bold text-[#183c2f]">Total</span>
+              <span className="font-bold text-[#183c2f]">{t("common.total")}</span>
               <span className="text-[17px] font-bold text-[#2e6f57]">
                 {isCheckingPrice && checkIn && checkOut
-                  ? "Checking..."
+                  ? t("common.checking")
                   : formatUsd(estimatedTotal)}
               </span>
             </div>
           </dl>
           {!checkIn || !checkOut ? (
             <p className="mt-2 text-[11px] text-[#8a9a94]">
-              Select dates to check final price and availability.
+              {t("booking.selectDatesPrice")}
             </p>
           ) : null}
         </div>
@@ -289,8 +291,7 @@ export default function PropertyBookingCard({
         {/* Alerts & Errors */}
         {isPriceUnavailable && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-700">
-            Pricing is missing for{" "}
-            {missingDates.length ? missingDates.join(", ") : "the selected range"}.
+            {t("booking.pricingMissing", { dates: missingDates.length ? missingDates.join(", ") : t("booking.selectDates") })}
           </div>
         )}
 
@@ -309,14 +310,14 @@ export default function PropertyBookingCard({
             className="mt-0.5 size-4 rounded accent-[#2e6f57] cursor-pointer"
           />
           <span>
-            I have read and agree to the{" "}
+            {t("booking.rulesAgreement")}{" "}
             <Link
-              href="/house-rules"
+              href={href("/house-rules")}
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-[#2e6f57] underline hover:text-[#183c2f]"
             >
-              House Rules
+              {t("common.houseRules")}
             </Link>
             .
           </span>
@@ -331,11 +332,11 @@ export default function PropertyBookingCard({
           {isPending ? (
             <>
               <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              <span>Processing...</span>
+              <span>{t("common.processing")}</span>
             </>
           ) : (
             <>
-              <span>Book & Pay with PayPal</span>
+              <span>{t("booking.bookPaypal")}</span>
               <svg
                 className="size-4"
                 fill="none"
@@ -369,7 +370,7 @@ export default function PropertyBookingCard({
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-            <span>Instant confirmation & secure payment</span>
+            <span>{t("booking.secure")}</span>
           </div>
         </div>
       </form>

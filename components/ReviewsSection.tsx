@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useReviews } from "@/lib/hooks/useReview";
+import { useI18n } from "@/components/I18nProvider";
 
 function StarRow({ rate }: { rate: number }) {
   const full = Math.min(5, Math.max(0, Math.round(rate)));
@@ -140,6 +141,7 @@ function ReviewCard({
 }
 
 export default function ReviewsSection() {
+  const { t } = useI18n();
   const { data, isLoading, isError } = useReviews({
     PageSize: 9,
     SortBy: "rate",
@@ -160,14 +162,14 @@ export default function ReviewsSection() {
           className="mx-auto flex max-w-[730px] flex-col items-center gap-2 text-center lg:gap-5"
         >
           <p className="text-[14px] font-medium uppercase tracking-[0.36em] text-[#d59e52] lg:text-[18px]">
-            Guest Reviews
+            {t("home.reviews.eyebrow")}
           </p>
           <h2 className="max-w-[480px] text-[20px] font-medium leading-normal tracking-[-0.02em] text-[#2e6f57] lg:max-w-none lg:text-[36px]">
-            What Our Guests Say
+            {t("home.reviews.title")}
           </h2>
           <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
           <p className="max-w-[480px] text-[14px] leading-relaxed text-[#5a6b64] lg:text-[16px]">
-            Real experiences from guests who stayed in our properties in Hurghada.
+            {t("home.reviews.body")}
           </p>
         </motion.div>
 
@@ -181,7 +183,7 @@ export default function ReviewsSection() {
             </div>
           ) : isError ? (
             <div className="flex items-center justify-center py-12 text-[14px] text-[#8a9a94]">
-              Failed to load reviews.
+              {t("home.reviews.failed")}
             </div>
           ) : reviews.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-[#d9d3c9] bg-white py-16 text-center">
@@ -200,9 +202,9 @@ export default function ReviewsSection() {
                 </svg>
               </div>
               <div>
-                <p className="text-[15px] font-semibold text-[#1F4D3D]">No reviews yet</p>
+                <p className="text-[15px] font-semibold text-[#1F4D3D]">{t("home.reviews.emptyTitle")}</p>
                 <p className="mt-1 text-[13px] text-[#8a9a94]">
-                  Be the first to share your experience!
+                  {t("home.reviews.emptyBody")}
                 </p>
               </div>
             </div>
@@ -236,7 +238,9 @@ export default function ReviewsSection() {
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
               <span className="text-[13px] font-semibold text-[#1F4D3D]">
-                {(reviews.reduce((acc, r) => acc + r.rate, 0) / reviews.length).toFixed(1)} average rating
+                {t("home.reviews.averageRating", {
+                  rating: (reviews.reduce((acc, r) => acc + r.rate, 0) / reviews.length).toFixed(1),
+                })}
               </span>
             </div>
             <div className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 shadow-sm">
@@ -244,7 +248,7 @@ export default function ReviewsSection() {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <span className="text-[13px] font-semibold text-[#1F4D3D]">
-                {data?.totalCount ?? reviews.length} verified reviews
+                {t("home.reviews.verifiedReviews", { count: data?.totalCount ?? reviews.length })}
               </span>
             </div>
           </motion.div>

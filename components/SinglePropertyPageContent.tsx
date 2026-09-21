@@ -90,8 +90,10 @@ function normalizeLookupKey(value: string) {
 }
 
 import DynamicAmenityIcon from "./DynamicAmenityIcon";
+import { useI18n } from "./I18nProvider";
 
 export default function SinglePropertyPageContent({ id }: { id: string }) {
+  const { t, href } = useI18n();
   const { data: property, isLoading } = usePropertyById(id);
   const { data: includeCategories = [] } = usePropertyCategories();
   const { data: includeItems = [] } = usePropertyCategoryItems();
@@ -103,7 +105,7 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
       <div className="flex min-h-[50vh] items-center justify-center p-20 text-center">
         <div className="flex flex-col items-center gap-3">
           <span className="size-8 animate-spin rounded-full border-3 border-[#183c2f] border-t-transparent" />
-          <span className="text-[15px] font-medium text-[#183c2f]">Loading Property...</span>
+          <span className="text-[15px] font-medium text-[#183c2f]">{t("property.loading")}</span>
         </div>
       </div>
     );
@@ -112,13 +114,13 @@ export default function SinglePropertyPageContent({ id }: { id: string }) {
   if (!property) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center p-20 text-center">
-        <h2 className="text-[20px] font-bold text-[#183c2f]">Property Not Found</h2>
-        <p className="mt-2 text-[14px] text-[#667c74]">The property you are looking for does not exist or has been removed.</p>
+        <h2 className="text-[20px] font-bold text-[#183c2f]">{t("property.notFoundTitle")}</h2>
+        <p className="mt-2 text-[14px] text-[#667c74]">{t("property.notFoundBody")}</p>
         <Link
-          href="/rent"
+          href={href("/rent")}
           className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-[#183c2f] px-6 text-[14px] font-semibold text-white transition hover:bg-[#2e6f57]"
         >
-          Browse Vacation Homes
+          {t("property.browse")}
         </Link>
       </div>
     );
@@ -151,6 +153,7 @@ function PropertyDetailView({
   averageRating: number;
   totalReviews: number;
 }) {
+  const { t, locale } = useI18n();
   const propertyId = property.id;
   const propertyName = property.name;
   const basePrice = property.basePrice || 0;
@@ -183,6 +186,7 @@ function PropertyDetailView({
         const urlParams = new URLSearchParams(window.location.search);
         const urlCheckIn = urlParams.get("checkIn") || urlParams.get("from");
         const urlCheckOut = urlParams.get("checkOut") || urlParams.get("to");
+        const urlPerson = Number(urlParams.get("person") || urlParams.get("MinCapacity") || urlParams.get("minCapacity"));
 
         const saved = localStorage.getItem(`rent_booking_draft_${propertyId}`);
         if (saved) {
@@ -213,6 +217,12 @@ function PropertyDetailView({
         }
         if (urlCheckOut && (!urlCheckIn || urlCheckOut > urlCheckIn)) {
           setCheckOut(urlCheckOut);
+        }
+        if (Number.isFinite(urlPerson) && urlPerson >= 1) {
+          setBookingForm((prev) => ({
+            ...prev,
+            person: Math.min(Math.max(1, urlPerson), capacity),
+          }));
         }
       } catch (err) {
         console.warn("Could not restore booking draft", err);
@@ -301,7 +311,7 @@ function PropertyDetailView({
     }
 
     if (rangeHasBookedDate(checkIn, day.date)) {
-      setFormError("This date range includes unavailable days. Please choose a different checkout date.");
+      setFormError(t("booking.errors.unavailableRange"));
       return;
     }
 
@@ -315,22 +325,22 @@ function PropertyDetailView({
       setCheckOut("");
     } else if (checkOut && rangeHasBookedDate(newCheckIn, checkOut)) {
       setCheckOut("");
-      setFormError("Selected date range includes unavailable days.");
+      setFormError(t("booking.errors.unavailableSelected"));
     }
   };
 
   const handleCheckOutChange = (newCheckOut: string) => {
     setFormError("");
     if (!checkIn) {
-      setFormError("Please select a check-in date first.");
+      setFormError(t("booking.errors.selectCheckIn"));
       return;
     }
     if (newCheckOut <= checkIn) {
-      setFormError("Check-out date must be after check-in date.");
+      setFormError(t("booking.errors.checkoutAfter"));
       return;
     }
     if (rangeHasBookedDate(checkIn, newCheckOut)) {
-      setFormError("Selected date range includes unavailable days.");
+      setFormError(t("booking.errors.unavailableSelected"));
       return;
     }
     setCheckOut(newCheckOut);
@@ -372,7 +382,7 @@ function PropertyDetailView({
       Array.from({ length: monthsToShow }, (_, index) => {
         const monthDate = new Date(currentYear, currentMonth + index, 1);
         return {
-          title: monthDate.toLocaleString("default", { month: "long", year: "numeric" }),
+          title: monthDate.toLocaleString(locale, { month: "long", year: "numeric" }),
           startOffset: monthDate.getDay(),
           days: getDaysForMonth(monthDate.getFullYear(), monthDate.getMonth()),
         };
@@ -394,7 +404,7 @@ function PropertyDetailView({
       payload: { checkIn, checkOut },
     }).catch((error) => {
       if (!isCurrent) return;
-      const message = getApiErrorMessage(error, "Could not check prices for this date range.");
+      const message = getApiErrorMessage(error, t("booking.errors.priceCheckFailed"));
       setFormError(message);
     });
 
@@ -413,22 +423,22 @@ function PropertyDetailView({
     setFormError("");
 
     if (!bookingForm.fullName.trim() || !bookingForm.email.trim() || !bookingForm.phone.trim()) {
-      setFormError("Please enter your name, email, and phone number.");
+      setFormError(t("booking.errors.contact"));
       return;
     }
 
     if (!checkIn || !checkOut) {
-      setFormError("Please select your check-in and check-out dates from the calendar.");
+      setFormError(t("booking.errors.dates"));
       return;
     }
 
     if (checkOut <= checkIn) {
-      setFormError("Check-out must be after check-in.");
+      setFormError(t("booking.errors.checkoutAfter"));
       return;
     }
 
     if (bookingForm.person > capacity) {
-      setFormError(`This property allows up to ${capacity} guests.`);
+      setFormError(t("booking.errors.capacity", { count: capacity }));
       return;
     }
 
@@ -437,7 +447,7 @@ function PropertyDetailView({
       const latestBookings = (latestAvailability?.bookingCalendar || []) as BookingCalendarItem[];
 
       if (rangeHasBookedDate(checkIn, checkOut, latestBookings)) {
-        const message = "This date range includes unavailable days. Please choose a different checkout date.";
+        const message = t("booking.errors.unavailableRange");
         setFormError(message);
         toast.error(message);
         return;
@@ -450,15 +460,15 @@ function PropertyDetailView({
 
       if (!latestPriceCheck?.isPriceAvailable) {
         const missing = latestPriceCheck?.missingDates?.length
-          ? ` Missing prices: ${latestPriceCheck.missingDates.join(", ")}.`
+          ? ` ${t("booking.pricingMissing", { dates: latestPriceCheck.missingDates.join(", ") })}`
           : "";
-        const message = `Pricing is not available for the selected dates.${missing}`;
+        const message = t("booking.errors.priceUnavailable", { missing });
         setFormError(message);
         toast.error(message);
         return;
       }
     } catch (error) {
-      const message = getApiErrorMessage(error, "Could not verify availability and pricing for this booking.");
+      const message = getApiErrorMessage(error, t("booking.errors.verifyFailed"));
       setFormError(message);
       toast.error(message);
       return;
@@ -478,7 +488,7 @@ function PropertyDetailView({
       {
         onSuccess: (res) => {
           if (!res.isSuccess || !res.data?.bookingId) {
-            const message = res.errors?.[0] || res.message || "Could not create this booking.";
+            const message = res.errors?.[0] || res.message || t("booking.errors.createUnavailable");
             setFormError(message);
             toast.error(message);
             return;
@@ -507,7 +517,7 @@ function PropertyDetailView({
                 window.location.href = orderRes.approvalUrl;
               },
               onError: (error) => {
-                const message = getApiErrorMessage(error, "Booking was created, but payment could not be started.");
+                const message = getApiErrorMessage(error, t("booking.errors.paymentStartFailed"));
                 setFormError(message);
                 toast.error(message);
               },
@@ -515,7 +525,7 @@ function PropertyDetailView({
           );
         },
         onError: (error) => {
-          const message = getApiErrorMessage(error, "Failed to create booking. Please check your details and try again.");
+          const message = getApiErrorMessage(error, t("booking.errors.createFailed"));
           setFormError(message);
           toast.error(message);
         },
@@ -557,9 +567,9 @@ function PropertyDetailView({
   });
 
   const quickFacts = [
-    { label: property.propertyTypeName || "Vacation Home", icon: "/homepage/properties/icons/size.svg" },
-    { label: `${property.capacity || 2} Guests`, icon: "/billing/icons/tenant.svg" },
-    { label: `${property.bedroomNo || 1} Bedroom`, icon: "/homepage/properties/icons/bed.svg" },
+    { label: property.propertyTypeName || t("property.quickType"), icon: "/homepage/properties/icons/size.svg" },
+    { label: `${property.capacity || 2} ${t("property.guests")}`, icon: "/billing/icons/tenant.svg" },
+    { label: `${property.bedroomNo || 1} ${Number(property.bedroomNo || 1) === 1 ? t("property.bedroom") : t("property.bedrooms")}`, icon: "/homepage/properties/icons/bed.svg" },
   ];
 
   const priceDetails: DetailRow[] = [
@@ -724,7 +734,7 @@ function PropertyDetailView({
             <p className="text-[11px] font-medium text-[#8a9a94]">
               {checkIn && checkOut
                 ? `${checkIn} to ${checkOut} (${nights} ${nights === 1 ? "nt" : "nts"})`
-                : "Choose dates to book"}
+                : t("booking.selectDates")}
             </p>
           </div>
           <button
@@ -737,7 +747,7 @@ function PropertyDetailView({
             }}
             className="inline-flex h-11 items-center justify-center rounded-full bg-[#2e6f57] px-6 text-[14px] font-semibold text-white shadow-md transition hover:bg-[#255f49] active:scale-95"
           >
-            Reserve
+            {t("common.bookNow")}
           </button>
         </div>
       </div>
@@ -746,18 +756,20 @@ function PropertyDetailView({
 }
 
 function PropertyHeader({ property }: { property: Property }) {
+  const { t, href } = useI18n();
+
   return (
     <header>
       <nav className="flex items-center gap-1.5 text-[13px] leading-6 text-[#8a9a94] lg:text-[14px]">
-        <Link href="/" className="hover:text-[#183c2f] transition flex items-center gap-1">
+        <Link href={href("/")} className="hover:text-[#183c2f] transition flex items-center gap-1">
           <span className="relative grid size-4 place-items-center">
             <Image src="/single-property/icon-home.svg" alt="" fill sizes="16px" className="object-contain" />
           </span>
-          <span>Home</span>
+          <span>{t("common.home")}</span>
         </Link>
         <span>&gt;</span>
-        <Link href="/rent" className="hover:text-[#183c2f] transition">
-          Vacation Homes
+        <Link href={href("/rent")} className="hover:text-[#183c2f] transition">
+          {t("property.vacationHomes")}
         </Link>
         <span>&gt;</span>
         <span className="truncate font-medium text-[#183c2f] max-w-[180px] sm:max-w-none">
@@ -938,6 +950,8 @@ function AvailabilityCalendarSection({
   setMonthsToShow: (count: number) => void;
   nights: number;
 }) {
+  const { t } = useI18n();
+
   return (
     <section
       id="availability-calendar"
@@ -954,14 +968,14 @@ function AvailabilityCalendarSection({
                 mask: "url('/billing/icons/calendar.svg') center / contain no-repeat",
               }}
             />
-            Availability & Dates
+            {t("property.availability")}
           </h2>
           <p className="mt-1 text-[13px] text-[#667c74]">
             {checkIn && checkOut
-              ? `Selected: ${checkIn} → ${checkOut} (${nights} ${nights === 1 ? "night" : "nights"})`
+              ? t("property.selectedRange", { checkIn, checkOut, nights, nightLabel: nights === 1 ? t("common.night") : t("common.nights") })
               : checkIn
-                ? `Check-in: ${checkIn} — Click a checkout date`
-                : "Select your dates on the calendar"}
+                ? t("property.checkInOnly", { checkIn })
+                : t("property.selectDatesCalendar")}
           </p>
         </div>
 
@@ -972,7 +986,7 @@ function AvailabilityCalendarSection({
               onClick={onClearDates}
               className="rounded-full border border-[#dfe8e4] bg-white px-3 py-1 text-[12px] font-medium text-[#667c74] hover:border-[#cfb072] hover:text-[#183c2f]"
             >
-              Clear dates
+              {t("common.clearDates")}
             </button>
           )}
 
@@ -986,7 +1000,7 @@ function AvailabilityCalendarSection({
                   monthsToShow === count ? "bg-[#2e6f57] text-white" : "text-[#667c74] hover:text-[#183c2f]"
                 }`}
               >
-                {count} mo
+                {t("property.oneMonth", { count })}
               </button>
             ))}
           </div>
@@ -1006,10 +1020,10 @@ function AvailabilityCalendarSection({
       </div>
 
       <div className="mt-6 flex flex-wrap gap-4 border-t border-[#edf2ef] pt-4 text-[11px] leading-4 text-[#6f8793]">
-        <Legend label="Past" className="bg-[#f1f5f8]" />
-        <Legend label="Today" className="border border-[#2e6f57] bg-white" />
-        <Legend label="Booked" className="bg-[#e9eef3]" />
-        <Legend label="Selected" className="bg-[#2e6f57]" />
+        <Legend label={t("property.past")} className="bg-[#f1f5f8]" />
+        <Legend label={t("property.today")} className="border border-[#2e6f57] bg-white" />
+        <Legend label={t("property.booked")} className="bg-[#e9eef3]" />
+        <Legend label={t("property.selected")} className="bg-[#2e6f57]" />
       </div>
     </section>
   );

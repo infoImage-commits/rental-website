@@ -1,10 +1,9 @@
 "use client";
 
 import { usePublicRentProperties } from "@/lib/hooks/useProperties";
-import { PropertyType, type PropertyListItem } from "@/lib/types/property";
+import type { PropertyListItem } from "@/lib/types/property";
 import { slugify } from "@/lib/utils/slugify";
 import { API_BASE_URL } from "@/lib/api/config";
-import { useCategories } from "@/lib/hooks/useCategory";
 import { formatUsd } from "@/lib/utils/currency";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,6 +11,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInHouseBookings } from "@/lib/hooks/useBooking";
+import { useI18n } from "./I18nProvider";
 
 type RentGridItem = PropertyListItem & {
   size?: number | null;
@@ -42,6 +42,7 @@ export default function PropertiesPageContent() {
 function PropertiesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, href } = useI18n();
   const paramsKey = searchParams.toString();
   const paramsObj = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -60,12 +61,9 @@ function PropertiesPageInner() {
     const formData = new FormData(e.currentTarget);
     const newParams = new URLSearchParams();
 
-    const city = formData.get("city") as string;
-    const minPrice = formData.get("minPrice") as string;
-    const maxPrice = formData.get("maxPrice") as string;
-    const propertyType = formData.get("propertyType") as string;
     const from = (formData.get("from") as string)?.trim();
     const to = (formData.get("to") as string)?.trim();
+    const minCapacity = (formData.get("minCapacity") as string)?.trim();
 
     if (from && to) {
       newParams.append("from", from);
@@ -77,23 +75,9 @@ function PropertiesPageInner() {
       newParams.append("to", d.toISOString().split("T")[0]);
     }
 
-    if (city) newParams.append("CategoryId", city);
-    if (propertyType) newParams.append("PropertyType", propertyType);
-    if (minPrice) newParams.append("MinPrice", minPrice);
-    if (maxPrice) newParams.append("MaxPrice", maxPrice);
-
-    const minCapacity = formData.get("minCapacity") as string;
     if (minCapacity) newParams.append("MinCapacity", minCapacity);
 
-    const isAvailable = formData.get("isAvailable") === "on";
-    if (isAvailable) newParams.append("IsAvailable", "true");
-
-    const views = ["SeaView", "PoolView", "GardenView", "MountainView", "CityView"];
-    views.forEach(v => {
-      if (formData.get(`has${v}`) === "on") newParams.append(`Has${v}`, "true");
-    });
-
-    router.push(`/rent?${newParams.toString()}`);
+    router.push(href(`/rent?${newParams.toString()}`));
     setMobileFiltersOpen(false);
   };
 
@@ -103,7 +87,7 @@ function PropertiesPageInner() {
 
       {/* Mobile filter toggle bar */}
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-[#e8e8e8] bg-white px-4 py-3 shadow-sm lg:hidden">
-        <p className="text-[14px] font-semibold text-[#183c2f]">Rental Properties</p>
+        <p className="text-[14px] font-semibold text-[#183c2f]">{t("rent.mobileTitle")}</p>
         <button
           id="open-filters-btn"
           onClick={() => setMobileFiltersOpen(true)}
@@ -112,7 +96,7 @@ function PropertiesPageInner() {
           <svg width="14" height="12" viewBox="0 0 14 12" fill="none" aria-hidden="true">
             <path d="M0 1h14M2 6h10M4 11h6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
           </svg>
-          Filters
+          {t("rent.filters")}
         </button>
       </div>
 
@@ -143,11 +127,11 @@ function PropertiesPageInner() {
             className="fixed inset-y-0 left-0 z-[90] flex w-full max-w-[340px] flex-col bg-white shadow-2xl lg:hidden"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-[#f0f0f0] px-5 py-4">
-              <h2 className="text-[18px] font-bold text-[#183c2f]">Filters</h2>
+              <h2 className="text-[18px] font-bold text-[#183c2f]">{t("rent.filters")}</h2>
               <button
                 onClick={() => setMobileFiltersOpen(false)}
                 className="grid size-8 place-items-center rounded-full text-[#656566] transition hover:bg-[#f5f5f5]"
-                aria-label="Close filters"
+                aria-label={t("rent.closeFilters")}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M1 1l12 12M13 1L1 13"/>
@@ -182,6 +166,8 @@ function PropertiesPageInner() {
 }
 
 function PropertiesHero() {
+  const { t } = useI18n();
+
   return (
     <section className="relative flex h-[200px] w-full items-center overflow-hidden bg-[#2e6f57] lg:h-[280px]">
       <Image
@@ -220,7 +206,7 @@ function PropertiesHero() {
             transition={{ duration: 0.6 }}
             className="text-[24px] font-bold leading-[1.2] text-white sm:text-3xl lg:text-[44px]"
           >
-            Find Your Next Vacation Rental Home
+            {t("rent.heroTitle")}
           </motion.h1>
           <motion.p
             initial={{ y: 20, opacity: 0 }}
@@ -228,7 +214,7 @@ function PropertiesHero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mt-2 text-[12px] leading-[1.6] text-white/90 sm:text-sm lg:mt-4 lg:text-[16px]"
           >
-            Discover comfortable holiday apartments, beachside chalets, and studios for rent in Hurghada. Enjoy verified amenities, prime coastal locations, and a relaxing stay.
+            {t("rent.heroBody")}
           </motion.p>
         </motion.div>
       </div>
@@ -245,20 +231,8 @@ function FilterForm({
   paramsObj: Record<string, string>;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
-  const { data: categories } = useCategories();
-
-  const categoryIdParam = paramsObj.CategoryId || paramsObj.categoryId || "";
-  const cityVal = categoryIdParam;
-  const propertyTypeVal = paramsObj.PropertyType || paramsObj.propertyType || "";
-  const minPriceVal = paramsObj.MinPrice || "";
-  const maxPriceVal = paramsObj.MaxPrice || "";
+  const { t } = useI18n();
   const minCapacityVal = paramsObj.MinCapacity || "";
-  const isAvailableVal = paramsObj.IsAvailable === "true";
-  const hasSeaViewVal = paramsObj.HasSeaView === "true";
-  const hasPoolViewVal = paramsObj.HasPoolView === "true";
-  const hasGardenViewVal = paramsObj.HasGardenView === "true";
-  const hasMountainViewVal = paramsObj.HasMountainView === "true";
-  const hasCityViewVal = paramsObj.HasCityView === "true";
 
   const fromVal = paramsObj.from || "";
   const toVal = paramsObj.to || "";
@@ -298,24 +272,15 @@ function FilterForm({
     setToDate("");
   };
 
-  const checkboxes = [
-    { name: "isAvailable", label: "Available Now", defaultChecked: isAvailableVal },
-    { name: "hasSeaView", label: "Sea View", defaultChecked: hasSeaViewVal },
-    { name: "hasPoolView", label: "Pool View", defaultChecked: hasPoolViewVal },
-    { name: "hasGardenView", label: "Garden View", defaultChecked: hasGardenViewVal },
-    { name: "hasMountainView", label: "Mountain View", defaultChecked: hasMountainViewVal },
-    { name: "hasCityView", label: "City View", defaultChecked: hasCityViewVal },
-  ];
-
   return (
     <form onSubmit={onSubmit} className="rounded-[20px] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.07)] lg:p-6">
-      <h3 className="mb-4 text-[15px] font-bold text-[#183c2f]">Filter Properties</h3>
+      <h3 className="mb-4 text-[15px] font-bold text-[#183c2f]">{t("rent.filterProperties")}</h3>
       <div className="flex flex-col gap-4">
         {/* Check-in & Check-out Dates */}
         <div className="rounded-xl border border-[#e6ece9] bg-[#f8faf9] p-3.5">
           <div className="mb-2.5 flex items-center justify-between">
             <span className="text-[12px] font-semibold uppercase tracking-wide text-[#2e6f57]">
-              Dates of Stay
+              {t("rent.datesOfStay")}
             </span>
             {(fromDate || toDate) && (
               <button
@@ -323,13 +288,13 @@ function FilterForm({
                 onClick={handleClearFormDates}
                 className="text-[11px] font-medium text-[#c94a4a] hover:underline"
               >
-                Clear Dates
+                {t("common.clearDates")}
               </button>
             )}
           </div>
           <div className="flex flex-col gap-2.5">
             <label className="block">
-              <span className="mb-1 block text-[11px] font-medium text-[#656566]">Check-in Date</span>
+              <span className="mb-1 block text-[11px] font-medium text-[#656566]">{t("home.hero.checkIn")}</span>
               <input
                 type="date"
                 name="from"
@@ -340,7 +305,7 @@ function FilterForm({
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-[11px] font-medium text-[#656566]">Check-out Date</span>
+              <span className="mb-1 block text-[11px] font-medium text-[#656566]">{t("home.hero.checkOut")}</span>
               <input
                 type="date"
                 name="to"
@@ -354,54 +319,14 @@ function FilterForm({
         </div>
 
         <label className="block">
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Location</span>
-          <select name="city" defaultValue={cityVal} className={inputCls}>
-            <option value="">Any Location</option>
-            {categories?.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
+          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">{t("rent.adults")}</span>
+          <input type="number" name="minCapacity" defaultValue={minCapacityVal} placeholder={t("rent.any")} min="1" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
         </label>
-        <label className="block">
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Property Type</span>
-          <select name="propertyType" defaultValue={propertyTypeVal} className={inputCls}>
-            <option value="">All</option>
-            <option value={PropertyType.Studio}>Studio</option>
-            <option value={PropertyType.oneBedroom}>1 Bedroom</option>
-            <option value={PropertyType.twoBedroom}>2 Bedroom</option>
-          </select>
-        </label>
-        <div>
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Price / Night (USD)</span>
-          <div className="flex items-center gap-2">
-            <input type="number" name="minPrice" defaultValue={minPriceVal} placeholder="Min" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-            <span className="shrink-0 text-[#bbb]">-</span>
-            <input type="number" name="maxPrice" defaultValue={maxPriceVal} placeholder="Max" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-          </div>
-        </div>
-        <label className="block">
-          <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#656566]">No Adults</span>
-          <input type="number" name="minCapacity" defaultValue={minCapacityVal} placeholder="Any" min="0" onWheel={(e) => (e.target as HTMLElement).blur()} className={inputCls} />
-        </label>
-        <div className="flex flex-col gap-2.5 border-t border-[#f0f0f0] pt-4">
-          <span className="text-[12px] font-semibold uppercase tracking-wide text-[#656566]">Amenities and Views</span>
-          {checkboxes.map(({ name, label, defaultChecked }) => (
-            <label key={name} className="flex cursor-pointer items-center gap-2.5 text-[14px] text-[#414847]">
-              <input
-                type="checkbox"
-                name={name}
-                defaultChecked={defaultChecked}
-                className="size-4 rounded border-[#d0d0d0] accent-[#2e6f57]"
-              />
-              {label}
-            </label>
-          ))}
-        </div>
         <button
           type="submit"
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2e6f57] text-[15px] font-bold text-white transition hover:bg-[#255f49] active:scale-[0.98]"
         >
-          Apply Filters
+          {t("rent.applyFilters")}
         </button>
       </div>
     </form>
@@ -409,13 +334,15 @@ function FilterForm({
 }
 
 function ListingHeading() {
+  const { t } = useI18n();
+
   return (
     <section className="pt-6 lg:pt-8">
       <p className="text-[13px] font-medium leading-6 text-[#656566] lg:text-[15px]">
-        Home &gt; Vacation Rentals
+        {t("rent.breadcrumb")}
       </p>
       <h2 className="mt-1 text-[22px] font-semibold text-[#183c2f] lg:mt-2 lg:text-[32px]">
-        Hurghada Vacation Homes & Holiday Rentals
+        {t("rent.heading")}
       </h2>
     </section>
   );
@@ -424,9 +351,11 @@ function ListingHeading() {
 function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, href } = useI18n();
   const pageNumber = Number(paramsObj.page) || 1;
   const pageSize = 50;
   const { data, isLoading } = usePublicRentProperties({ ...paramsObj, pageNumber, pageSize });
+  const minCapacity = Math.max(0, Number(paramsObj.MinCapacity || paramsObj.minCapacity || 0) || 0);
 
   const hasDateFilter = Boolean(paramsObj.from && paramsObj.to);
   const {
@@ -444,12 +373,12 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.delete("from");
     newParams.delete("to");
-    router.push(`/rent?${newParams.toString()}`);
+    router.push(href(`/rent?${newParams.toString()}`));
   };
 
   // Filter items by inHouseData if date filter is active
   const filteredRawItems = useMemo(() => {
-    const rawItems = items || [];
+    const rawItems = (items || []).filter((item) => !minCapacity || Number(item.capacity || 0) >= minCapacity);
     if (!hasDateFilter) return rawItems;
     if (!inHouseData?.units) return [];
 
@@ -496,7 +425,7 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
 
       return isAvailable;
     });
-  }, [hasDateFilter, inHouseData, items]);
+  }, [hasDateFilter, inHouseData, items, minCapacity]);
 
   // Sort properties so featured properties appear first
   const sortedRawItems = useMemo(() => {
@@ -509,16 +438,23 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
 
   const properties: NormalizedPropertyCard[] = sortedRawItems.map((item) => {
     const rentItem = item as RentGridItem;
-    const url = hasDateFilter
-      ? `/rent/${slugify(rentItem.name)}?checkIn=${encodeURIComponent(paramsObj.from)}&checkOut=${encodeURIComponent(paramsObj.to)}`
-      : `/rent/${slugify(rentItem.name)}`;
+    const detailParams = new URLSearchParams();
+    if (hasDateFilter) {
+      detailParams.set("checkIn", paramsObj.from);
+      detailParams.set("checkOut", paramsObj.to);
+    }
+    if (minCapacity) {
+      detailParams.set("person", String(minCapacity));
+    }
+    const queryString = detailParams.toString();
+    const url = `/rent/${slugify(rentItem.name)}${queryString ? `?${queryString}` : ""}`;
 
     return {
       id: rentItem.id,
       title: rentItem.name,
-      location: rentItem.city || rentItem.areaName || "Location not specified",
-      beds: `${rentItem.bedroomNo} Bedroom`,
-      baths: `${rentItem.bathroomNo} Bathroom`,
+      location: rentItem.city || rentItem.areaName || t("home.featured.locationMissing"),
+      beds: `${rentItem.bedroomNo} ${Number(rentItem.bedroomNo) === 1 ? t("property.bedroom") : t("property.bedrooms")}`,
+      baths: `${rentItem.bathroomNo} ${Number(rentItem.bathroomNo) === 1 ? t("property.bathroom") : t("property.bathrooms")}`,
       size: `${rentItem.size || rentItem.capacity || 0} sqm`,
       price: rentItem.basePrice,
       image: rentItem.coverImageUrl ? `${API_BASE_URL}/${rentItem.coverImageUrl}` : "/rent/property-card.png",
@@ -543,7 +479,7 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
                 <line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
               <span>
-                Showing available vacation homes for <strong>{paramsObj.from}</strong> to <strong>{paramsObj.to}</strong> ({properties.length} available)
+                {t("rent.showingAvailable", { from: paramsObj.from, to: paramsObj.to, count: properties.length })}
               </span>
             </div>
             <button
@@ -551,7 +487,7 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
               onClick={handleClearDates}
               className="text-[13px] font-semibold text-[#2e6f57] underline hover:text-[#183c2f]"
             >
-              Clear dates
+              {t("common.clearDates")}
             </button>
           </div>
         )}
@@ -561,7 +497,7 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2e6f57] border-t-transparent" />
             {hasDateFilter && inHouseLoading && (
               <p className="text-[14px] text-[#656566]">
-                Checking availability for {paramsObj.from} to {paramsObj.to}...
+                {t("rent.checkingAvailability", { from: paramsObj.from, to: paramsObj.to })}
               </p>
             )}
           </div>
@@ -574,11 +510,11 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
           >
             {properties.length === 0 ? (
               <div className="col-span-full py-20 text-center">
-                <p className="text-[18px] font-semibold text-[#183c2f]">No vacation rentals available</p>
+                <p className="text-[18px] font-semibold text-[#183c2f]">{t("rent.emptyTitle")}</p>
                 <p className="mt-2 text-[14px] text-[#656566]">
                   {hasDateFilter
-                    ? `None of our vacation homes are available from ${paramsObj.from} to ${paramsObj.to}. Try selecting different dates or clear your date filter.`
-                    : "No vacation rentals found matching your criteria. Try adjusting your filters."}
+                    ? t("rent.emptyWithDates", { from: paramsObj.from, to: paramsObj.to })
+                    : t("rent.emptyFiltered")}
                 </p>
                 {hasDateFilter && (
                   <button
@@ -586,7 +522,7 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
                     onClick={handleClearDates}
                     className="mt-4 inline-flex items-center justify-center rounded-full bg-[#2e6f57] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#245b46]"
                   >
-                    View All Available Homes
+                    {t("rent.viewAllAvailable")}
                   </button>
                 )}
               </div>
@@ -606,12 +542,14 @@ function PropertyGrid({ paramsObj }: { paramsObj: Record<string, string> }) {
 }
 
 function PropertyCard({ property }: { property: NormalizedPropertyCard }) {
+  const { t, href } = useI18n();
+
   return (
     <motion.article
       variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } }}
       className="flex min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] transition hover:shadow-[0_8px_24px_rgba(0,0,0,0.13)]"
     >
-      <Link href={property.url} className="relative block aspect-[16/10] shrink-0 overflow-hidden bg-[#f5f7f6]">
+      <Link href={href(property.url)} className="relative block aspect-[16/10] shrink-0 overflow-hidden bg-[#f5f7f6]">
         <Image
           src={property.image}
           alt={property.title}
@@ -621,20 +559,20 @@ function PropertyCard({ property }: { property: NormalizedPropertyCard }) {
         />
         {property.isFeatured ? (
           <span className="absolute left-3 top-3 flex h-7 items-center gap-1 rounded-full border border-[#d59e52]/40 bg-[#d59e52] px-3 text-[12px] font-semibold text-white shadow-md backdrop-blur-sm">
-            ★ Featured
+            ★ {t("home.featured.featured")}
           </span>
         ) : (
           <span className="absolute left-3 top-3 flex h-7 items-center rounded-full border border-white/20 bg-black/40 px-3 text-[12px] font-medium text-white backdrop-blur-sm">
-            Holiday Rental
+            {t("home.featured.holidayRental")}
           </span>
         )}
         <span className="absolute bottom-3 left-3 flex h-9 items-center gap-1.5 rounded-lg bg-[#cfb072] px-3 text-white shadow-lg">
-          <span className="text-[14px] font-bold lg:text-[17px]">{formatUsd(property.price)}<span className="text-[11px] font-normal">/night</span></span>
+          <span className="text-[14px] font-bold lg:text-[17px]">{formatUsd(property.price)}<span className="text-[11px] font-normal">/{t("common.night")}</span></span>
         </span>
       </Link>
       <div className="flex flex-1 flex-col p-4">
         <div className="border-b border-[#f0f0f0] pb-3">
-          <Link href={property.url} className="hover:underline">
+          <Link href={href(property.url)} className="hover:underline">
             <h3 className="line-clamp-1 text-[15px] font-bold text-[#183c2f] lg:text-[17px]">{property.title}</h3>
           </Link>
           <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[#656566] lg:text-[13px]">
@@ -651,7 +589,7 @@ function PropertyCard({ property }: { property: NormalizedPropertyCard }) {
           href={property.url}
           className="mt-4 flex h-10 w-full items-center justify-center rounded-xl bg-[#2e6f57] text-[13px] font-semibold text-white transition hover:bg-[#255f49] lg:h-11 lg:text-[14px]"
         >
-          Book Now
+          {t("common.bookNow")}
         </Link>
       </div>
     </motion.article>
@@ -669,12 +607,13 @@ function PropertyMeta({ icon, label }: { icon: string; label: string }) {
 
 function Pagination({ currentPage, totalPages, paramsObj }: { currentPage: number; totalPages: number; paramsObj: Record<string, string> }) {
   const router = useRouter();
+  const { t, href } = useI18n();
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
     const newParams = new URLSearchParams(paramsObj);
     newParams.set("page", page.toString());
-    router.push(`/rent?${newParams.toString()}`);
+    router.push(href(`/rent?${newParams.toString()}`));
   };
 
   const generatePages = (): Array<number | "..."> => {
@@ -692,7 +631,7 @@ function Pagination({ currentPage, totalPages, paramsObj }: { currentPage: numbe
   return (
     <nav className="mt-10 flex justify-center pb-4" aria-label="Properties pagination">
       <div className="flex items-center gap-2">
-        <PageArrow src="/rent/icons/page-prev.svg" disabled={currentPage <= 1} label="Previous page" onClick={() => handlePageChange(currentPage - 1)} />
+        <PageArrow src="/rent/icons/page-prev.svg" disabled={currentPage <= 1} label={t("common.previousPage")} onClick={() => handlePageChange(currentPage - 1)} />
         {generatePages().map((page, idx) =>
           page === "..." ? (
             <span key={`ellipsis-${idx}`} className="px-1 text-[16px] text-[#667c74]">...</span>
@@ -711,7 +650,7 @@ function Pagination({ currentPage, totalPages, paramsObj }: { currentPage: numbe
             </button>
           )
         )}
-        <PageArrow src="/rent/icons/page-next.svg" disabled={currentPage >= totalPages} label="Next page" onClick={() => handlePageChange(currentPage + 1)} />
+        <PageArrow src="/rent/icons/page-next.svg" disabled={currentPage >= totalPages} label={t("common.nextPage")} onClick={() => handlePageChange(currentPage + 1)} />
       </div>
     </nav>
   );

@@ -6,6 +6,11 @@ import type {
   AttributeGroupItemApiResponse,
   AttributeGroupItemRequest,
 } from "@/lib/types/attributeGroupItem";
+import {
+  adminTranslationLocales,
+  buildTranslationFromRecords,
+  type LocaleRecord,
+} from "@/lib/i18n/adminTranslations";
 
 const KEY = "attribute-group-items";
 
@@ -27,17 +32,47 @@ export function useLandmarks() {
   return useAttributeGroupItemsByGroup(LANDMARK_ATTRIBUTE_GROUP_ID);
 }
 
-export function useAttributeGroupItemById(id: string) {
+export function useAttributeGroupItemById(id: string, locale?: string) {
   return useQuery({
-    queryKey: [KEY, id],
+    queryKey: [KEY, id, locale],
     queryFn: async () => {
       const { data } = await axiosInstance.get<AttributeGroupItemApiResponse<AttributeGroupItem>>(
-        `/api/attribute-group-items/${id}`
+        `/api/attribute-group-items/${id}`,
+        locale ? { headers: { "Accept-Language": locale, "X-Locale": locale } } : undefined
       );
       return data.data;
     },
     enabled: Boolean(id),
     staleTime: 30 * 1000,
+  });
+}
+
+export function useAttributeGroupItemTranslations(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [KEY, id, "translations"],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        adminTranslationLocales.map(async (locale) => {
+          const { data } = await axiosInstance.get<AttributeGroupItemApiResponse<AttributeGroupItem>>(
+            `/api/attribute-group-items/${id}`,
+            { headers: { "Accept-Language": locale, "X-Locale": locale } }
+          );
+          if (!data.data) throw new Error(`Attribute group item ${id} did not load for ${locale}`);
+          return [locale, data.data] as const;
+        })
+      );
+      const records = Object.fromEntries(entries) as LocaleRecord<AttributeGroupItem>;
+      return {
+        records,
+        key: buildTranslationFromRecords(records, (record) => record.key),
+        value: buildTranslationFromRecords(records, (record) => record.value),
+        attributeGroupId: records.en.attributeGroupId,
+        displayOrder: records.en.displayOrder,
+      };
+    },
+    enabled: Boolean(id && enabled),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 

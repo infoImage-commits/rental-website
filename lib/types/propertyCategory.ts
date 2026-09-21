@@ -23,7 +23,7 @@ export interface PropertyCategory {
 
 export interface PropertyCategoryRequest {
   id?: string;
-  name: string;
+  name: TranslationInput;
   icon?: string;
   defaultIcon?: string;
   displayOrder?: number;
@@ -32,7 +32,7 @@ export interface PropertyCategoryRequest {
 export interface PropertyCategoryItemRequest {
   id?: string;
   propertyCategoryId?: string;
-  name?: string;
+  name?: TranslationInput;
   icon?: string;
   displayOrder?: number;
 }
@@ -44,3 +44,4 @@ export interface PropertyCategoryApiResponse<T = PropertyCategory> {
   errors: string[];
   type: number;
 }
+import type { TranslationInput } from "@/lib/i18n/adminTranslations";

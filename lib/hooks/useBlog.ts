@@ -11,6 +11,13 @@ import type {
   UpdateBlogRequest,
   UpdateBlogSectionRequest,
 } from "@/lib/types/blog";
+import {
+  adminTranslationLocales,
+  appendTranslationFormData,
+  buildTranslationFromRecords,
+  type LocaleRecord,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 const BLOGS_KEY = "blogs";
 
@@ -23,11 +30,16 @@ function appendOptional(formData: FormData, key: string, value?: string | number
   formData.append(key, String(value));
 }
 
+function appendOptionalTranslation(formData: FormData, key: string, value?: TranslationInput) {
+  if (!value) return;
+  appendTranslationFormData(formData, key, value);
+}
+
 function blogFormData(payload: CreateBlogRequest | UpdateBlogRequest) {
   const formData = new FormData();
-  formData.append("Title", payload.title);
-  appendOptional(formData, "Summary", payload.summary);
-  appendOptional(formData, "Content", payload.content);
+  appendTranslationFormData(formData, "Title", payload.title);
+  appendOptionalTranslation(formData, "Summary", payload.summary);
+  appendOptionalTranslation(formData, "Content", payload.content);
   appendOptional(formData, "FeaturedImage", payload.featuredImage);
   if ("removeFeaturedImage" in payload) {
     appendOptional(formData, "RemoveFeaturedImage", payload.removeFeaturedImage);
@@ -39,8 +51,8 @@ function blogFormData(payload: CreateBlogRequest | UpdateBlogRequest) {
 
 function sectionFormData(payload: CreateBlogSectionRequest | UpdateBlogSectionRequest) {
   const formData = new FormData();
-  formData.append("Title", payload.title);
-  formData.append("Content", payload.content);
+  appendTranslationFormData(formData, "Title", payload.title);
+  appendTranslationFormData(formData, "Content", payload.content);
   appendOptional(formData, "Image", payload.image);
   if ("removeImage" in payload) {
     appendOptional(formData, "RemoveImage", payload.removeImage);
@@ -74,17 +86,65 @@ export function useBlogs(query: BlogsQuery) {
   });
 }
 
-export function useBlogById(id: string, incrementViewCount = false) {
+export function useBlogById(id: string, incrementViewCount = false, locale?: string) {
   return useQuery({
-    queryKey: [BLOGS_KEY, id, incrementViewCount],
+    queryKey: [BLOGS_KEY, id, incrementViewCount, locale],
     queryFn: async () => {
       const { data } = await axiosInstance.get<BlogApiResponse<BlogItem>>(
         `/api/blogs/${id}`,
-        { params: { incrementViewCount } }
+        {
+          params: { incrementViewCount },
+          headers: locale ? { "Accept-Language": locale, "X-Locale": locale } : undefined,
+        }
       );
       return data.data;
     },
     enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useBlogTranslations(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [BLOGS_KEY, id, "translations"],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        adminTranslationLocales.map(async (locale) => {
+          const { data } = await axiosInstance.get<BlogApiResponse<BlogItem>>(
+            `/api/blogs/${id}`,
+            {
+              params: { incrementViewCount: false },
+              headers: { "Accept-Language": locale, "X-Locale": locale },
+            }
+          );
+          if (!data.data) throw new Error(`Blog ${id} did not load for ${locale}`);
+          return [locale, data.data] as const;
+        })
+      );
+      const records = Object.fromEntries(entries) as LocaleRecord<BlogItem>;
+      const sectionTranslations = new Map<string, { title: TranslationInput; content: TranslationInput }>();
+
+      for (const section of records.en.blogSections ?? []) {
+        sectionTranslations.set(section.id, {
+          title: buildTranslationFromRecords(records, (record) =>
+            record.blogSections.find((item) => item.id === section.id)?.title
+          ),
+          content: buildTranslationFromRecords(records, (record) =>
+            record.blogSections.find((item) => item.id === section.id)?.content
+          ),
+        });
+      }
+
+      return {
+        records,
+        blog: records.en,
+        title: buildTranslationFromRecords(records, (record) => record.title),
+        summary: buildTranslationFromRecords(records, (record) => record.summary),
+        content: buildTranslationFromRecords(records, (record) => record.content),
+        sectionTranslations,
+      };
+    },
+    enabled: Boolean(id && enabled),
     staleTime: 30 * 1000,
   });
 }

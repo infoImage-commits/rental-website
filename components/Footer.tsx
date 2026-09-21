@@ -8,22 +8,12 @@ import type { ReactNode } from "react";
 import { PropertyType } from "@/lib/types/property";
 import { buildRentPropertyTypeHref } from "@/lib/utils/propertyUtils";
 import { siteConfig } from "@/lib/site";
+import { useI18n } from "./I18nProvider";
 
-const quickLinks = [
-  { label: "Home", href: "/" },
-  { label: "Vacation Rentals", href: "/rent" },
-  { label: "About Us", href: "/about" },
-  { label: "Contact Us", href: "/contact" },
-  { label: "Blogs", href: "/blogs" },
-  { label: "FAQ", href: "/faq" },
-  { label: "House Rules", href: "/house-rules" },
-];
-
-const propertyTypes = [
-  { label: "Studio", href: buildRentPropertyTypeHref(PropertyType.Studio) },
-  { label: "1 Bedroom", href: buildRentPropertyTypeHref(PropertyType.oneBedroom) },
-  { label: "2 Bedroom", href: buildRentPropertyTypeHref(PropertyType.twoBedroom) },
-];
+type FooterLink = {
+  label: string;
+  href: string;
+};
 
 const socialLinks = [
   { label: "WhatsApp", href: siteConfig.whatsappUrl, icon: "/footer/icons/whatsapp.svg" },
@@ -83,6 +73,21 @@ const footerItemMotion: Variants = {
 export default function Footer() {
   const shouldReduceMotion = useReducedMotion();
   const initialState = shouldReduceMotion ? false : "hidden";
+  const { t } = useI18n();
+  const quickLinks = [
+    { label: t("common.home"), href: "/" },
+    { label: t("common.rent"), href: "/rent" },
+    { label: t("common.about"), href: "/about" },
+    { label: t("common.contact"), href: "/contact" },
+    { label: t("common.blogs"), href: "/blogs" },
+    { label: t("common.faq"), href: "/faq" },
+    { label: t("common.houseRules"), href: "/house-rules" },
+  ];
+  const propertyTypes = [
+    { label: t("footer.rentalTypeLabels.studio"), href: buildRentPropertyTypeHref(PropertyType.Studio) },
+    { label: t("footer.rentalTypeLabels.oneBedroom"), href: buildRentPropertyTypeHref(PropertyType.oneBedroom) },
+    { label: t("footer.rentalTypeLabels.twoBedroom"), href: buildRentPropertyTypeHref(PropertyType.twoBedroom) },
+  ];
 
   return (
     <motion.footer
@@ -98,8 +103,8 @@ export default function Footer() {
           className="grid gap-8 lg:grid-cols-[305px_197px_196px_371px] lg:gap-5"
         >
           <BrandColumn shouldReduceMotion={!!shouldReduceMotion} />
-          <FooterLinkColumn title="Quick Links" links={quickLinks} shouldReduceMotion={!!shouldReduceMotion} />
-          <FooterLinkColumn title="Rental Types" links={propertyTypes} shouldReduceMotion={!!shouldReduceMotion} />
+          <FooterLinkColumn title={t("footer.quickLinks")} links={quickLinks} shouldReduceMotion={!!shouldReduceMotion} />
+          <FooterLinkColumn title={t("footer.rentalTypes")} links={propertyTypes} shouldReduceMotion={!!shouldReduceMotion} />
           <ContactColumn shouldReduceMotion={!!shouldReduceMotion} />
         </motion.div>
 
@@ -107,7 +112,7 @@ export default function Footer() {
           variants={footerItemMotion}
           className="mt-8 text-center text-[10px] font-light leading-normal lg:mt-12 lg:text-[12px]"
         >
-          Powered By{" "}
+          {t("footer.poweredBy")}{" "}
           <motion.a
             href="https://tech-gear.net/"
             target="_blank"
@@ -117,7 +122,7 @@ export default function Footer() {
           >
             Tech Gear Solutions
           </motion.a>
-          &nbsp; &copy; 2026 All Rights Reserved
+          &nbsp; &copy; 2026 {t("footer.rights")}
         </motion.p>
       </div>
     </motion.footer>
@@ -125,6 +130,8 @@ export default function Footer() {
 }
 
 function BrandColumn({ shouldReduceMotion }: { shouldReduceMotion: boolean }) {
+  const { t } = useI18n();
+
   return (
     <motion.div variants={footerColumnMotion} className="flex flex-col items-start gap-[17px]">
       <motion.div variants={footerItemMotion} whileHover={shouldReduceMotion ? undefined : { y: -2 }}>
@@ -141,7 +148,7 @@ function BrandColumn({ shouldReduceMotion }: { shouldReduceMotion: boolean }) {
         variants={footerItemMotion}
         className="max-w-[325px] text-[12px] leading-[1.6] lg:max-w-[284px] lg:text-[14px]"
       >
-        Handpicked vacation homes, beachside chalets, and private airport transfers in Hurghada. Enjoy verified quality, transparent booking, and dedicated local host care.
+        {t("footer.intro")}
       </motion.p>
       <motion.div variants={footerItemMotion} className="flex items-center gap-6">
         {socialLinks.map((item) => (
@@ -169,9 +176,11 @@ function FooterLinkColumn({
   shouldReduceMotion,
 }: {
   title: string;
-  links: typeof quickLinks;
+  links: FooterLink[];
   shouldReduceMotion: boolean;
 }) {
+  const { href } = useI18n();
+
   return (
     <motion.div variants={footerColumnMotion} className="flex flex-col items-start gap-2.5">
       <FooterHeading>{title}</FooterHeading>
@@ -182,7 +191,7 @@ function FooterLinkColumn({
             variants={footerItemMotion}
             whileHover={shouldReduceMotion ? undefined : { x: 4 }}
           >
-            <Link href={link.href} className="group flex items-center gap-1 text-[12px] leading-[1.6] lg:text-[18px]">
+            <Link href={href(link.href)} className="group flex items-center gap-1 text-[12px] leading-[1.6] lg:text-[18px]">
               <Chevron />
               <span className="transition group-hover:text-[#cfb072]">{link.label}</span>
             </Link>
@@ -194,9 +203,11 @@ function FooterLinkColumn({
 }
 
 function ContactColumn({ shouldReduceMotion }: { shouldReduceMotion: boolean }) {
+  const { t } = useI18n();
+
   return (
     <motion.div variants={footerColumnMotion} className="flex flex-col items-start gap-4">
-      <FooterHeading>contact Us</FooterHeading>
+      <FooterHeading>{t("footer.contact")}</FooterHeading>
       <ul className="flex flex-col gap-3.5">
         {contactItems.map((item) => (
           <motion.li

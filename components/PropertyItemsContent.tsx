@@ -10,10 +10,18 @@ import {
   useUpdatePropertyCategoryItem,
   useDeletePropertyCategoryItem,
   useUpdatePropertyCategoryItemStatus,
+  usePropertyCategoryItemTranslations,
 } from "@/lib/hooks/usePropertyCategoryItem";
 import { usePropertyCategories } from "@/lib/hooks/usePropertyCategory";
 import type { PropertyCategoryItem, PropertyCategoryItemRequest } from "@/lib/types/propertyCategory";
 import ConfirmModal from "./ConfirmModal";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 // ── Form slide-over panel ─────────────────────────────────────────────────────
 function ItemFormPanel({
@@ -31,28 +39,44 @@ function ItemFormPanel({
   const { data: categories = [] } = usePropertyCategories();
   const { mutate: createItem, isPending: isCreating } = useCreatePropertyCategoryItem();
   const { mutate: updateItem, isPending: isUpdating } = useUpdatePropertyCategoryItem();
+  const translationsQuery = usePropertyCategoryItemTranslations(
+    item?.id ?? "",
+    isOpen && isEditing
+  );
 
   const [propertyCategoryId, setPropertyCategoryId] = useState("");
-  const [name, setName] = useState("");
+  const [name, setName] = useState<TranslationInput>(emptyTranslation());
   const [icon, setIcon] = useState("amenities-title");
   const [isIconSelectorOpen, setIsIconSelectorOpen] = useState(false);
   const [isDefaultIconSelectorOpen, setIsDefaultIconSelectorOpen] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number | "">("");
 
   useEffect(() => {
-    if (isOpen) {
-      setPropertyCategoryId(item?.propertyCategoryId ?? (categories[0]?.id || ""));
-      setName(item?.name ?? "");
-      setIcon(item?.icon ?? "amenities-title");
-      setDisplayOrder(item?.displayOrder ?? "");
+    if (!isOpen) return;
+
+    if (!isEditing) {
+      setPropertyCategoryId(categories[0]?.id || "");
+      setName(emptyTranslation());
+      setIcon("amenities-title");
+      setDisplayOrder("");
+      return;
+    }
+
+    if (translationsQuery.data) {
+      setPropertyCategoryId(translationsQuery.data.propertyCategoryId ?? (categories[0]?.id || ""));
+      setName(translationsQuery.data.name);
+      setIcon(translationsQuery.data.icon ?? "amenities-title");
+      setDisplayOrder(translationsQuery.data.displayOrder ?? "");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, item, categories.length]);
+  }, [isOpen, isEditing, translationsQuery.data, categories.length]);
 
   if (!isOpen) return null;
 
   const isSaving = isCreating || isUpdating;
-  const isFormValid = name.trim().length > 0 && propertyCategoryId;
+  const isHydrating = isEditing && translationsQuery.isLoading;
+  const canEdit = !isEditing || translationsQuery.isSuccess;
+  const isFormValid = canEdit && hasRequiredBaseTranslation(name) && propertyCategoryId;
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -60,7 +84,7 @@ function ItemFormPanel({
 
     const payload: PropertyCategoryItemRequest = {
       propertyCategoryId,
-      name: name.trim(),
+      name: trimTranslation(name),
       icon: icon.trim() || undefined,
       displayOrder: displayOrder !== "" ? Number(displayOrder) : undefined,
     };
@@ -76,7 +100,7 @@ function ItemFormPanel({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#dfe8e4] px-6 py-4">
           <h2 className="text-[18px] font-semibold text-[#183c2f]">
@@ -104,6 +128,7 @@ function ItemFormPanel({
               required
               value={propertyCategoryId}
               onChange={(e) => setPropertyCategoryId(e.target.value)}
+              disabled={!canEdit || isSaving}
               className="w-full rounded-xl border border-[#dfe8e4] bg-white px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
             >
               <option value="" disabled>Select a category</option>
@@ -115,20 +140,26 @@ function ItemFormPanel({
             </select>
           </div>
 
-          {/* Name */}
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. WiFi"
-              className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          {isHydrating && (
+            <div className="rounded-xl border border-[#dfe8e4] bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#667c74]">
+              Loading all language versions before editing...
+            </div>
+          )}
+
+          {translationsQuery.isError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+              Could not load every language. Editing stays locked until all four versions load.
+            </div>
+          )}
+
+          <TranslationFields
+            label="Name"
+            value={name}
+            onChange={setName}
+            required
+            placeholder="e.g. WiFi"
+            disabled={!canEdit || isSaving}
+          />
 
           {/* Icon */}
           <div>
@@ -139,6 +170,7 @@ function ItemFormPanel({
               <button
                 type="button"
                 onClick={() => setIsIconSelectorOpen(true)}
+                disabled={!canEdit || isSaving}
                 className="flex h-10 items-center justify-center rounded-lg border border-[#dfe8e4] bg-[#f4f7f6] px-4 text-[14px] font-medium text-[#183c2f] transition hover:bg-[#e8efeb]"
               >
                 Select Icon
@@ -173,6 +205,7 @@ function ItemFormPanel({
               value={displayOrder}
               onChange={(e) => setDisplayOrder(e.target.value === "" ? "" : Number(e.target.value))}
               placeholder="e.g. 1"
+              disabled={!canEdit || isSaving}
               className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
             />
           </div>

@@ -11,12 +11,19 @@ import { useLandmarks } from "@/lib/hooks/useAttributeGroupItem";
 import { PropertyRequest, PropertyType, PropertyStatus, BedType } from "@/lib/types/property";
 import { sortLandmarks } from "@/lib/utils/landmarks";
 import axiosInstance from "@/lib/api/axiosInstance";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 const defaultPayload: PropertyRequest = {
   categoryId: "",
   code: "",
-  name: "",
-  description: "",
+  name: emptyTranslation(),
+  description: emptyTranslation(),
   bedroomNo: 1,
   bathroomNo: 1,
   roomNo: 1,
@@ -37,17 +44,17 @@ const defaultPayload: PropertyRequest = {
   rulesCancellation: "",
   notes: "",
   address: {
-    country: "",
-    city: "",
-    area: "",
+    country: emptyTranslation(),
+    city: emptyTranslation(),
+    area: emptyTranslation(),
     zipCode: "",
-    street: "",
+    street: emptyTranslation(),
   },
   listingDetails: {
     lateCheckIn: "",
-    outdoorFacility: "",
+    outdoorFacility: emptyTranslation(),
     originalService: "",
-    cancellation: "",
+    cancellation: emptyTranslation(),
     extraPeopleFee: 0,
     extraPeople: "",
     privatebathroom: false,
@@ -123,6 +130,9 @@ export default function PropertyCreateContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (step === 1 && (!hasRequiredBaseTranslation(formData.name as TranslationInput) || !hasRequiredBaseTranslation(formData.description as TranslationInput))) {
+      return;
+    }
     if (step < 5) {
       setStep(step + 1);
       return;
@@ -130,9 +140,20 @@ export default function PropertyCreateContent() {
 
     createProperty({
       ...formData,
+      name: trimTranslation(formData.name as TranslationInput),
+      description: trimTranslation(formData.description as TranslationInput),
+      address: {
+        ...formData.address!,
+        country: trimTranslation(formData.address!.country as TranslationInput),
+        city: trimTranslation(formData.address!.city as TranslationInput),
+        area: trimTranslation(formData.address!.area as TranslationInput),
+        street: trimTranslation(formData.address!.street as TranslationInput),
+      },
       isFeatured: Boolean(formData.isFeatured),
       listingDetails: {
         ...formData.listingDetails!,
+        outdoorFacility: trimTranslation(formData.listingDetails!.outdoorFacility as TranslationInput),
+        cancellation: trimTranslation(formData.listingDetails!.cancellation as TranslationInput),
         ...hiddenListingDefaults,
       },
     }, {
@@ -190,19 +211,28 @@ export default function PropertyCreateContent() {
             
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Property Name *</label>
-                <input required type="text" value={formData.name} onChange={e => updateForm({ name: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
-              </div>
-              <div>
                 <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Property Code *</label>
                 <input required type="text" value={formData.code} onChange={e => updateForm({ code: e.target.value })} placeholder="e.g. PRO-123" className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
               </div>
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Description *</label>
-              <textarea required rows={4} value={formData.description} onChange={e => updateForm({ description: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
-            </div>
+            <TranslationFields
+              label="Property Name"
+              value={formData.name as TranslationInput}
+              onChange={(value) => updateForm({ name: value })}
+              required
+              disabled={isPending}
+            />
+
+            <TranslationFields
+              label="Description"
+              value={formData.description as TranslationInput}
+              onChange={(value) => updateForm({ description: value })}
+              required
+              textarea
+              rows={4}
+              disabled={isPending}
+            />
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
               <div>
@@ -306,27 +336,35 @@ export default function PropertyCreateContent() {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h2 className="text-[18px] font-semibold text-[#183c2f]">2. Location & Views</h2>
             
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Country</label>
-                <input type="text" value={formData.address?.country} onChange={e => updateAddress({ country: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">City</label>
-                <input type="text" value={formData.address?.city} onChange={e => updateAddress({ city: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Area / District</label>
-                <input type="text" value={formData.address?.area} onChange={e => updateAddress({ area: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
-              </div>
+            <div className="grid grid-cols-1 gap-6">
+              <TranslationFields
+                label="Country"
+                value={formData.address?.country as TranslationInput}
+                onChange={(value) => updateAddress({ country: value })}
+                disabled={isPending}
+              />
+              <TranslationFields
+                label="City"
+                value={formData.address?.city as TranslationInput}
+                onChange={(value) => updateAddress({ city: value })}
+                disabled={isPending}
+              />
+              <TranslationFields
+                label="Area / District"
+                value={formData.address?.area as TranslationInput}
+                onChange={(value) => updateAddress({ area: value })}
+                disabled={isPending}
+              />
               <div>
                 <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Zip Code</label>
                 <input type="text" value={formData.address?.zipCode} onChange={e => updateAddress({ zipCode: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
               </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Street</label>
-                <input type="text" value={formData.address?.street} onChange={e => updateAddress({ street: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
-              </div>
+              <TranslationFields
+                label="Street"
+                value={formData.address?.street as TranslationInput}
+                onChange={(value) => updateAddress({ street: value })}
+                disabled={isPending}
+              />
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -471,13 +509,21 @@ export default function PropertyCreateContent() {
                 <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Late Check-In Policy</label>
                 <input type="text" value={formData.listingDetails?.lateCheckIn} onChange={e => updateListing({ lateCheckIn: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
               </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Cancellation Policy</label>
-                <input type="text" value={formData.listingDetails?.cancellation} onChange={e => updateListing({ cancellation: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
+              <div className="sm:col-span-2">
+                <TranslationFields
+                  label="Cancellation Policy"
+                  value={formData.listingDetails?.cancellation as TranslationInput}
+                  onChange={(value) => updateListing({ cancellation: value })}
+                  disabled={isPending}
+                />
               </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Outdoor Facility</label>
-                <input type="text" value={formData.listingDetails?.outdoorFacility} onChange={e => updateListing({ outdoorFacility: e.target.value })} className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]" />
+              <div className="sm:col-span-2">
+                <TranslationFields
+                  label="Outdoor Facility"
+                  value={formData.listingDetails?.outdoorFacility as TranslationInput}
+                  onChange={(value) => updateListing({ outdoorFacility: value })}
+                  disabled={isPending}
+                />
               </div>
               <div>
                 <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Original Service</label>

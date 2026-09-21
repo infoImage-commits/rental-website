@@ -8,6 +8,7 @@ import type {
   FaqApiResponse,
 } from "@/lib/types/faq";
 import type { PaginatedResponse } from "@/lib/types/contact";
+import { adminTranslationLocales, buildTranslationFromRecords, type LocaleRecord } from "@/lib/i18n/adminTranslations";
 
 const FAQS_KEY = "faqs";
 
@@ -21,6 +22,49 @@ export function useFaqs(query: FaqsQuery) {
       >("/api/faqs", { params: query });
       return data.data as PaginatedResponse<FaqItem>;
     },
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useFaqById(id: string, locale?: string) {
+  return useQuery({
+    queryKey: [FAQS_KEY, id, locale],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get<FaqApiResponse<FaqItem>>(
+        `/api/faqs/${id}`,
+        locale ? { headers: { "Accept-Language": locale, "X-Locale": locale } } : undefined
+      );
+      return data.data;
+    },
+    enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useFaqTranslations(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [FAQS_KEY, id, "translations"],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        adminTranslationLocales.map(async (locale) => {
+          const { data } = await axiosInstance.get<FaqApiResponse<FaqItem>>(
+            `/api/faqs/${id}`,
+            { headers: { "Accept-Language": locale, "X-Locale": locale } }
+          );
+          if (!data.data) throw new Error(`FAQ ${id} did not load for ${locale}`);
+          return [locale, data.data] as const;
+        })
+      );
+      const records = Object.fromEntries(entries) as LocaleRecord<FaqItem>;
+      return {
+        records,
+        question: buildTranslationFromRecords(records, (record) => record.question),
+        answer: buildTranslationFromRecords(records, (record) => record.answer),
+        displayOrder: records.en.displayOrder,
+        isPublished: records.en.isPublished,
+      };
+    },
+    enabled: Boolean(id && enabled),
     staleTime: 30 * 1000,
   });
 }

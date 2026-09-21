@@ -9,6 +9,7 @@ import { API_BASE_URL } from "@/lib/api/config";
 import { savePaymentBookingContext } from "@/lib/utils/paymentBookingContext";
 import { formatUsd } from "@/lib/utils/currency";
 import { toast } from "sonner";
+import { useI18n } from "./I18nProvider";
 
 function resolveImageUrl(url: string): string {
   if (!url || url.trim() === "") return "";
@@ -42,6 +43,7 @@ interface SingleTransferPageContentProps {
 }
 
 export default function SingleTransferPageContent({ id }: SingleTransferPageContentProps) {
+  const { t } = useI18n();
   const { data: journey, isLoading, isError } = useJourneyById(id);
   const { mutate: createTransferBooking, isPending: isCreatingBooking } = useCreateTransferBooking();
   const { mutate: createPaypalOrder, isPending: isCreatingOrder } = useCreatePaypalOrder();
@@ -64,11 +66,11 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
   });
 
   if (isLoading) {
-    return <div className="p-20 text-center text-gray-500">Loading journey details...</div>;
+    return <div className="p-20 text-center text-gray-500">{t("common.loading")}</div>;
   }
 
   if (isError || !journey) {
-    return <div className="p-20 text-center text-red-500">Failed to load journey details.</div>;
+    return <div className="p-20 text-center text-red-500">{t("transfer.failed")}</div>;
   }
 
   const handleTransferSubmit = () => {
@@ -80,12 +82,12 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
       !transferData.pickupDate ||
       !transferData.pickupTime
     ) {
-      toast.error("Please fill in your contact details, passengers, pickup date, and pickup time.");
+      toast.error(t("transfer.errors.required"));
       return;
     }
 
     if (transferData.tripType === 2 && (!transferData.returnDate || !transferData.returnTime)) {
-      toast.error("Please enter the return date and return time for a round trip.");
+      toast.error(t("transfer.errors.returnRequired"));
       return;
     }
 
@@ -127,21 +129,21 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
               },
               onError: (err) => {
                 console.error("Failed to create PayPal order:", err);
-                toast.error("Could not initiate payment. Please try again.");
+                toast.error(t("transfer.errors.paymentStart"));
               },
             }
           );
         },
         onError: (err) => {
           console.error("Failed to create transfer booking:", err);
-          toast.error("Failed to create transfer booking. Please check your details and try again.");
+          toast.error(t("transfer.errors.createFailed"));
         },
       }
     );
   };
 
   const totals = [
-    ["Ride Fare", formatUsd(journey.basePrice)],
+    [t("transfer.rideFare"), formatUsd(journey.basePrice)],
   ];
   const dueToday = formatUsd(journey.basePrice);
 
@@ -151,9 +153,9 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
         <div className="mx-auto max-w-[335px] lg:max-w-[1277px]">
           
           <header className="hidden h-[76px] flex-col items-start gap-2 pt-2 lg:flex">
-            <h1 className="text-[30px] font-medium leading-9 text-[#0f172a]">Book Transfer: {journey.name}</h1>
+            <h1 className="text-[30px] font-medium leading-9 text-[#0f172a]">{t("transfer.bookTitle", { name: journey.name })}</h1>
             <p className="text-[16px] leading-6 text-[#475569]">
-              Complete your details and payment to confirm your booking.
+              {t("transfer.bookSubtitle")}
             </p>
           </header>
 
@@ -166,7 +168,7 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
             <aside className="mt-6 flex flex-col gap-6 lg:mt-0 lg:w-full">
               <div className="overflow-hidden rounded-xl border border-[#f1f5f9] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
                 <div className="border-b border-[#e5e7eb] p-6 pb-[17px]">
-                  <h2 className="text-[20px] font-semibold leading-7 text-[#1b1b1c]">Booking Summary</h2>
+                  <h2 className="text-[20px] font-semibold leading-7 text-[#1b1b1c]">{t("transfer.summary")}</h2>
                   
                   <div className="relative mt-4 h-[187.88px] overflow-hidden rounded-md bg-gray-100">
                     {journey.imageUrl && journey.imageUrl.trim() !== "" && (
@@ -178,7 +180,7 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
                       />
                     )}
                     <span className="absolute right-2 top-2 rounded bg-[#3b82f6] px-2 py-1 text-[12px] font-medium leading-[17px] text-white">
-                      Transfer
+                      {t("transfer.transfer")}
                     </span>
                   </div>
 
@@ -189,8 +191,8 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
 
                   <dl className="mt-5 space-y-3 text-[12px] leading-[16.8px]">
                     <div className="flex items-center justify-between gap-5">
-                      <dt className="font-medium text-[#4d434f]">Estimated Duration</dt>
-                      <dd className="font-semibold text-[#1b1b1c]">{journey.estimatedDurationMinutes} minutes</dd>
+                      <dt className="font-medium text-[#4d434f]">{t("transfer.estimatedDuration")}</dt>
+                      <dd className="font-semibold text-[#1b1b1c]">{journey.estimatedDurationMinutes} {t("transfer.minutes")}</dd>
                     </div>
                   </dl>
                 </div>
@@ -205,14 +207,14 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
                     ))}
                   </dl>
                   <div className="mt-6 flex items-center justify-between border-t border-[#e5e7eb] pt-[17px]">
-                    <span className="text-[16px] font-semibold leading-7 text-[#1b1b1c] lg:text-[20px]">Total Due Today</span>
+                    <span className="text-[16px] font-semibold leading-7 text-[#1b1b1c] lg:text-[20px]">{t("transfer.totalDue")}</span>
                     <span className="text-[16px] font-semibold leading-7 text-[#2e6f57] lg:text-[20px]">{dueToday}</span>
                   </div>
                 </div>
               </div>
 
               <SectionCard className="p-[25px]">
-                <SectionHeading>Payment Method</SectionHeading>
+                <SectionHeading>{t("transfer.paymentMethod")}</SectionHeading>
                 <div className="mt-6 space-y-4">
                   <label className="flex h-[70px] items-center justify-between rounded-xl border border-[#cfb072] bg-[#fcf9f6] px-4 py-[17px]">
                     <input type="radio" name="payment-method" defaultChecked className="sr-only" />
@@ -221,8 +223,8 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
                         <div className="size-2 rounded-full bg-white" />
                       </span>
                       <span className="ml-3">
-                        <span className="block text-[14px] font-medium leading-5 text-[#0f172a] lg:font-bold">Pay Now Online</span>
-                        <span className="block text-[12px] leading-4 text-[#8a9a94]">Secure payment by PayPal</span>
+                        <span className="block text-[14px] font-medium leading-5 text-[#0f172a] lg:font-bold">{t("transfer.payNowOnline")}</span>
+                        <span className="block text-[12px] leading-4 text-[#8a9a94]">{t("transfer.securePaypal")}</span>
                       </span>
                     </span>
                   </label>
@@ -233,7 +235,7 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
                   disabled={isPending}
                   className="mt-[24px] flex h-12 w-full items-center justify-center gap-2 rounded-[48px] bg-[#2e6f57] text-[16px] font-medium leading-6 text-white transition hover:bg-[#255f49] lg:h-14 lg:font-bold disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {isPending ? "Processing..." : "Pay Now & Confirm Booking"}
+                  {isPending ? t("common.processing") : t("transfer.payConfirm")}
                 </button>
               </SectionCard>
             </aside>
@@ -245,38 +247,40 @@ export default function SingleTransferPageContent({ id }: SingleTransferPageCont
 }
 
 function TransferCustomerInfo({ data, setData }: TransferFormProps) {
+  const { t } = useI18n();
+
   return (
     <SectionCard className="p-[25px]">
-      <SectionHeading>Customer Information</SectionHeading>
+      <SectionHeading>{t("transfer.customerInfo")}</SectionHeading>
       <div className="mt-6 grid gap-x-6 gap-y-[23.59px] lg:grid-cols-2">
         <label className="block">
-          <span className="text-[14px] font-medium leading-5 text-[#4d434f]">Full Name</span>
+          <span className="text-[14px] font-medium leading-5 text-[#4d434f]">{t("booking.fullName")}</span>
           <input
             type="text"
             value={data.fullName}
-            placeholder="Enter your full name"
+            placeholder={t("booking.fullNamePlaceholder")}
             required
             onChange={(e) => setData({ ...data, fullName: e.target.value })}
             className="mt-2 h-[43.59px] w-full rounded-lg border border-[#cbd5e1] bg-white px-[13px] text-[14px] outline-none focus:border-[#2e6f57]"
           />
         </label>
         <label className="block">
-          <span className="text-[14px] font-medium leading-5 text-[#4d434f]">Email Address</span>
+          <span className="text-[14px] font-medium leading-5 text-[#4d434f]">{t("booking.email")}</span>
           <input
             type="email"
             value={data.email}
-            placeholder="name@example.com"
+            placeholder={t("booking.emailPlaceholder")}
             required
             onChange={(e) => setData({ ...data, email: e.target.value })}
             className="mt-2 h-[43.59px] w-full rounded-lg border border-[#cbd5e1] bg-white px-[13px] text-[14px] outline-none focus:border-[#2e6f57]"
           />
         </label>
         <label className="block lg:col-span-2">
-          <span className="text-[14px] font-medium leading-5 text-[#4d434f]">Phone Number</span>
+          <span className="text-[14px] font-medium leading-5 text-[#4d434f]">{t("booking.phone")}</span>
           <input
             type="tel"
             value={data.phone}
-            placeholder="+20 100 000 0000"
+            placeholder={t("booking.phonePlaceholder")}
             required
             onChange={(e) => setData({ ...data, phone: e.target.value })}
             className="mt-2 h-[43.59px] w-full rounded-lg border border-[#cbd5e1] bg-white px-[13px] text-[14px] outline-none focus:border-[#2e6f57]"
@@ -288,35 +292,37 @@ function TransferCustomerInfo({ data, setData }: TransferFormProps) {
 }
 
 function TransferDetailsInfo({ data, setData }: TransferFormProps) {
+  const { t } = useI18n();
+
   return (
     <SectionCard className="p-[25px]">
-      <SectionHeading>Transfer Details</SectionHeading>
+      <SectionHeading>{t("transfer.details")}</SectionHeading>
       <div className="mt-6 grid gap-x-6 gap-y-4 lg:grid-cols-2">
         <label className="block">
-          <span className="text-[14px] font-bold text-[#4d434f]">Trip Type</span>
+          <span className="text-[14px] font-bold text-[#4d434f]">{t("transfer.tripType")}</span>
           <select
             value={data.tripType}
             onChange={(e) => setData({ ...data, tripType: parseInt(e.target.value) })}
             className="mt-2 h-[43.59px] w-full rounded-lg border border-[#cbd5e1] bg-white px-[13px] text-[14px] outline-none focus:border-[#2e6f57]"
           >
-            <option value={1}>One Way</option>
-            <option value={2}>Round Trip</option>
+            <option value={1}>{t("transfer.oneWay")}</option>
+            <option value={2}>{t("transfer.roundTrip")}</option>
           </select>
         </label>
         <label className="block">
-          <span className="text-[14px] font-bold text-[#4d434f]">Passengers</span>
+          <span className="text-[14px] font-bold text-[#4d434f]">{t("transfer.passengers")}</span>
           <input
             type="number"
             min="1"
             value={data.passengers}
-            placeholder="Number of passengers"
+            placeholder={t("transfer.passengersPlaceholder")}
             required
             onChange={(e) => setData({ ...data, passengers: e.target.value })}
             className="mt-2 h-[43.59px] w-full rounded-lg border border-[#cbd5e1] bg-white px-[13px] text-[14px] outline-none focus:border-[#2e6f57]"
           />
         </label>
         <label className="block">
-          <span className="text-[14px] font-medium text-[#4d434f]">Pickup Date</span>
+          <span className="text-[14px] font-medium text-[#4d434f]">{t("transfer.pickupDate")}</span>
           <input
             type="date"
             value={data.pickupDate}
@@ -326,7 +332,7 @@ function TransferDetailsInfo({ data, setData }: TransferFormProps) {
           />
         </label>
         <label className="block">
-          <span className="text-[14px] font-medium text-[#4d434f]">Pickup Time</span>
+          <span className="text-[14px] font-medium text-[#4d434f]">{t("transfer.pickupTime")}</span>
           <input
             type="time"
             value={data.pickupTime}
@@ -339,7 +345,7 @@ function TransferDetailsInfo({ data, setData }: TransferFormProps) {
         {data.tripType === 2 && (
           <>
             <label className="block">
-              <span className="text-[14px] font-medium text-[#4d434f]">Return Date</span>
+              <span className="text-[14px] font-medium text-[#4d434f]">{t("transfer.returnDate")}</span>
               <input
                 type="date"
                 value={data.returnDate}
@@ -349,7 +355,7 @@ function TransferDetailsInfo({ data, setData }: TransferFormProps) {
               />
             </label>
             <label className="block">
-              <span className="text-[14px] font-medium text-[#4d434f]">Return Time</span>
+              <span className="text-[14px] font-medium text-[#4d434f]">{t("transfer.returnTime")}</span>
               <input
                 type="time"
                 value={data.returnTime}
@@ -362,21 +368,21 @@ function TransferDetailsInfo({ data, setData }: TransferFormProps) {
         )}
 
         <label className="block lg:col-span-2">
-          <span className="text-[14px] font-medium text-[#4d434f]">Flight Number (if applicable)</span>
+          <span className="text-[14px] font-medium text-[#4d434f]">{t("transfer.flightNumber")}</span>
           <input
             type="text"
             value={data.flightNumber}
-            placeholder="Example: MS911"
+            placeholder={t("transfer.flightPlaceholder")}
             onChange={(e) => setData({ ...data, flightNumber: e.target.value })}
             className="mt-2 h-[43.59px] w-full rounded-lg border border-[#cbd5e1] bg-white px-[13px] text-[14px] outline-none focus:border-[#2e6f57]"
           />
         </label>
 
         <label className="block lg:col-span-2">
-          <span className="text-[14px] font-medium text-[#4d434f]">Pickup Notes</span>
+          <span className="text-[14px] font-medium text-[#4d434f]">{t("transfer.pickupNotes")}</span>
           <textarea
             value={data.pickupNotes}
-            placeholder="Example: Please pick up from the hotel lobby."
+            placeholder={t("transfer.pickupPlaceholder")}
             onChange={(e) => setData({ ...data, pickupNotes: e.target.value })}
             className="mt-2 w-full rounded-lg border border-[#cbd5e1] bg-white p-[13px] text-[14px] outline-none focus:border-[#2e6f57]"
             rows={2}
@@ -384,10 +390,10 @@ function TransferDetailsInfo({ data, setData }: TransferFormProps) {
         </label>
         
         <label className="block lg:col-span-2">
-          <span className="text-[14px] font-medium text-[#4d434f]">Drop-off Notes</span>
+          <span className="text-[14px] font-medium text-[#4d434f]">{t("transfer.dropoffNotes")}</span>
           <textarea
             value={data.dropOffNotes}
-            placeholder="Example: Drop off at Terminal 2 entrance."
+            placeholder={t("transfer.dropoffPlaceholder")}
             onChange={(e) => setData({ ...data, dropOffNotes: e.target.value })}
             className="mt-2 w-full rounded-lg border border-[#cbd5e1] bg-white p-[13px] text-[14px] outline-none focus:border-[#2e6f57]"
             rows={2}

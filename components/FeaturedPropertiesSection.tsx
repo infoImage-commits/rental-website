@@ -9,15 +9,17 @@ import { API_BASE_URL } from "@/lib/api/config";
 import { PropertyListItem } from "@/lib/types/property";
 import { slugify } from "@/lib/utils/slugify";
 import { formatUsd } from "@/lib/utils/currency";
+import { useI18n } from "./I18nProvider";
 
 const filterTabs = [
-  { id: "hot", label: "Hot Deal", icon: "/homepage/properties/icons/hot.svg" },
-  { id: "recommended", label: "Recommended for you", icon: "/homepage/properties/icons/recommend.svg" },
-  { id: "price", label: "Best Price", icon: "/homepage/properties/icons/price.svg" },
+  { id: "hot", labelKey: "home.featured.hot", icon: "/homepage/properties/icons/hot.svg" },
+  { id: "recommended", labelKey: "home.featured.recommended", icon: "/homepage/properties/icons/recommend.svg" },
+  { id: "price", labelKey: "home.featured.bestPrice", icon: "/homepage/properties/icons/price.svg" },
 ];
 
 export default function FeaturedPropertiesSection() {
   const [activeTab, setActiveTab] = useState("hot");
+  const { t, href } = useI18n();
 
   const { data: response, isLoading } = usePublicRentProperties({ IsFeatured: true, pageSize: 50 });
   const allProperties: PropertyListItem[] = (response?.items || []).filter((p) => p.isFeatured);
@@ -67,7 +69,7 @@ export default function FeaturedPropertiesSection() {
                 }`}
               >
                 <Image src={filter.icon} alt="" width={16} height={16} className="size-3.5 sm:size-5" />
-                {filter.label}
+                {t(filter.labelKey)}
               </motion.button>
             ))}
           </div>
@@ -80,8 +82,8 @@ export default function FeaturedPropertiesSection() {
             </div>
           ) : properties.length === 0 ? (
             <div className="flex h-[420px] w-full flex-col items-center justify-center gap-2 text-center text-[16px] text-[#737373]">
-              <p className="font-medium text-[#183c2f]">No featured vacation deals available right now.</p>
-              <p className="text-[14px] text-[#8a9a94]">Check back soon or explore all our vacation homes below.</p>
+              <p className="font-medium text-[#183c2f]">{t("home.featured.noDeals")}</p>
+              <p className="text-[14px] text-[#8a9a94]">{t("home.featured.noDealsHint")}</p>
             </div>
           ) : (
             <motion.div 
@@ -104,10 +106,10 @@ export default function FeaturedPropertiesSection() {
 
         <div className="mt-10 flex justify-center lg:mt-14">
           <Link
-            href="/rent"
+            href={href("/rent")}
             className="inline-flex h-12 w-full max-w-[320px] items-center justify-center rounded-full border-2 border-[#2e6f57] bg-white px-10 text-[16px] font-semibold text-[#2e6f57] transition hover:bg-[#2e6f57] hover:text-white sm:h-14 sm:max-w-[400px] sm:text-[18px]"
           >
-            View More Vacation Homes
+            {t("home.featured.viewMore")}
           </Link>
         </div>
 
@@ -117,6 +119,8 @@ export default function FeaturedPropertiesSection() {
 }
 
 function SectionHeading() {
+  const { t } = useI18n();
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -126,10 +130,10 @@ function SectionHeading() {
       className="mx-auto flex max-w-[740px] flex-col items-center gap-4 text-center lg:gap-[21px]"
     >
       <p className="text-[14px] font-medium uppercase leading-normal tracking-[0.36em] text-[#d59e52] lg:text-[18px]">
-        Featured Stays
+        {t("home.featured.eyebrow")}
       </p>
       <h2 className="text-[20px] font-medium leading-normal tracking-[-0.02em] text-[#2e6f57] sm:text-[28px] lg:text-[36px]">
-        Featured Vacation Rentals
+        {t("home.featured.title")}
       </h2>
       <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
     </motion.div>
@@ -137,8 +141,9 @@ function SectionHeading() {
 }
 
 function PropertyCard({ property }: { property: PropertyListItem }) {
+  const { t, href } = useI18n();
   const imageUrl = property.coverImageUrl ? `${API_BASE_URL}/${property.coverImageUrl}` : "/rent/property-card.png";
-  const location = property.city || property.country || "Location not specified";
+  const location = property.city || property.country || t("home.featured.locationMissing");
 
   return (
     <motion.article 
@@ -154,12 +159,16 @@ function PropertyCard({ property }: { property: PropertyListItem }) {
           className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
         />
 
-        <div className="absolute left-5 top-4 inline-flex h-[27px] min-w-[113px] items-center justify-center rounded-full border-t border-[#d59e52] bg-white px-4 text-[14px] font-semibold text-[#d59e52] shadow-sm">
+        <div className="hidden">
           ★ Featured Deal
         </div>
 
+        <div className="absolute left-5 top-4 inline-flex h-[27px] min-w-[113px] items-center justify-center rounded-full border-t border-[#d59e52] bg-white px-4 text-[14px] font-semibold text-[#d59e52] shadow-sm">
+          ★ {t("home.featured.featuredDeal")}
+        </div>
+
         <div className="absolute left-0 top-[68%] inline-flex h-[37px] items-center gap-2 rounded-r-lg bg-[#d59e52] px-3 text-[16px] font-semibold text-white">
-          <span>{formatUsd(property.basePrice)} /night</span>
+          <span>{formatUsd(property.basePrice)} /{t("common.night")}</span>
         </div>
       </div>
 
@@ -173,13 +182,13 @@ function PropertyCard({ property }: { property: PropertyListItem }) {
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2 text-[14px] text-[#656566]">
-          <PropertyMeta icon="/homepage/properties/icons/bed.svg" label={`${property.bedroomNo || 0} Bed`} />
-          <PropertyMeta icon="/homepage/properties/icons/bath.svg" label={`${property.bathroomNo || 0} Bath`} />
-          <PropertyMeta icon="/homepage/properties/icons/size.svg" label={property.capacity ? `${property.capacity} m²` : "N/A"} />
+          <PropertyMeta icon="/homepage/properties/icons/bed.svg" label={`${property.bedroomNo || 0} ${t("home.featured.bed")}`} />
+          <PropertyMeta icon="/homepage/properties/icons/bath.svg" label={`${property.bathroomNo || 0} ${t("home.featured.bath")}`} />
+          <PropertyMeta icon="/homepage/properties/icons/size.svg" label={property.capacity ? `${property.capacity} m²` : t("home.featured.notAvailable")} />
         </div>
 
-        <Link href={`/rent/${slugify(property.name)}`} className="mt-auto flex h-12 items-center justify-center rounded-full bg-[#2e6f57] text-[16px] font-semibold text-white transition hover:bg-[#245f49]">
-          Book Now
+        <Link href={href(`/rent/${slugify(property.name)}`)} className="mt-auto flex h-12 items-center justify-center rounded-full bg-[#2e6f57] text-[16px] font-semibold text-white transition hover:bg-[#245f49]">
+          {t("common.bookNow")}
         </Link>
       </div>
     </motion.article>

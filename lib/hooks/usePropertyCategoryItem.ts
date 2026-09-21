@@ -5,6 +5,11 @@ import type {
   PropertyCategoryItemRequest,
   PropertyCategoryApiResponse,
 } from "@/lib/types/propertyCategory";
+import {
+  adminTranslationLocales,
+  buildTranslationFromRecords,
+  type LocaleRecord,
+} from "@/lib/i18n/adminTranslations";
 
 const KEY = "property-category-items";
 const CATEGORIES_KEY = "property-categories";
@@ -41,16 +46,45 @@ export function usePropertyCategoryItemsByCategory(categoryId: string) {
 }
 
 // ── 3. Single item by ID ─────────────────────────────────────────────────────
-export function usePropertyCategoryItemById(id: string) {
+export function usePropertyCategoryItemById(id: string, locale?: string) {
   return useQuery({
-    queryKey: [KEY, id],
+    queryKey: [KEY, id, locale],
     queryFn: async () => {
       const { data } = await axiosInstance.get<PropertyCategoryApiResponse<PropertyCategoryItem>>(
-        `/api/properties/category-items/${id}`
+        `/api/properties/category-items/${id}`,
+        locale ? { headers: { "Accept-Language": locale, "X-Locale": locale } } : undefined
       );
       return data.data;
     },
     enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function usePropertyCategoryItemTranslations(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [KEY, id, "translations"],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        adminTranslationLocales.map(async (locale) => {
+          const { data } = await axiosInstance.get<PropertyCategoryApiResponse<PropertyCategoryItem>>(
+            `/api/properties/category-items/${id}`,
+            { headers: { "Accept-Language": locale, "X-Locale": locale } }
+          );
+          if (!data.data) throw new Error(`Property category item ${id} did not load for ${locale}`);
+          return [locale, data.data] as const;
+        })
+      );
+      const records = Object.fromEntries(entries) as LocaleRecord<PropertyCategoryItem>;
+      return {
+        records,
+        name: buildTranslationFromRecords(records, (record) => record.name),
+        propertyCategoryId: records.en.propertyCategoryId,
+        icon: records.en.icon,
+        displayOrder: records.en.displayOrder,
+      };
+    },
+    enabled: Boolean(id && enabled),
     staleTime: 30 * 1000,
   });
 }

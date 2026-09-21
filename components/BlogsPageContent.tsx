@@ -10,6 +10,7 @@ import { useBlogs } from "@/lib/hooks/useBlog";
 import type { BlogItem } from "@/lib/types/blog";
 import { resolveApiImageUrl } from "@/lib/utils/imageUrl";
 import { getBlogSlug } from "@/lib/utils/blogSlug";
+import { useI18n } from "./I18nProvider";
 
 const metaIcons = {
   date: "/homepage/blogs/icons/calendar.svg",
@@ -94,10 +95,10 @@ const ctaItemMotion: Variants = {
   },
 };
 
-function formatDate(value: string) {
+function formatDate(value: string, locale: string, fallback: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Recently";
-  return new Intl.DateTimeFormat("en", {
+  if (Number.isNaN(date.getTime())) return fallback;
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -115,6 +116,7 @@ function getVisiblePages(currentPage: number, totalPages: number) {
 }
 
 export default function BlogsPageContent() {
+  const { locale } = useI18n();
   const [page, setPage] = useState(1);
   const shouldReduceMotion = useReducedMotion();
   const initialState = shouldReduceMotion ? false : "hidden";
@@ -173,7 +175,7 @@ export default function BlogsPageContent() {
               >
                 <BlogGrid>
                   {blogs.map((blog) => (
-                    <BlogCard key={blog.id} blog={blog} shouldReduceMotion={!!shouldReduceMotion} />
+                    <BlogCard key={blog.id} blog={blog} shouldReduceMotion={!!shouldReduceMotion} locale={locale} />
                   ))}
                 </BlogGrid>
 
@@ -198,6 +200,8 @@ export default function BlogsPageContent() {
 }
 
 function PageHeader({ initialState }: { initialState: false | "hidden" }) {
+  const { t, href } = useI18n();
+
   return (
     <motion.div
       variants={panelMotion}
@@ -206,15 +210,15 @@ function PageHeader({ initialState }: { initialState: false | "hidden" }) {
       className="flex flex-col items-start gap-3 lg:gap-6"
     >
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[16px] font-semibold leading-[14px]">
-        <Link href="/" className="text-[#667c74] transition hover:text-[#2e6f57]">
-          Home
+        <Link href={href("/")} className="text-[#667c74] transition hover:text-[#2e6f57]">
+          {t("common.home")}
         </Link>
         <span className="text-[#667c74]">&gt;</span>
-        <span className="text-[#183c2f]">Blog</span>
+        <span className="text-[#183c2f]">{t("common.blogs")}</span>
       </nav>
 
       <h1 className="text-[28px] font-semibold leading-tight text-[#2e6f57] lg:text-[42px]">
-        Hurghada Vacation & Travel Guides
+        {t("common.blogs")}
       </h1>
     </motion.div>
   );
@@ -231,9 +235,10 @@ function BlogGrid({ children }: { children: ReactNode }) {
   );
 }
 
-function BlogCard({ blog, shouldReduceMotion }: { blog: BlogItem; shouldReduceMotion: boolean }) {
+function BlogCard({ blog, shouldReduceMotion, locale }: { blog: BlogItem; shouldReduceMotion: boolean; locale: string }) {
+  const { t, href } = useI18n();
   const imageSrc = resolveApiImageUrl(blog.featuredImageUrl) || fallbackImage;
-  const excerpt = blog.summary || blog.content || "Explore the latest rental insights and local property guidance.";
+  const excerpt = blog.summary || blog.content || t("seo.siteDescription");
 
   return (
     <motion.article
@@ -252,7 +257,7 @@ function BlogCard({ blog, shouldReduceMotion }: { blog: BlogItem; shouldReduceMo
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col px-5 py-5 lg:px-6 lg:py-6">
-        <ArticleMeta icon={metaIcons.date} label={formatDate(blog.createdAtUtc)} />
+        <ArticleMeta icon={metaIcons.date} label={formatDate(blog.createdAtUtc, locale, t("common.recently"))} />
 
         <div className="mt-3 flex min-w-0 flex-col gap-2.5">
           <h2 className="line-clamp-2 min-w-0 text-[20px] font-semibold leading-snug text-[#183c2f] [overflow-wrap:anywhere] lg:text-[22px]">
@@ -264,10 +269,10 @@ function BlogCard({ blog, shouldReduceMotion }: { blog: BlogItem; shouldReduceMo
         </div>
 
         <Link
-          href={`/blogs/${getBlogSlug(blog)}`}
+          href={href(`/blogs/${getBlogSlug(blog)}`)}
           className="mt-auto ml-auto inline-flex h-11 min-w-[170px] items-center justify-center gap-2 rounded-full border border-[#d59e52] bg-white px-5 text-[15px] font-semibold text-[#183c2f] transition hover:-translate-y-0.5 hover:bg-[#f5f7f6] lg:min-w-[184px] lg:text-[16px]"
         >
-          <span>Read Article</span>
+          <span>{t("common.readArticle")}</span>
           <Image
             src="/homepage/blogs/icons/arrow.svg"
             alt=""

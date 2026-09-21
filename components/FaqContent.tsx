@@ -6,8 +6,16 @@ import {
   useCreateFaq,
   useUpdateFaq,
   useDeleteFaq,
+  useFaqTranslations,
 } from "@/lib/hooks/useFaq";
 import type { FaqItem, FaqsQuery } from "@/lib/types/faq";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 import ConfirmModal from "./ConfirmModal";
 
 // ── Form Panel Component ──────────────────────────────────────────────────────
@@ -25,33 +33,45 @@ function FaqFormPanel({
   const isEditing = !!faq;
   const { mutate: createFaq, isPending: isCreating } = useCreateFaq();
   const { mutate: updateFaq, isPending: isUpdating } = useUpdateFaq();
+  const translationsQuery = useFaqTranslations(faq?.id ?? "", isOpen && isEditing);
 
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
+  const [question, setQuestion] = useState<TranslationInput>(emptyTranslation());
+  const [answer, setAnswer] = useState<TranslationInput>(emptyTranslation());
   const [displayOrder, setDisplayOrder] = useState<number>(1);
   const [isPublished, setIsPublished] = useState(false);
 
-  // Sync state when panel opens/faq changes
   useEffect(() => {
-    if (isOpen) {
-      setQuestion(faq?.question ?? "");
-      setAnswer(faq?.answer ?? "");
-      setDisplayOrder(faq?.displayOrder ?? 1);
-      setIsPublished(faq?.isPublished ?? false);
+    if (!isOpen) return;
+
+    if (!isEditing) {
+      setQuestion(emptyTranslation());
+      setAnswer(emptyTranslation());
+      setDisplayOrder(1);
+      setIsPublished(false);
+      return;
     }
-  }, [isOpen, faq]);
+
+    if (translationsQuery.data) {
+      setQuestion(translationsQuery.data.question);
+      setAnswer(translationsQuery.data.answer);
+      setDisplayOrder(translationsQuery.data.displayOrder);
+      setIsPublished(translationsQuery.data.isPublished);
+    }
+  }, [isOpen, isEditing, translationsQuery.data]);
 
   if (!isOpen) return null;
 
   const isSaving = isCreating || isUpdating;
+  const isHydrating = isEditing && translationsQuery.isLoading;
+  const canEdit = !isEditing || translationsQuery.isSuccess;
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!question.trim() || !answer.trim()) return;
+    if (!canEdit || !hasRequiredBaseTranslation(question) || !hasRequiredBaseTranslation(answer)) return;
 
     const payload = {
-      question: question.trim(),
-      answer: answer.trim(),
+      question: trimTranslation(question),
+      answer: trimTranslation(answer),
       displayOrder,
       isPublished,
     };
@@ -83,7 +103,7 @@ function FaqFormPanel({
       />
 
       {/* Slide-in Panel */}
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transition-transform duration-300 flex flex-col">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl transition-transform duration-300">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#dfe8e4] px-6 py-4">
           <h2 className="text-[18px] font-semibold text-[#183c2f]">
@@ -103,33 +123,37 @@ function FaqFormPanel({
         {/* Form */}
         <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-6 py-6">
           <div className="space-y-5">
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-                Question <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="E.g., How do I book a cleaning?"
-                className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-              />
-            </div>
+            {isHydrating && (
+              <div className="rounded-xl border border-[#dfe8e4] bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#667c74]">
+                Loading all language versions before editing...
+              </div>
+            )}
 
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-                Answer <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                required
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                rows={5}
-                placeholder="Enter the detailed answer here..."
-                className="w-full resize-y rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-              />
-            </div>
+            {translationsQuery.isError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+                Could not load every language. Editing stays locked until all four versions load.
+              </div>
+            )}
+
+            <TranslationFields
+              label="Question"
+              value={question}
+              onChange={setQuestion}
+              required
+              placeholder="E.g., How do I book a cleaning?"
+              disabled={!canEdit || isSaving}
+            />
+
+            <TranslationFields
+              label="Answer"
+              value={answer}
+              onChange={setAnswer}
+              required
+              textarea
+              rows={5}
+              placeholder="Enter the detailed answer here..."
+              disabled={!canEdit || isSaving}
+            />
 
             <div>
               <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
@@ -140,6 +164,7 @@ function FaqFormPanel({
                 min="1"
                 value={displayOrder}
                 onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 1)}
+                disabled={!canEdit || isSaving}
                 className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
               />
               <p className="mt-1 text-[12px] text-[#8a9a94]">
@@ -155,9 +180,10 @@ function FaqFormPanel({
               <button
                 type="button"
                 onClick={() => setIsPublished(!isPublished)}
+                disabled={!canEdit || isSaving}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#2e6f57] focus:ring-offset-2 ${
                   isPublished ? "bg-[#2e6f57]" : "bg-[#dfe8e4]"
-                }`}
+                } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 <span
                   className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
@@ -182,7 +208,12 @@ function FaqFormPanel({
             </button>
             <button
               onClick={handleSave}
-              disabled={isSaving || !question.trim() || !answer.trim()}
+              disabled={
+                isSaving ||
+                !canEdit ||
+                !hasRequiredBaseTranslation(question) ||
+                !hasRequiredBaseTranslation(answer)
+              }
               className="inline-flex min-w-[100px] items-center justify-center gap-2 rounded-full bg-[#2e6f57] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#255f49] disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSaving ? (
@@ -214,7 +245,6 @@ export default function FaqContent() {
   const [faqToDelete, setFaqToDelete] = useState<FaqItem | null>(null);
 
   const { data, isLoading, isError, isFetching } = useFaqs(query);
-  const { mutate: updateFaq } = useUpdateFaq();
   const { mutate: deleteFaq } = useDeleteFaq();
 
   function applySearch() {
@@ -237,16 +267,6 @@ export default function FaqContent() {
   function openEditPanel(faq: FaqItem) {
     setEditingFaq(faq);
     setIsPanelOpen(true);
-  }
-
-  function handleTogglePublish(faq: FaqItem) {
-    const payload = {
-      question: faq.question,
-      answer: faq.answer,
-      displayOrder: faq.displayOrder,
-      isPublished: !faq.isPublished,
-    };
-    updateFaq({ id: faq.id, payload });
   }
 
   function confirmDelete(id: string) {
@@ -395,13 +415,13 @@ export default function FaqContent() {
                     </h3>
                     {/* Status Badge (clickable to toggle) */}
                      <button
-                        onClick={() => handleTogglePublish(faq)}
+                        onClick={() => openEditPanel(faq)}
                         className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium transition hover:shadow-sm ${
                           faq.isPublished
                             ? "bg-[#f5f7f6] text-[#2e6f57] hover:bg-[#dfe8e4]"
                             : "bg-[#f5f7f6] text-[#667c74] hover:bg-[#dfe8e4]"
                         }`}
-                        title="Click to toggle status"
+                        title="Open edit panel to change status"
                       >
                         <span className={`size-1.5 rounded-full ${faq.isPublished ? 'bg-[#2e6f57]' : 'bg-[#8a9a94]'}`} />
                         {faq.isPublished ? "Published" : "Draft"}

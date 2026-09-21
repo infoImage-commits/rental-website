@@ -1,0 +1,640 @@
+{
+  "common": {
+    "brand": "Hurghada Vacation Homes",
+    "home": "Startseite",
+    "rent": "Ferienwohnungen",
+    "transfers": "Transfers",
+    "about": "Über uns",
+    "contact": "Kontakt",
+    "blogs": "Blog",
+    "faq": "FAQ",
+    "houseRules": "Hausregeln",
+    "search": "Suchen",
+    "bookNow": "Jetzt buchen",
+    "viewMore": "Mehr anzeigen",
+    "loading": "Wird geladen...",
+    "processing": "Wird verarbeitet...",
+    "tryAgain": "Erneut versuchen",
+    "backToHome": "Zur Startseite",
+    "readArticle": "Artikel lesen",
+    "exploreHomes": "Ferienwohnungen ansehen",
+    "night": "Nacht",
+    "nights": "Nächte",
+    "guest": "Gast",
+    "guests": "Gäste",
+    "property": "Unterkunft",
+    "properties": "Unterkünfte",
+    "checking": "Prüfung läuft...",
+    "total": "Gesamt",
+    "clear": "Löschen",
+    "clearDates": "Daten löschen",
+    "recently": "Kürzlich",
+    "previousPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite",
+    "previousView": "Vorherige Ansicht",
+    "nextView": "Nächste Ansicht",
+    "toggleNavigation": "Navigation umschalten",
+    "maxCapacity": "Maximale Kapazität",
+    "language": "Sprache"
+  },
+  "nav": {
+    "items": {
+      "home": "Startseite",
+      "rent": "Ferienwohnungen",
+      "transfer": "Transfers",
+      "about": "Über uns",
+      "contact": "Kontakt",
+      "blogs": "Blog"
+    },
+    "homeAria": "Hurghada Vacation Homes Startseite"
+  },
+  "footer": {
+    "quickLinks": "Schnelllinks",
+    "rentalTypes": "Mietarten",
+    "contact": "Kontakt",
+    "intro": "Ausgewählte Ferienwohnungen, Chalets am Meer und private Flughafentransfers in Hurghada. Genießen Sie geprüfte Qualität, transparente Buchung und lokale Betreuung.",
+    "poweredBy": "Bereitgestellt von",
+    "rights": "Alle Rechte vorbehalten",
+    "rentalTypeLabels": {
+      "studio": "Studio",
+      "oneBedroom": "1 Schlafzimmer",
+      "twoBedroom": "2 Schlafzimmer"
+    }
+  },
+  "seo": {
+    "homeTitle": "Ferienwohnungen und Urlaubsunterkünfte in Hurghada",
+    "homeDescription": "Entdecken und buchen Sie geprüfte Ferienwohnungen, Apartments, Chalets, Studios und private Flughafentransfers in Hurghada mit lokaler Betreuung.",
+    "siteTitle": "Hurghada Vacation Homes | Ferienwohnungen in Hurghada",
+    "siteDescription": "Entdecken und buchen Sie geprüfte Ferienwohnungen, Apartments, Strandchalets, Studios und private Flughafentransfers in Hurghada.",
+    "ogAlt": "Ferienwohnungen von Hurghada Vacation Homes in Hurghada"
+  },
+  "home": {
+    "hero": {
+      "titlePrefix": "Von Zuhause zu Ihrem",
+      "titleHighlight": "Zuhause",
+      "subtitle": "Ausgewählte Ferienwohnungen und entspannte Aufenthalte in Hurghada.",
+      "checkIn": "Anreisedatum",
+      "checkOut": "Abreisedatum",
+      "searchHomes": "Ferienwohnungen suchen"
+    },
+    "categories": {
+      "eyebrow": "Empfohlene Angebote",
+      "title": "Mietkategorien entdecken",
+      "studio": "Studio",
+      "oneBedroom": "1 Schlafzimmer",
+      "twoBedroom": "2 Schlafzimmer",
+      "viewListings": "{name}-Unterkünfte ansehen",
+      "categoryAlt": "Kategorie {name}"
+    },
+    "facilities": {
+      "eyebrow": "In jedem Aufenthalt enthalten",
+      "title": "Standardausstattung und Annehmlichkeiten",
+      "body": "Alle unsere Ferienwohnungen sind mit hochwertigen Komfortmerkmalen ausgestattet, damit Sie Hurghada sorgenfrei genießen können.",
+      "items": [
+        [
+          "Kostenloses Highspeed-WLAN",
+          "Schnelle Verbindung in allen Räumen"
+        ],
+        [
+          "24/7 Sicherheit und Support",
+          "Rund um die Uhr beruhigt"
+        ],
+        [
+          "Klimaanlage",
+          "Angenehmes Klima in jeder Unterkunft"
+        ],
+        [
+          "Strände in der Nähe",
+          "Nur 10 bis 15 Minuten zu Fuß"
+        ],
+        [
+          "Pool",
+          "Saubere Resort-Pools"
+        ],
+        [
+          "Kostenloses Parken vor Ort",
+          "Eigener Parkplatz"
+        ],
+        [
+          "Flughafentransfer verfügbar",
+          "Private Transfers vom Flughafen"
+        ],
+        [
+          "Voll ausgestattete Küche",
+          "Kochgeschirr, Kühlschrank und Herd"
+        ]
+      ]
+    },
+    "featured": {
+      "eyebrow": "Empfohlene Aufenthalte",
+      "title": "Empfohlene Ferienwohnungen",
+      "hot": "Top-Angebot",
+      "recommended": "Für Sie empfohlen",
+      "bestPrice": "Bester Preis",
+      "noDeals": "Derzeit sind keine empfohlenen Ferienangebote verfügbar.",
+      "noDealsHint": "Schauen Sie bald wieder vorbei oder entdecken Sie alle Ferienwohnungen.",
+      "viewMore": "Mehr Ferienwohnungen anzeigen",
+      "featuredDeal": "Empfohlenes Angebot",
+      "featured": "Empfohlen",
+      "holidayRental": "Ferienunterkunft",
+      "locationMissing": "Standort nicht angegeben",
+      "bed": "Bett",
+      "bath": "Bad",
+      "notAvailable": "N/V"
+    },
+    "views": {
+      "eyebrow": "Ausgewählte Aussichten",
+      "title": "Ferienwohnungen nach Aussicht entdecken",
+      "rentalViewAlt": "Aussicht {name}"
+    },
+    "infoArea": {
+      "eyebrow": "Umgebung und Highlights",
+      "title": "Alles, was Sie brauchen, direkt in der Nähe",
+      "body": "Unsere Unterkünfte liegen zentral in Hurghada, nahe Stränden, Restaurants, Einkaufsmöglichkeiten und wichtigen Services.",
+      "destinations": "Ziele und Entfernungen in der Nähe",
+      "calculated": "Berechnet ab unseren zentral gelegenen Unterkünften in Hurghada",
+      "verified": "{count} geprüfte Orte",
+      "showFewer": "Weniger Orte anzeigen",
+      "viewAll": "Alle {count} Orte in der Nähe anzeigen",
+      "displayingAll": "Alle {count} nahegelegenen Ziele werden angezeigt",
+      "showingTop": "{shown} von {total} Top-Zielen in der Nähe"
+    },
+    "how": {
+      "eyebrow": "So funktioniert es",
+      "title": "Buchen Sie Ihren Hurghada-Urlaub in 3 einfachen Schritten",
+      "steps": [
+        [
+          "Suchen",
+          "Durchsuchen Sie Ferienwohnungen nach Lage, Typ, Preis pro Nacht und Ausstattung."
+        ],
+        [
+          "Entdecken",
+          "Sehen Sie Fotos, prüfen Sie die Verfügbarkeit und lesen Sie die Hausregeln."
+        ],
+        [
+          "Buchen und entspannen",
+          "Reservieren Sie online mit 10 % Anzahlung, fügen Sie Transfers hinzu und genießen Sie Ihren Aufenthalt."
+        ]
+      ]
+    },
+    "cta": {
+      "title": "Bereit für Ihren entspannten Hurghada-Urlaub?",
+      "body": "Durchsuchen Sie geprüfte Ferienwohnungen in Hurghadas besten Küstenlagen und buchen Sie Ihren Aufenthalt.",
+      "action": "Ferienwohnungen finden",
+      "alt": "Pool eines Resorts in Hurghada bei Nacht"
+    },
+    "who": {
+      "eyebrow": "Wer wir sind",
+      "title": "Räume, in die Sie gern zurückkehren",
+      "trustedTitle": "Ihr vertrauenswürdiger Gastgeber für unvergessliche Hurghada-Urlaube",
+      "body": "Ob Strandurlaub oder entspannte Ferien: Wir helfen Ihnen, sorgfältig ausgewählte Apartments, Chalets und Studios mit echter lokaler Gastfreundschaft zu finden.",
+      "why": "Warum wir",
+      "readMore": "Mehr lesen",
+      "videoAlt": "Luftaufnahme einer Ferienanlage",
+      "playVideo": "Video abspielen",
+      "benefits": {
+        "verified": {
+          "title": "Geprüfte Ferienwohnungen",
+          "description": "Jede Unterkunft wird persönlich auf Qualität, Sauberkeit und Komfort geprüft."
+        },
+        "locations": {
+          "title": "Beste Lagen in Hurghada",
+          "description": "Chalets, Apartments und Studios in den besten Resort- und Küstenlagen Hurghadas."
+        },
+        "hosts": {
+          "title": "Engagierte lokale Gastgeber",
+          "description": "Freundliche Unterstützung während Ihres gesamten Urlaubs."
+        }
+      }
+    },
+    "reviews": {
+      "eyebrow": "Gästebewertungen",
+      "title": "Was unsere Gäste sagen",
+      "body": "Echte Erfahrungen von Gästen, die in unseren Unterkünften in Hurghada übernachtet haben.",
+      "failed": "Bewertungen konnten nicht geladen werden.",
+      "emptyTitle": "Noch keine Bewertungen",
+      "emptyBody": "Teilen Sie als Erste Ihre Erfahrung!",
+      "averageRating": "{rating} Durchschnittsbewertung",
+      "verifiedReviews": "{count} geprüfte Bewertungen"
+    }
+  },
+  "rent": {
+    "metadataTitle": "Ferienwohnungen und Urlaubsunterkünfte in Hurghada",
+    "metadataDescription": "Finden und buchen Sie geprüfte Apartments, Chalets, Studios und Ferienwohnungen in Hurghada und El Kawther.",
+    "heroTitle": "Finden Sie Ihre nächste Ferienunterkunft",
+    "heroBody": "Entdecken Sie komfortable Apartments, Chalets am Meer und Studios in Hurghada mit geprüfter Ausstattung und guten Lagen.",
+    "mobileTitle": "Mietunterkünfte",
+    "filters": "Filter",
+    "closeFilters": "Filter schließen",
+    "filterProperties": "Unterkünfte filtern",
+    "datesOfStay": "Aufenthaltsdaten",
+    "location": "Standort",
+    "anyLocation": "Alle Standorte",
+    "propertyType": "Unterkunftstyp",
+    "all": "Alle",
+    "priceNight": "Preis / Nacht (USD)",
+    "min": "Min.",
+    "max": "Max.",
+    "adults": "Erwachsene",
+    "any": "Beliebig",
+    "amenitiesViews": "Ausstattung und Aussichten",
+    "availableNow": "Jetzt verfügbar",
+    "seaView": "Meerblick",
+    "poolView": "Poolblick",
+    "gardenView": "Gartenblick",
+    "mountainView": "Bergblick",
+    "cityView": "Stadtblick",
+    "applyFilters": "Filter anwenden",
+    "breadcrumb": "Startseite > Ferienwohnungen",
+    "heading": "Ferienwohnungen und Urlaubsunterkünfte in Hurghada",
+    "showingAvailable": "Verfügbare Unterkünfte vom {from} bis {to} ({count} verfügbar)",
+    "checkingAvailability": "Verfügbarkeit vom {from} bis {to} wird geprüft...",
+    "emptyTitle": "Keine Ferienwohnungen verfügbar",
+    "emptyWithDates": "Keine Unterkunft ist vom {from} bis {to} verfügbar. Wählen Sie andere Daten oder löschen Sie den Datumsfilter.",
+    "emptyFiltered": "Keine Unterkunft entspricht Ihren Kriterien. Passen Sie die Filter an.",
+    "viewAllAvailable": "Alle verfügbaren Unterkünfte anzeigen",
+    "ctaTitle": "Bereit, Ihre nächste Ferienunterkunft zu finden?",
+    "ctaBody": "Durchsuchen Sie geprüfte Unterkünfte in Hurghadas besten Küstenlagen.",
+    "exploreRentals": "Unterkünfte entdecken"
+  },
+  "property": {
+    "notFoundTitle": "Unterkunft nicht gefunden",
+    "notFoundBody": "Die gesuchte Unterkunft existiert nicht oder wurde entfernt.",
+    "browse": "Ferienwohnungen ansehen",
+    "loading": "Unterkunft wird geladen...",
+    "propertyNotFoundMeta": "Mietunterkunft nicht gefunden",
+    "defaultMetaTitle": "Ferienunterkunft in Hurghada",
+    "defaultMetaDescription": "Details, Ausstattung, Verfügbarkeit und Buchungsinformationen für diese Ferienwohnung in Hurghada.",
+    "detailsMetaTitle": "Details zur Ferienunterkunft",
+    "quickType": "Ferienwohnung",
+    "bedroom": "Schlafzimmer",
+    "bedrooms": "Schlafzimmer",
+    "bathroom": "Bad",
+    "bathrooms": "Bäder",
+    "guests": "Gäste",
+    "home": "Startseite",
+    "vacationHomes": "Ferienwohnungen",
+    "availability": "Verfügbarkeit und Daten",
+    "selectedRange": "Ausgewählt: {checkIn} bis {checkOut} ({nights} {nightLabel})",
+    "checkInOnly": "Anreise: {checkIn} - Wählen Sie ein Abreisedatum",
+    "selectDatesCalendar": "Wählen Sie Ihre Daten im Kalender",
+    "viewCalendar": "Kalender anzeigen",
+    "oneMonth": "{count} Mon.",
+    "past": "Vergangen",
+    "today": "Heute",
+    "booked": "Gebucht",
+    "selected": "Ausgewählt"
+  },
+  "booking": {
+    "priceSummary": "Preisübersicht",
+    "selectDatesPrice": "Wählen Sie Daten, um den Endpreis und die Verfügbarkeit zu prüfen.",
+    "pricingMissing": "Preis fehlt für {dates}.",
+    "selectedRange": "{count} {label} ausgewählt",
+    "selectCheckout": "Abreisedatum wählen",
+    "selectDates": "Daten wählen",
+    "checkIn": "Anreise",
+    "checkout": "Abreise",
+    "fullName": "Vollständiger Name",
+    "email": "E-Mail-Adresse",
+    "phone": "Telefonnummer",
+    "fullNamePlaceholder": "z. B. Max Mustermann",
+    "emailPlaceholder": "z. B. max@example.com",
+    "phonePlaceholder": "z. B. +20 123 456 7890",
+    "rulesAgreement": "Ich habe gelesen und akzeptiere die",
+    "bookPaypal": "Buchen und mit PayPal bezahlen",
+    "secure": "Sofortige Bestätigung und sichere Zahlung",
+    "errors": {
+      "contact": "Bitte geben Sie Name, E-Mail und Telefonnummer ein.",
+      "dates": "Bitte wählen Sie Anreise- und Abreisedatum im Kalender.",
+      "checkoutAfter": "Die Abreise muss nach der Anreise liegen.",
+      "capacity": "Diese Unterkunft erlaubt bis zu {count} Gäste.",
+      "unavailableRange": "Dieser Zeitraum enthält nicht verfügbare Tage. Bitte wählen Sie ein anderes Abreisedatum.",
+      "unavailableSelected": "Der ausgewählte Zeitraum enthält nicht verfügbare Tage.",
+      "selectCheckIn": "Bitte wählen Sie zuerst ein Anreisedatum.",
+      "priceUnavailable": "Für die ausgewählten Daten ist kein Preis verfügbar.{missing}",
+      "verifyFailed": "Verfügbarkeit und Preis konnten nicht geprüft werden.",
+      "createFailed": "Buchung konnte nicht erstellt werden. Prüfen Sie Ihre Angaben und versuchen Sie es erneut.",
+      "createUnavailable": "Diese Buchung konnte nicht erstellt werden.",
+      "paymentStartFailed": "Die Buchung wurde erstellt, aber die Zahlung konnte nicht gestartet werden.",
+      "priceCheckFailed": "Preise konnten für diesen Zeitraum nicht geprüft werden."
+    }
+  },
+  "transfer": {
+    "metadataTitle": "Private Transfers in Hurghada",
+    "metadataDescription": "Private Transfers für Flughafen, Hotels und Reisen am Roten Meer ansehen und buchen.",
+    "heroAlt": "Premium-Transferservice in Hurghada",
+    "heroTitle": "Stressfreie Flughafentransfers",
+    "heroBody": "Buchen Sie Ihren privaten, komfortablen und zuverlässigen Transfer.",
+    "breadcrumb": "Startseite > Transferstrecken",
+    "available": "Verfügbare Transfers",
+    "loading": "Transfers werden geladen...",
+    "failed": "Transfers konnten nicht geladen werden.",
+    "empty": "Derzeit sind keine Transfers verfügbar.",
+    "noImage": "Kein Bild verfügbar",
+    "from": "Von:",
+    "to": "Nach:",
+    "duration": "Dauer:",
+    "mins": "Min.",
+    "notFoundTitle": "Transfer nicht gefunden",
+    "notFoundDescription": "Buchen Sie Ihre Transferstrecke.",
+    "fallbackDescription": "Details ansehen und Buchung abschließen.",
+    "metaDescription": "Buchen Sie einen Transfer von {route}. {description}",
+    "bookTitle": "Transfer buchen: {name}",
+    "bookSubtitle": "Füllen Sie Ihre Daten aus und bezahlen Sie, um die Buchung zu bestätigen.",
+    "summary": "Buchungsübersicht",
+    "transfer": "Transfer",
+    "estimatedDuration": "Geschätzte Dauer",
+    "minutes": "Minuten",
+    "rideFare": "Fahrpreis",
+    "totalDue": "Heute fällig",
+    "paymentMethod": "Zahlungsmethode",
+    "payNowOnline": "Jetzt online bezahlen",
+    "securePaypal": "Sichere Zahlung per PayPal",
+    "payConfirm": "Jetzt bezahlen und bestätigen",
+    "customerInfo": "Kundendaten",
+    "details": "Transferdetails",
+    "tripType": "Reiseart",
+    "oneWay": "Einfach",
+    "roundTrip": "Hin und zurück",
+    "passengers": "Passagiere",
+    "passengersPlaceholder": "Anzahl der Passagiere",
+    "pickupDate": "Abholdatum",
+    "pickupTime": "Abholzeit",
+    "returnDate": "Rückreisedatum",
+    "returnTime": "Rückreisezeit",
+    "flightNumber": "Flugnummer (falls zutreffend)",
+    "flightPlaceholder": "Beispiel: MS911",
+    "pickupNotes": "Abholhinweise",
+    "pickupPlaceholder": "Beispiel: Bitte in der Hotellobby abholen.",
+    "dropoffNotes": "Abgabehinweise",
+    "dropoffPlaceholder": "Beispiel: Abgabe am Eingang von Terminal 2.",
+    "errors": {
+      "required": "Bitte geben Sie Kontaktdaten, Passagiere, Abholdatum und Abholzeit ein.",
+      "returnRequired": "Bitte geben Sie Rückreisedatum und Rückreisezeit für Hin- und Rückfahrt ein.",
+      "paymentStart": "Zahlung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
+      "createFailed": "Transferbuchung konnte nicht erstellt werden. Prüfen Sie Ihre Angaben und versuchen Sie es erneut."
+    }
+  },
+  "payment": {
+    "title": "Zahlung",
+    "loadingTitle": "Ihre Zahlung wird bestätigt",
+    "loadingBody": "Bitte warten Sie, während wir Ihre Zahlung mit PayPal bestätigen. Schließen oder aktualisieren Sie diese Seite nicht.",
+    "sessionMissing": "Zahlungssitzung nicht gefunden. Es wurde keine PayPal-Bestell-ID angegeben.",
+    "captureFailed": "Zahlung konnte nicht erfasst werden. Bitte kontaktieren Sie den Support.",
+    "genericFailed": "Zahlung konnte nicht erfasst werden.",
+    "whatsNext": "Wie geht es weiter?",
+    "failedTitle": "Zahlung fehlgeschlagen",
+    "failedBody": "Wir konnten den Zahlungsstatus auf dieser Seite nicht bestätigen. Kontaktieren Sie den Support mit Ihrer PayPal-Bestell-ID.",
+    "detailLabels": {
+      "bookingNumber": "Buchungsnummer",
+      "bookingType": "Buchungstyp",
+      "paymentStatus": "Zahlungsstatus",
+      "amountPaid": "Gezahlter Betrag",
+      "transactionId": "Transaktions-ID",
+      "property": "Unterkunft",
+      "checkIn": "Anreise",
+      "checkOut": "Abreise",
+      "guests": "Gäste",
+      "transfer": "Transfer",
+      "pickupDate": "Abholdatum",
+      "pickupTime": "Abholzeit",
+      "passengers": "Passagiere",
+      "purchaseId": "Kauf-ID"
+    },
+    "kinds": {
+      "rent": [
+        "Miete",
+        "Buchung bestätigt!",
+        "Ihre Mietbuchung wurde erfolgreich abgeschlossen.",
+        "Wir bestätigen Ihre Aufenthaltsdetails per E-Mail. Bitte halten Sie Ihr Telefon vor der Anreise bereit."
+      ],
+      "extension": [
+        "Verlängerung",
+        "Zahlung für Verlängerung bestätigt!",
+        "Ihre Zahlung für die Verlängerung wurde abgeschlossen.",
+        "Wir aktualisieren den Status nach Zahlungsbestätigung."
+      ],
+      "transfer": [
+        "Transfer",
+        "Transferbuchung bestätigt!",
+        "Ihre Transferbuchung wurde erfolgreich abgeschlossen.",
+        "Unser Fahrer kontaktiert Sie vor der geplanten Abholung."
+      ],
+      "buy": [
+        "Kauf",
+        "Kaufanfrage bestätigt!",
+        "Ihre Kaufanfrage wurde erfolgreich abgeschlossen.",
+        "Unser Verkaufsteam prüft Ihre Anfrage und meldet sich bei Ihnen."
+      ],
+      "booking": [
+        "Buchung",
+        "Buchung bestätigt!",
+        "Ihre Buchung wurde erfolgreich abgeschlossen.",
+        "Wir senden Ihnen die Bestätigung per E-Mail."
+      ]
+    },
+    "cancelTitle": "Zahlung abgebrochen",
+    "cancelBody": "Sie haben den Zahlungsvorgang abgebrochen. Ihr Konto wurde nicht belastet.",
+    "notifying": "Server wird benachrichtigt..."
+  },
+  "contact": {
+    "metadataTitle": "Hurghada Vacation Homes kontaktieren",
+    "metadataDescription": "Kontaktieren Sie Hurghada Vacation Homes in Hurghada El Kawther telefonisch oder per WhatsApp.",
+    "title": "Kontakt",
+    "body": "Haben Sie Fragen, brauchen Sie Hilfe bei der Auswahl einer Unterkunft oder möchten Sie einen Transfer organisieren? Schreiben Sie uns.",
+    "getInTouch": "Kontakt aufnehmen",
+    "helpTitle": "Wir helfen Ihnen gern.",
+    "helpBody": "Nutzen Sie einen der Kanäle unten oder senden Sie uns eine Nachricht.",
+    "labels": {
+      "email": "E-Mail",
+      "whatsapp": "WhatsApp",
+      "office": "Büro",
+      "hours": "Öffnungszeiten"
+    },
+    "workingHours": "So - Do: 9:00 - 18:00",
+    "form": {
+      "sentTitle": "Nachricht gesendet",
+      "sentBody": "Vielen Dank für Ihre Nachricht. Unser Team meldet sich so bald wie möglich.",
+      "sendAnother": "Weitere Nachricht senden",
+      "errorFallback": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "networkError": "Netzwerkfehler. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+      "name": "Ihr Name",
+      "email": "E-Mail-Adresse",
+      "phone": "Telefonnummer",
+      "subject": "Betreff",
+      "message": "Ihre Nachricht",
+      "namePlaceholder": "Ihr vollständiger Name",
+      "emailPlaceholder": "Ihre E-Mail-Adresse",
+      "phonePlaceholder": "Ihre Telefonnummer",
+      "subjectPlaceholder": "Fragen zu Daten, Unterkünften oder Transfers",
+      "messagePlaceholder": "Schreiben Sie Ihre Nachricht hier...",
+      "sending": "Wird gesendet...",
+      "send": "Nachricht senden"
+    }
+  },
+  "about": {
+    "eyebrow": "Wer wir sind",
+    "title": "Ihr Zuhause fern von Zuhause am Roten Meer.",
+    "body": "Wir helfen Reisenden, komfortable Ferienwohnungen und private Transfers in Hurghada mit geprüften Details und lokaler Betreuung zu finden.",
+    "summaryPoints": [
+      "Geprüfte Unterkünfte",
+      "Lokale Expertise",
+      "Engagierter Support"
+    ],
+    "missionTitle": "Unsere Mission",
+    "missionBody": "Wir bieten zuverlässige, transparente und herzliche Gastfreundschaft, damit die Buchung eines Aufenthalts in Hurghada stressfrei ist.",
+    "helpTitle": "Wobei wir helfen",
+    "helpBody": "Von Apartments am Meer und Resort-Chalets bis zu privaten Flughafentransfers und lokalen Empfehlungen kümmern wir uns um die Details.",
+    "imageAlt": "Helles Wohnzimmer einer Ferienwohnung mit großen Fenstern",
+    "imageCaption": "Sorgfältig ausgewählte Unterkünfte, klar erklärt.",
+    "stats": {
+      "experience": "Jahre Erfahrung",
+      "guests": "Zufriedene Gäste",
+      "homes": "Ferienwohnungen",
+      "hosts": "Engagierte Gastgeber"
+    },
+    "trustEyebrow": "Warum Gäste uns vertrauen",
+    "trustTitle": "Praktische Hilfe bei jedem Schritt.",
+    "reasons": {
+      "wideRange": {
+        "title": "Große Auswahl an Ferienwohnungen",
+        "description": "Chalets, Resort-Apartments und Studios für jeden Reisestil und jedes Budget."
+      },
+      "locations": {
+        "title": "Beste Küstenlagen",
+        "description": "Wir konzentrieren uns auf Hurghadas gute Lagen mit einfachem Zugang zu Strand, Restaurants und Erholung."
+      },
+      "transparent": {
+        "title": "Transparente Buchung",
+        "description": "Klare Preise, genaue Fotos, geprüfte Ausstattung und einfache Online-Anzahlung von 10 %."
+      },
+      "hostCare": {
+        "title": "Lokale Gastgeberbetreuung",
+        "description": "Ein freundliches lokales Team hilft vor, während und nach Ihrem Aufenthalt."
+      }
+    },
+    "ctaTitle": "Bereit, Ihren Hurghada-Urlaub zu planen?",
+    "ctaBody": "Senden Sie uns Ihre Reisedaten und Wünsche, und unser Team hilft Ihnen, die passende Ferienwohnung zu finden.",
+    "ctaAction": "Gastgeberteam kontaktieren"
+  },
+  "blogs": {
+    "homeEyebrow": "Reise- und Aufenthaltsführer",
+    "homeTitle": "Urlaubs- und Reiseführer für Hurghada",
+    "fallbackExcerpt": "Entdecken Sie Tipps zu Ferienwohnungen und lokale Reiseführer für Hurghada.",
+    "unableHome": "Blogs können derzeit nicht geladen werden.",
+    "unableTitle": "Blogs konnten nicht geladen werden",
+    "unableBody": "Aktualisieren Sie die Seite oder versuchen Sie es später erneut.",
+    "emptyTitle": "Noch keine Blogs veröffentlicht",
+    "emptyBody": "Neue Reiseführer für Hurghada erscheinen bald hier.",
+    "refresh": "Aktualisieren",
+    "pagination": "Blog-Paginierung",
+    "noContent": "Für diesen Artikel ist noch kein Inhalt verfügbar."
+  },
+  "bookingConfirmation": {
+    "title": "Buchung bestätigt!",
+    "body": "Ihre Ferienwohnung wurde erfolgreich reserviert.",
+    "nextBody": "Unser lokales Team kontaktiert Sie mit Anreisehinweisen, Schlüsselübergabe und weiteren Details.",
+    "sampleDate": "15. September 2026",
+    "sampleCheckout": "22. September 2026",
+    "sampleHome": "Luxus-Apartment am Strand",
+    "details": {
+      "bookingId": "Buchungs-ID",
+      "checkIn": "Anreisedatum",
+      "vacationHome": "Ferienwohnung",
+      "checkOut": "Abreisedatum"
+    }
+  },
+  "houseRules": {
+    "metadataTitle": "Hausregeln",
+    "metadataDescription": "Lesen Sie die Hausregeln von Hurghada Vacation Homes zu Check-in, Besuchern, Pflege, Reinigung, Wäsche und Sicherheit.",
+    "eyebrow": "Gästeinformationen",
+    "intro": "Willkommen. Wir wünschen Ihnen einen angenehmen Aufenthalt. Bitte beachten Sie, dass es sich um Selbstversorger-Apartments handelt und keine Hotelservices angeboten werden.",
+    "heroAlt": "Komfortable Ferienunterkunft",
+    "rules": [
+      [
+        "Check-in und Check-out",
+        "Check-in ist ab 14:00 Uhr möglich. Check-out ist vor 12:00 Uhr mittags."
+      ],
+      [
+        "Besucher, Partys und Veranstaltungen",
+        "Besucher sind nicht erlaubt. Partys und Veranstaltungen sind nicht gestattet."
+      ],
+      [
+        "Haustiere",
+        "Haustiere sind in der Wohnung nicht erlaubt."
+      ],
+      [
+        "Bettwäsche",
+        "Bitte dekorieren Sie die Bettwäsche nicht mit Blumen, da dies dauerhafte Flecken verursachen kann."
+      ],
+      [
+        "Rauchen",
+        "Rauchen ist nur in ausgewiesenen Bereichen erlaubt. Bitte entsorgen Sie Zigarettenreste verantwortungsvoll."
+      ],
+      [
+        "Ruhezeiten",
+        "Bitte nehmen Sie Rücksicht auf Nachbarn und vermeiden Sie besonders abends und nachts Lärm."
+      ],
+      [
+        "Pflege von Apartment und Resort",
+        "Behandeln Sie Apartment und Resort mit demselben Respekt wie Ihr eigenes Zuhause."
+      ],
+      [
+        "Klimaanlage",
+        "Bitte schalten Sie die Klimaanlage aus, wenn Sie die Wohnung verlassen."
+      ],
+      [
+        "Schäden oder Bruch",
+        "Informieren Sie uns bitte sofort, wenn während Ihres Aufenthalts etwas beschädigt wird."
+      ],
+      [
+        "Saubere Böden",
+        "Bitte werfen Sie keine Lebensmittel auf den Boden."
+      ],
+      [
+        "Müllentsorgung",
+        "Nutzen Sie den Müllschacht an der Wand hinter dem Aufzug."
+      ],
+      [
+        "Kinder",
+        "Kinder müssen jederzeit von Eltern oder Aufsichtspersonen beaufsichtigt werden."
+      ],
+      [
+        "Wasser und Strom sparen",
+        "Bitte helfen Sie uns, Wasser und Strom zu sparen."
+      ],
+      [
+        "Badnutzung",
+        "Spülen Sie kein Toilettenpapier oder andere Gegenstände hinunter. Nutzen Sie den bereitgestellten Mülleimer."
+      ]
+    ],
+    "additionalServices": "Zusätzliche Services",
+    "paidServices": [
+      "Wäscheservice ist gegen Aufpreis verfügbar.",
+      "Wohnungsreinigung inklusive frischer Bettwäsche und Handtücher ist gegen Aufpreis verfügbar."
+    ],
+    "serviceContact": "Servicekontakt",
+    "serviceBody": "Für Wäsche- oder Reinigungswünsche kontaktieren Sie unser Team.",
+    "thankYou": "Vielen Dank, dass Sie diese Hausregeln respektieren. Wir wünschen Ihnen einen angenehmen Aufenthalt."
+  },
+  "faq": {
+    "heroTitle": "Häufig gestellte Fragen",
+    "helpCentre": "Hilfecenter",
+    "pageBody": "Antworten zu Unterkünften, Zahlungen, Transfers und Gästeservice in Hurghada.",
+    "failed": "FAQs können derzeit nicht geladen werden.",
+    "refresh": "Aktualisieren",
+    "empty": "Noch keine FAQs verfügbar.",
+    "emptyYet": "Noch keine FAQs veröffentlicht.",
+    "viewAll": "Alle FAQs anzeigen",
+    "updating": "FAQs werden aktualisiert...",
+    "showing": "{shown} von {total} Fragen",
+    "loadMore": "Weitere Fragen laden",
+    "allSeen": "Sie haben alle Fragen gesehen.",
+    "stillQuestions": "Noch Fragen?",
+    "contactBody": "Senden Sie uns eine Nachricht und unser lokales Team hilft Ihnen bei Unterkunft oder Transfer."
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "body": "Die gesuchte Seite wurde möglicherweise verschoben oder die Adresse ist falsch."
+  }
+}

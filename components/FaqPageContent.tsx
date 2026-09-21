@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useFaqs } from "@/lib/hooks/useFaq";
 import FaqAccordion from "./FaqAccordion";
+import { useI18n } from "./I18nProvider";
 
 const PAGE_STEP = 10;
 
 export default function FaqPageContent() {
+  const { t, href } = useI18n();
   const [pageSize, setPageSize] = useState(PAGE_STEP);
 
   const { data, isLoading, isFetching, isError } = useFaqs({
@@ -32,23 +34,22 @@ export default function FaqPageContent() {
 
         <div className="relative mx-auto max-w-[900px] text-center">
           <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.28em] text-[#d9a441] lg:text-[16px]">
-            Help Centre
+            {t("faq.helpCentre")}
           </p>
           <h1 className="text-[28px] font-semibold leading-[1.2] tracking-[-0.02em] lg:text-[52px]">
-            Frequently Asked Questions
+            {t("common.faq")}
           </h1>
           <p className="mx-auto mt-4 max-w-[600px] text-[14px] leading-[1.7] text-white/70 lg:mt-6 lg:text-[18px]">
-            Browse answers to the most common questions about our rental platform,
-            booking process, payments, and property management.
+            {t("faq.pageBody")}
           </p>
 
           {/* Breadcrumb */}
           <nav className="mt-8 flex items-center justify-center gap-2 text-[13px] text-white/50">
-            <Link href="/" className="transition hover:text-white">
-              Home
+            <Link href={href("/")} className="transition hover:text-white">
+              {t("common.home")}
             </Link>
             <span>/</span>
-            <span className="text-white">FAQ</span>
+            <span className="text-white">{t("common.faq")}</span>
           </nav>
         </div>
       </section>
@@ -75,8 +76,8 @@ export default function FaqPageContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
               </div>
-              <p className="text-[16px] font-semibold text-[#183c2f]">Failed to load FAQs</p>
-              <p className="mt-1 text-[14px] text-[#667c74]">Please try refreshing the page.</p>
+              <p className="text-[16px] font-semibold text-[#183c2f]">{t("faq.failed")}</p>
+              <p className="mt-1 text-[14px] text-[#667c74]">{t("faq.refresh")}</p>
             </div>
           ) : faqs.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-20 text-center shadow-sm">
@@ -85,14 +86,14 @@ export default function FaqPageContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-[16px] font-semibold text-[#183c2f]">No FAQs available yet</p>
-              <p className="mt-1 text-[14px] text-[#667c74]">Check back soon — we&apos;re updating our help content.</p>
+              <p className="text-[16px] font-semibold text-[#183c2f]">{t("faq.emptyYet")}</p>
+              <p className="mt-1 text-[14px] text-[#667c74]">{t("faq.updating")}</p>
             </div>
           ) : (
             <>
               {/* Count */}
               <p className="mb-6 text-[13px] text-[#8a9a94]">
-                Showing {faqs.length} of {totalCount} question{totalCount !== 1 ? "s" : ""}
+                {t("faq.showing", { shown: faqs.length, total: totalCount })}
               </p>
 
               {/* Accordion */}
@@ -110,11 +111,11 @@ export default function FaqPageContent() {
                     {isFetching ? (
                       <>
                         <span className="size-4 animate-spin rounded-full border-2 border-[#2e6f57]/30 border-t-[#2e6f57]" />
-                        Loading...
+                        {t("common.loading")}
                       </>
                     ) : (
                       <>
-                        Load More Questions
+                        {t("faq.loadMore")}
                         <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                           <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -127,7 +128,7 @@ export default function FaqPageContent() {
               {/* All loaded message */}
               {!hasMore && totalCount > PAGE_STEP && (
                 <p className="mt-8 text-center text-[13px] text-[#8a9a94]">
-                  You&apos;ve seen all {totalCount} questions!
+                  {t("faq.allSeen", { total: totalCount })}
                 </p>
               )}
             </>
@@ -139,26 +140,26 @@ export default function FaqPageContent() {
       <section className="bg-white px-5 py-14 sm:px-8 sm:py-20 lg:px-20">
         <div className="mx-auto max-w-[700px] text-center">
           <h2 className="text-[22px] font-semibold leading-snug text-[#183c2f] lg:text-[32px]">
-            Still have questions?
+            {t("faq.stillQuestions")}
           </h2>
           <p className="mx-auto mt-3 max-w-[480px] text-[14px] leading-[1.7] text-[#667c74] lg:text-[16px]">
-            Our team is always happy to help. Reach out to us and we&apos;ll get back to you as soon as possible.
+            {t("faq.contactBody")}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/contact"
+              href={href("/contact")}
               className="inline-flex h-12 items-center gap-2 rounded-full bg-[#2e6f57] px-7 text-[14px] font-semibold text-white transition hover:bg-[#255f49] shadow-md hover:shadow-lg"
             >
-              Contact Us
+              {t("common.contact")}
               <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
             <Link
-              href="/"
+              href={href("/")}
               className="inline-flex h-12 items-center gap-2 rounded-full border-2 border-[#dfe8e4] px-7 text-[14px] font-medium text-[#667c74] transition hover:border-[#2e6f57] hover:text-[#2e6f57]"
             >
-              Back to Home
+              {t("common.backToHome")}
             </Link>
           </div>
         </div>

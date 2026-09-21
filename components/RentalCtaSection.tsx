@@ -3,8 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useI18n } from "./I18nProvider";
 
 export default function RentalCtaSection() {
+  const { t, href } = useI18n();
+
   return (
     <section className="min-h-[220px] overflow-hidden bg-[#1f4d3d] lg:min-h-[361px]">
       <div className="relative h-full w-full overflow-hidden">
@@ -17,7 +20,7 @@ export default function RentalCtaSection() {
         >
           <Image
             src="/homepage/vacation/resort-night-view.jpeg"
-            alt="Hurghada vacation resort pool at night"
+            alt={t("home.cta.alt")}
             fill
             sizes="(min-width: 1024px) 44vw, 52vw"
             className="object-cover object-center"
@@ -40,13 +43,13 @@ export default function RentalCtaSection() {
             variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} 
             className="max-w-[420px] text-[26px] font-semibold leading-[1.2] text-white sm:text-[32px] lg:max-w-none lg:text-[40px]"
           >
-            Ready for Your Relaxing Hurghada Holiday?
+            {t("home.cta.title")}
           </motion.h2>
           <motion.p 
             variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }} 
             className="mt-4 max-w-[560px] text-[14px] font-medium leading-[1.6] text-white sm:text-[16px] lg:text-[20px]"
           >
-            Browse verified vacation homes in Hurghada&apos;s top coastal spots and book your holiday stay today.
+            {t("home.cta.body")}
           </motion.p>
           <motion.div 
             variants={{ hidden: { opacity: 0, scaleX: 0 }, visible: { opacity: 1, scaleX: 1 } }} 
@@ -54,10 +57,10 @@ export default function RentalCtaSection() {
           />
           <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
             <Link
-              href="/rent"
+              href={href("/rent")}
               className="mt-6 inline-flex h-12 min-w-[210px] items-center justify-center rounded-full bg-white px-7 text-[16px] font-medium text-[#2e6f57] transition hover:scale-105 hover:bg-[#f8f5f0] lg:h-14 lg:min-w-[251px] lg:text-[20px]"
             >
-              Find Vacation Homes
+              {t("home.cta.action")}
             </Link>
           </motion.div>
         </motion.div>

@@ -7,8 +7,10 @@ import { motion } from "framer-motion";
 import { useCategories } from "@/lib/hooks/useCategory";
 import { API_BASE_URL } from "@/lib/api/config";
 import { CategoryItem } from "@/lib/types/category";
+import { useI18n } from "./I18nProvider";
 
 export default function BestLocationsSection() {
+  const { t, href } = useI18n();
   const { data: rawViews = [], isLoading } = useCategories();
   const views = rawViews.slice(0, 8);
   const viewsScrollerRef = useRef<HTMLDivElement>(null);
@@ -96,10 +98,10 @@ export default function BestLocationsSection() {
           className="mx-auto flex max-w-[730px] flex-col items-center gap-4 text-center"
         >
           <p className="text-[14px] font-medium uppercase tracking-[0.36em] text-[#d59e52] lg:text-[18px]">
-            Featured Views
+            {t("home.views.eyebrow")}
           </p>
           <h2 className="text-[26px] font-medium leading-tight tracking-[-0.02em] text-white sm:text-[32px] lg:text-[36px]">
-            Explore Vacation Homes by View
+            {t("home.views.title")}
           </h2>
           <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
         </motion.div>
@@ -144,10 +146,10 @@ export default function BestLocationsSection() {
 
         <div className="mt-8 flex justify-center">
           <Link
-            href="/rent"
+            href={href("/rent")}
             className="inline-flex h-11 items-center justify-center rounded-full border border-white/70 bg-white px-10 text-[16px] font-medium text-[#1f4d3d] transition hover:border-[#cfb072] hover:bg-[#f7f4eb] hover:text-[#2e6f57]"
           >
-            View More
+            {t("common.viewMore")}
           </Link>
         </div>
       </div>
@@ -162,6 +164,7 @@ function ViewCard({
   view: CategoryItem;
   onCardClick: (e: React.MouseEvent) => void;
 }) {
+  const { t, href } = useI18n();
   const imageUrl = view.imageUrl ? `${API_BASE_URL}/${view.imageUrl}` : "/homepage/locations/el-gouna.png";
   const rentHref = `/rent?CategoryId=${encodeURIComponent(view.id)}&LocationName=${encodeURIComponent(view.name)}`;
 
@@ -172,7 +175,7 @@ function ViewCard({
       className="select-none"
     >
       <Link 
-        href={rentHref}
+        href={href(rentHref)}
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
         onClick={onCardClick}
@@ -180,7 +183,7 @@ function ViewCard({
       >
         <Image
           src={imageUrl}
-          alt={`${view.name} rental view`}
+          alt={t("home.views.rentalViewAlt", { name: view.name })}
           fill
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
@@ -191,7 +194,7 @@ function ViewCard({
         <div className="pointer-events-none absolute inset-x-0 top-6 text-center z-10 select-none">
           <h3 className="select-none text-[24px] font-medium leading-normal tracking-[-0.02em] text-white transition-transform duration-500 group-hover:-translate-y-1">{view.name}</h3>
           <p className="select-none mt-1 text-[16px] font-medium leading-[1.5] tracking-[-0.02em] text-white/90 transition-transform duration-500 group-hover:-translate-y-1">
-            {view.propertiesCount} {view.propertiesCount === 1 ? 'Property' : 'Properties'}
+            {view.propertiesCount} {view.propertiesCount === 1 ? t("common.property") : t("common.properties")}
           </p>
         </div>
       </Link>
@@ -206,12 +209,13 @@ function ViewArrowButton({
   direction: "left" | "right";
   onClick: () => void;
 }) {
+  const { t } = useI18n();
   const isLeft = direction === "left";
 
   return (
     <button
       type="button"
-      aria-label={isLeft ? "Previous view" : "Next view"}
+      aria-label={isLeft ? t("common.previousView") : t("common.nextView")}
       onClick={onClick}
       className={`absolute top-1/2 z-20 grid size-11 sm:size-12 -translate-y-1/2 place-items-center rounded-full border border-white/60 bg-white/95 text-[#1f4d3d] shadow-[0_10px_24px_rgba(0,0,0,0.22)] transition hover:bg-[#f7f4eb] hover:scale-105 active:scale-95 ${
         isLeft ? "-left-2 sm:-left-3 lg:-left-5" : "-right-2 sm:-right-3 lg:-right-5"
@@ -232,4 +236,3 @@ function ViewArrowButton({
     </button>
   );
 }
-

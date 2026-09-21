@@ -11,9 +11,17 @@ import {
   useUpdatePropertyCategory,
   useDeletePropertyCategory,
   useUpdatePropertyCategoryStatus,
+  usePropertyCategoryTranslations,
 } from "@/lib/hooks/usePropertyCategory";
 import type { PropertyCategory, PropertyCategoryRequest } from "@/lib/types/propertyCategory";
 import ConfirmModal from "./ConfirmModal";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 // ── Expanded items row (lazy-loaded) ──────────────────────────────────────────
 function CategoryItemsRow({ categoryId }: { categoryId: string }) {
@@ -85,8 +93,12 @@ function CategoryFormPanel({
   const isEditing = !!category;
   const { mutate: createCategory, isPending: isCreating } = useCreatePropertyCategory();
   const { mutate: updateCategory, isPending: isUpdating } = useUpdatePropertyCategory();
+  const translationsQuery = usePropertyCategoryTranslations(
+    category?.id ?? "",
+    isOpen && isEditing
+  );
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState<TranslationInput>(emptyTranslation());
   const [icon, setIcon] = useState("amenities-title");
   const [isIconSelectorOpen, setIsIconSelectorOpen] = useState(false);
   const [isDefaultIconSelectorOpen, setIsDefaultIconSelectorOpen] = useState(false);
@@ -94,25 +106,37 @@ function CategoryFormPanel({
   const [displayOrder, setDisplayOrder] = useState<number | "">("");
 
   useEffect(() => {
-    if (isOpen) {
-      setName(category?.name ?? "");
-      setIcon(category?.icon ?? "amenities-title");
-      setDefaultIcon(category?.defaultIcon ?? "amenities-title");
-      setDisplayOrder(category?.displayOrder ?? "");
+    if (!isOpen) return;
+
+    if (!isEditing) {
+      setName(emptyTranslation());
+      setIcon("amenities-title");
+      setDefaultIcon("amenities-title");
+      setDisplayOrder("");
+      return;
     }
-  }, [isOpen, category]);
+
+    if (translationsQuery.data) {
+      setName(translationsQuery.data.name);
+      setIcon(translationsQuery.data.icon ?? "amenities-title");
+      setDefaultIcon(translationsQuery.data.defaultIcon ?? "amenities-title");
+      setDisplayOrder(translationsQuery.data.displayOrder ?? "");
+    }
+  }, [isOpen, isEditing, translationsQuery.data]);
 
   if (!isOpen) return null;
 
   const isSaving = isCreating || isUpdating;
-  const isFormValid = name.trim().length > 0;
+  const isHydrating = isEditing && translationsQuery.isLoading;
+  const canEdit = !isEditing || translationsQuery.isSuccess;
+  const isFormValid = canEdit && hasRequiredBaseTranslation(name);
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!isFormValid) return;
 
     const payload: PropertyCategoryRequest = {
-      name: name.trim(),
+      name: trimTranslation(name),
       icon: icon.trim() || undefined,
       defaultIcon: defaultIcon.trim() || undefined,
       displayOrder: displayOrder !== "" ? Number(displayOrder) : undefined,
@@ -129,7 +153,7 @@ function CategoryFormPanel({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#dfe8e4] px-6 py-4">
           <h2 className="text-[18px] font-semibold text-[#183c2f]">
@@ -148,20 +172,26 @@ function CategoryFormPanel({
 
         {/* Form body */}
         <form onSubmit={handleSave} className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
-          {/* Name */}
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Amenities"
-              className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          {isHydrating && (
+            <div className="rounded-xl border border-[#dfe8e4] bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#667c74]">
+              Loading all language versions before editing...
+            </div>
+          )}
+
+          {translationsQuery.isError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+              Could not load every language. Editing stays locked until all four versions load.
+            </div>
+          )}
+
+          <TranslationFields
+            label="Name"
+            value={name}
+            onChange={setName}
+            required
+            placeholder="e.g. Amenities"
+            disabled={!canEdit || isSaving}
+          />
 
           {/* Icon */}
           <div>

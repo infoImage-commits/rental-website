@@ -6,7 +6,9 @@ import type {
   PropertyListItem,
   PropertyRequest,
   PropertyAddress,
+  PropertyAddressRequest,
   PropertyListingDetails,
+  PropertyListingDetailsRequest,
   PropertyImage,
   BulkDailyPricesRequest,
   DailyPriceCheckData,
@@ -19,6 +21,11 @@ import type {
   PaginatedResponse,
   PropertyTypeCount,
 } from "@/lib/types/property";
+import {
+  adminTranslationLocales,
+  buildTranslationFromRecords,
+  type LocaleRecord,
+} from "@/lib/i18n/adminTranslations";
 
 const KEY = "properties";
 
@@ -323,14 +330,54 @@ export function usePublicRentProperties(params: PropertyQueryParams = {}) {
   });
 }
 
-export function usePropertyById(id: string) {
+export function usePropertyById(id: string, locale?: string) {
   return useQuery({
-    queryKey: [KEY, id],
+    queryKey: [KEY, id, locale],
     queryFn: async () => {
-      const { data } = await axiosInstance.get<PropertyApiResponse<Property>>(`/api/properties/${id}`);
+      const { data } = await axiosInstance.get<PropertyApiResponse<Property>>(
+        `/api/properties/${id}`,
+        locale ? { headers: { "Accept-Language": locale, "X-Locale": locale } } : undefined
+      );
       return data.data;
     },
     enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function usePropertyTranslations(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [KEY, id, "translations"],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        adminTranslationLocales.map(async (locale) => {
+          const { data } = await axiosInstance.get<PropertyApiResponse<Property>>(
+            `/api/properties/${id}`,
+            { headers: { "Accept-Language": locale, "X-Locale": locale } }
+          );
+          if (!data.data) throw new Error(`Property ${id} did not load for ${locale}`);
+          return [locale, data.data] as const;
+        })
+      );
+      const records = Object.fromEntries(entries) as LocaleRecord<Property>;
+      return {
+        records,
+        property: records.en,
+        name: buildTranslationFromRecords(records, (record) => record.name),
+        description: buildTranslationFromRecords(records, (record) => record.description),
+        address: {
+          country: buildTranslationFromRecords(records, (record) => record.address?.country),
+          city: buildTranslationFromRecords(records, (record) => record.address?.city),
+          area: buildTranslationFromRecords(records, (record) => record.address?.area),
+          street: buildTranslationFromRecords(records, (record) => record.address?.street),
+        },
+        listingDetails: {
+          outdoorFacility: buildTranslationFromRecords(records, (record) => record.listingDetails?.outdoorFacility),
+          cancellation: buildTranslationFromRecords(records, (record) => record.listingDetails?.cancellation),
+        },
+      };
+    },
+    enabled: Boolean(id && enabled),
     staleTime: 30 * 1000,
   });
 }
@@ -462,7 +509,7 @@ export function useUpdatePropertyFeatured() {
 export function useUpdatePropertyAddress() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: PropertyAddress }) => {
+    mutationFn: async ({ id, payload }: { id: string; payload: PropertyAddressRequest }) => {
       const { data } = await axiosInstance.put<PropertyApiResponse<boolean>>(`/api/properties/${id}/address`, payload);
       return data;
     },
@@ -475,7 +522,7 @@ export function useUpdatePropertyAddress() {
 export function useUpdatePropertyListingDetails() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: PropertyListingDetails }) => {
+    mutationFn: async ({ id, payload }: { id: string; payload: PropertyListingDetailsRequest }) => {
       const { data } = await axiosInstance.put<PropertyApiResponse<boolean>>(
         `/api/properties/${id}/listing-details`,
         payload

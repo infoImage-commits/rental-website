@@ -1,3 +1,5 @@
+import type { TranslationInput } from "@/lib/i18n/adminTranslations";
+
 export interface FaqItem {
   id: string;
   question: string;
@@ -18,8 +20,8 @@ export interface FaqsQuery {
 }
 
 export interface CreateFaqRequest {
-  question: string;
-  answer: string;
+  question: TranslationInput;
+  answer: TranslationInput;
   displayOrder: number;
   isPublished: boolean;
 }

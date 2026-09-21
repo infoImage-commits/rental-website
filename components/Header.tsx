@@ -5,23 +5,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useHeaderStore } from "../lib/headerStore";
+import { localeFlags, localeLabels, locales, localizePath, stripLocale, type Locale } from "@/lib/i18n/config";
+import { useI18n } from "./I18nProvider";
 
 type NavItem = {
   href?: string;
   label: string;
   subItems?: { href: string; label: string }[];
 };
-
-const navItems: NavItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/rent", label: "Vacation Homes" },
-  { href: "/transfer", label: "Transfers" },
-  { href: "/about", label: "About Us" },
-  { href: "/contact", label: "Contact Us" },
-  { href: "/blogs", label: "Blogs" },
-];
 
 const smoothEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const headerMotion: Variants = {
@@ -99,9 +93,19 @@ const mobileMenuMotion: Variants = {
 export default function Header() {
   const { menuOpen, toggleMenu, closeMenu } = useHeaderStore();
   const pathname = usePathname();
+  const publicPathname = stripLocale(pathname);
+  const { t, href, locale } = useI18n();
   const shouldReduceMotion = useReducedMotion();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const initialState = shouldReduceMotion ? false : "hidden";
+  const navItems: NavItem[] = [
+    { href: "/", label: t("nav.items.home") },
+    { href: "/rent", label: t("nav.items.rent") },
+    { href: "/transfer", label: t("nav.items.transfer") },
+    { href: "/about", label: t("nav.items.about") },
+    { href: "/contact", label: t("nav.items.contact") },
+    { href: "/blogs", label: t("nav.items.blogs") },
+  ];
 
   return (
     <motion.header
@@ -115,7 +119,7 @@ export default function Header() {
         className="mx-auto flex h-14 w-full max-w-[1280px] items-center justify-between px-5 sm:px-10 lg:grid lg:h-[104px] lg:grid-cols-[1fr_auto_1fr] lg:px-6 xl:px-0"
       >
         <motion.div variants={headerItemMotion} whileHover={shouldReduceMotion ? undefined : { y: -2 }}>
-          <Link href="/" className="flex shrink-0 items-center" aria-label="Hurghada Vacation Homes home">
+          <Link href={href("/")} className="flex shrink-0 items-center" aria-label={t("nav.homeAria")}>
             <Image
               src="/logo-green.png"
               alt="Logo"
@@ -134,7 +138,7 @@ export default function Header() {
         >
           {navItems.map((item) => {
             if (item.subItems) {
-              const isActive = item.subItems.some(sub => pathname === sub.href || pathname.startsWith(`${sub.href}/`));
+              const isActive = item.subItems.some(sub => publicPathname === sub.href || publicPathname.startsWith(`${sub.href}/`));
               const isOpen = openDropdown === item.label;
 
               return (
@@ -183,7 +187,7 @@ export default function Header() {
                         {item.subItems.map((sub) => (
                           <motion.div key={sub.href} variants={dropdownItemMotion}>
                             <Link
-                              href={sub.href}
+                              href={href(sub.href)}
                               className="block px-5 py-3 text-[16px] text-[#12382e] transition hover:bg-[#f4faf7] hover:text-[#2f7b61]"
                             >
                               {sub.label}
@@ -197,7 +201,7 @@ export default function Header() {
               );
             }
 
-            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+            const isActive = publicPathname === item.href || (item.href !== "/" && publicPathname.startsWith(`${item.href}/`));
 
             return (
               <motion.div
@@ -206,7 +210,7 @@ export default function Header() {
                 whileHover={shouldReduceMotion ? undefined : { y: -2 }}
               >
                 <Link
-                  href={item.href!}
+                  href={href(item.href!)}
                   className={`relative flex h-[104px] items-center whitespace-nowrap px-[13px] transition-colors hover:text-[#2f7b61] ${
                     isActive ? "text-[#2f7b61]" : ""
                   }`}
@@ -226,12 +230,14 @@ export default function Header() {
           })}
         </motion.nav>
 
-        <div className="hidden lg:block" />
+        <motion.div variants={headerItemMotion} className="hidden justify-self-end lg:block">
+          <LanguageSwitcher locale={locale} publicPathname={publicPathname} />
+        </motion.div>
 
         <motion.button
           variants={headerItemMotion}
           type="button"
-          aria-label="Toggle navigation"
+          aria-label={t("common.toggleNavigation")}
           aria-expanded={menuOpen}
           onClick={toggleMenu}
           whileTap={{ scale: 0.92 }}
@@ -278,7 +284,7 @@ export default function Header() {
                         {item.subItems.map((sub) => (
                           <Link
                             key={sub.label}
-                            href={sub.href}
+                            href={href(sub.href)}
                             className="rounded-md px-2 py-2 text-[15px] font-medium text-[#1F4D3D] transition hover:bg-[#f4faf7]"
                           >
                             {sub.label}
@@ -292,7 +298,7 @@ export default function Header() {
                 return (
                   <motion.div key={item.label} variants={dropdownItemMotion} whileTap={{ scale: 0.98 }}>
                     <Link
-                      href={item.href!}
+                      href={href(item.href!)}
                       className="block rounded-md px-2 py-3 text-base font-semibold text-[#1F4D3D] transition hover:bg-[#f4faf7]"
                     >
                       {item.label}
@@ -300,10 +306,137 @@ export default function Header() {
                   </motion.div>
                 );
               })}
+              <motion.div variants={dropdownItemMotion} className="mt-4 border-t border-[#1F4D3D]/10 pt-4">
+                <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a9a94]">
+                  {t("common.language")}
+                </p>
+                {locales.map((item) => (
+                  <Link
+                    key={item}
+                    href={localizePath(publicPathname, item)}
+                    className={`flex items-center gap-3 rounded-lg px-2 py-2.5 text-[14px] font-semibold transition ${
+                      item === locale
+                        ? "bg-[#f0f7f4] text-[#1F4D3D]"
+                        : "text-[#5d6965] hover:bg-[#f5f7f6] hover:text-[#1F4D3D]"
+                    }`}
+                    aria-current={item === locale ? "true" : undefined}
+                  >
+                    <Image
+                      src={localeFlags[item].src}
+                      alt={localeFlags[item].alt}
+                      width={22}
+                      height={16}
+                      className="h-4 w-[22px] rounded-[2px] object-cover shadow-[0_0_0_1px_rgba(31,77,61,0.12)]"
+                    />
+                    <span>{localeLabels[item]}</span>
+                    {item === locale && <Check className="ml-auto size-4 text-[#2e6f57]" aria-hidden="true" />}
+                  </Link>
+                ))}
+              </motion.div>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
     </motion.header>
+  );
+}
+
+function LanguageSwitcher({ locale, publicPathname }: { locale: Locale; publicPathname: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const switcherRef = useRef<HTMLDivElement>(null);
+  const selectedLabel = localeLabels[locale];
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (switcherRef.current && !switcherRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={switcherRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="flex h-11 min-w-[156px] items-center justify-between gap-3 rounded-full border border-[#dfe8e4] bg-white px-3 text-[14px] font-semibold text-[#1F4D3D] shadow-[0_6px_16px_rgba(31,77,61,0.05)] transition hover:border-[#2e6f57]/35 hover:bg-[#f8faf9]"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <Image
+            src={localeFlags[locale].src}
+            alt={localeFlags[locale].alt}
+            width={22}
+            height={16}
+            className="h-4 w-[22px] rounded-[2px] object-cover shadow-[0_0_0_1px_rgba(31,77,61,0.12)]"
+          />
+          <span className="truncate">{selectedLabel}</span>
+        </span>
+        <ChevronDown
+          className={`size-4 shrink-0 text-[#667c74] transition ${isOpen ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            variants={dropdownMotion}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            role="menu"
+            className="absolute right-0 top-[calc(100%+10px)] z-[80] w-56 origin-top-right overflow-hidden rounded-xl border border-[#dfe8e4] bg-white p-1.5 shadow-[0_18px_42px_rgba(31,77,61,0.16)]"
+          >
+            {locales.map((item) => {
+              const isSelected = item === locale;
+
+              return (
+                <motion.div key={item} variants={dropdownItemMotion}>
+                  <Link
+                    href={localizePath(publicPathname, item)}
+                    role="menuitem"
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-semibold transition ${
+                      isSelected
+                        ? "bg-[#f0f7f4] text-[#1F4D3D]"
+                        : "text-[#5d6965] hover:bg-[#f8faf9] hover:text-[#1F4D3D]"
+                    }`}
+                    aria-current={isSelected ? "true" : undefined}
+                  >
+                    <Image
+                      src={localeFlags[item].src}
+                      alt={localeFlags[item].alt}
+                      width={24}
+                      height={18}
+                      className="h-[18px] w-6 rounded-[2px] object-cover shadow-[0_0_0_1px_rgba(31,77,61,0.12)]"
+                    />
+                    <span className="min-w-0 flex-1 truncate">{localeLabels[item]}</span>
+                    {isSelected && <Check className="size-4 text-[#2e6f57]" aria-hidden="true" />}
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

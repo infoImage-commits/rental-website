@@ -8,6 +8,11 @@ import type {
   JourneyApiResponse,
 } from "@/lib/types/journey";
 import type { PaginatedResponse } from "@/lib/types/contact";
+import {
+  adminTranslationLocales,
+  buildTranslationFromRecords,
+  type LocaleRecord,
+} from "@/lib/i18n/adminTranslations";
 
 const JOURNEYS_KEY = "journeys";
 
@@ -26,16 +31,48 @@ export function useJourneys(query: JourneysQuery) {
 }
 
 // 1b. Single Journey details
-export function useJourneyById(id: string) {
+export function useJourneyById(id: string, locale?: string) {
   return useQuery({
-    queryKey: [JOURNEYS_KEY, id],
+    queryKey: [JOURNEYS_KEY, id, locale],
     queryFn: async () => {
       const { data } = await axiosInstance.get<JourneyApiResponse<JourneyItem>>(
-        `/api/journeys/${id}`
+        `/api/journeys/${id}`,
+        locale ? { headers: { "Accept-Language": locale, "X-Locale": locale } } : undefined
       );
       return data.data;
     },
     enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useJourneyTranslations(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [JOURNEYS_KEY, id, "translations"],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        adminTranslationLocales.map(async (locale) => {
+          const { data } = await axiosInstance.get<JourneyApiResponse<JourneyItem>>(
+            `/api/journeys/${id}`,
+            { headers: { "Accept-Language": locale, "X-Locale": locale } }
+          );
+          if (!data.data) throw new Error(`Journey ${id} did not load for ${locale}`);
+          return [locale, data.data] as const;
+        })
+      );
+      const records = Object.fromEntries(entries) as LocaleRecord<JourneyItem>;
+      return {
+        records,
+        name: buildTranslationFromRecords(records, (record) => record.name),
+        description: buildTranslationFromRecords(records, (record) => record.description),
+        fromLocationId: records.en.fromLocationId,
+        toLocationId: records.en.toLocationId,
+        basePrice: records.en.basePrice,
+        estimatedDurationMinutes: records.en.estimatedDurationMinutes,
+        isActive: records.en.isActive,
+      };
+    },
+    enabled: Boolean(id && enabled),
     staleTime: 30 * 1000,
   });
 }

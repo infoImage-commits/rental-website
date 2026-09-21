@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   useBlogs,
   useDeleteBlog,
-  useUpdateBlog,
 } from "@/lib/hooks/useBlog";
 import type { BlogItem, BlogsQuery } from "@/lib/types/blog";
 import { resolveApiImageUrl } from "@/lib/utils/imageUrl";
@@ -52,7 +51,6 @@ export default function AdminBlogsContent() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data, isLoading, isError, isFetching } = useBlogs(query);
-  const { mutate: updateBlog } = useUpdateBlog();
   const { mutate: deleteBlog } = useDeleteBlog();
 
   const blogs = data?.items ?? [];
@@ -74,19 +72,6 @@ export default function AdminBlogsContent() {
       IsPublished: filter === "all" ? undefined : filter === "published",
       PageNumber: 1,
     }));
-  }
-
-  function handleTogglePublish(blog: BlogItem) {
-    updateBlog({
-      id: blog.id,
-      payload: {
-        title: blog.title,
-        summary: blog.summary ?? undefined,
-        content: blog.content ?? undefined,
-        isPublished: !blog.isPublished,
-        displayOrder: blog.displayOrder,
-      },
-    });
   }
 
   function confirmDelete(id: string) {
@@ -217,18 +202,18 @@ export default function AdminBlogsContent() {
                     >
                       {blog.title}
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() => handleTogglePublish(blog)}
+                    <Link
+                      href={`/admin/blog/${blog.id}`}
                       className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium transition hover:shadow-sm ${
                         blog.isPublished
                           ? "bg-[#f5f7f6] text-[#2e6f57] hover:bg-[#dfe8e4]"
                           : "bg-[#f5f7f6] text-[#667c74] hover:bg-[#dfe8e4]"
                       }`}
+                      title="Open edit page to change publish status"
                     >
                       <span className={`size-1.5 rounded-full ${blog.isPublished ? "bg-[#2e6f57]" : "bg-[#8a9a94]"}`} />
                       {blog.isPublished ? "Published" : "Draft"}
-                    </button>
+                    </Link>
                   </div>
                   <p className="mt-1 line-clamp-2 text-[14px] leading-relaxed text-[#667c74]">
                     {blog.summary || blog.content || "No summary yet."}

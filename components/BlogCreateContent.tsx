@@ -4,15 +4,22 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useBlogs, useCreateBlog } from "@/lib/hooks/useBlog";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 export default function BlogCreateContent() {
   const router = useRouter();
   const { mutate: createBlog, isPending } = useCreateBlog();
   const { data: blogsCount } = useBlogs({ PageNumber: 1, PageSize: 1 });
 
-  const [title, setTitle] = useState("");
-  const [summary, setSummary] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState<TranslationInput>(emptyTranslation());
+  const [summary, setSummary] = useState<TranslationInput>(emptyTranslation());
+  const [content, setContent] = useState<TranslationInput>(emptyTranslation());
   const [featuredImage, setFeaturedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [isPublished, setIsPublished] = useState(false);
@@ -38,13 +45,13 @@ export default function BlogCreateContent() {
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!title.trim()) return;
+    if (!hasRequiredBaseTranslation(title)) return;
 
     createBlog(
       {
-        title: title.trim(),
-        summary: summary.trim() || undefined,
-        content: content.trim() || undefined,
+        title: trimTranslation(title),
+        summary: trimTranslation(summary),
+        content: trimTranslation(content),
         featuredImage,
         isPublished,
         displayOrder,
@@ -80,41 +87,34 @@ export default function BlogCreateContent() {
 
       <form onSubmit={handleSubmit} className="rounded-2xl border border-[#dfe8e4] bg-white p-6 shadow-[0_8px_24px_rgba(31,77,61,0.05)] sm:p-8">
         <div className="grid gap-6">
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="E.g. How to choose the right rental home"
-              className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          <TranslationFields
+            label="Title"
+            value={title}
+            onChange={setTitle}
+            required
+            placeholder="E.g. How to choose the right rental home"
+            disabled={isPending}
+          />
 
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Summary</label>
-            <textarea
-              rows={3}
-              value={summary}
-              onChange={(event) => setSummary(event.target.value)}
-              placeholder="Short intro shown in the admin list and public cards later."
-              className="w-full resize-y rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          <TranslationFields
+            label="Summary"
+            value={summary}
+            onChange={setSummary}
+            textarea
+            rows={3}
+            placeholder="Short intro shown in the admin list and public cards later."
+            disabled={isPending}
+          />
 
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Main Content</label>
-            <textarea
-              rows={9}
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              placeholder="Main article content before any extra sections."
-              className="w-full resize-y rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] leading-6 outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          <TranslationFields
+            label="Main Content"
+            value={content}
+            onChange={setContent}
+            textarea
+            rows={9}
+            placeholder="Main article content before any extra sections."
+            disabled={isPending}
+          />
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
             <div>
@@ -186,7 +186,7 @@ export default function BlogCreateContent() {
           </Link>
           <button
             type="submit"
-            disabled={isPending || !title.trim()}
+            disabled={isPending || !hasRequiredBaseTranslation(title)}
             className="inline-flex min-w-[120px] items-center justify-center gap-2 rounded-full bg-[#2e6f57] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#255f49] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isPending ? (

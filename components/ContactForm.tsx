@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import Image from "next/image";
 import { useSubmitContact } from "@/lib/hooks/useContact";
+import { useI18n } from "./I18nProvider";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 22 },
@@ -23,6 +24,7 @@ const container: Variants = {
 };
 
 export default function ContactForm({ defaultSubject = "" }: { defaultSubject?: string }) {
+  const { t } = useI18n();
   const shouldReduceMotion = useReducedMotion();
   const viewport = { once: true, amount: 0.2 };
 
@@ -55,12 +57,12 @@ export default function ContactForm({ defaultSubject = "" }: { defaultSubject?: 
           setFormData({ name: "", email: "", phone: "", subject: defaultSubject, message: "" });
         } else {
           setStatus("error");
-          setErrorMessage(res.errors?.[0] ?? res.message ?? "Something went wrong. Please try again.");
+          setErrorMessage(res.errors?.[0] ?? res.message ?? t("contact.form.errorFallback"));
         }
       },
       onError: () => {
         setStatus("error");
-        setErrorMessage("Network error. Please check your connection and try again.");
+        setErrorMessage(t("contact.form.networkError"));
       },
     });
   }
@@ -92,9 +94,9 @@ export default function ContactForm({ defaultSubject = "" }: { defaultSubject?: 
               </svg>
             </motion.div>
             <div>
-              <h2 className="text-[24px] font-semibold text-[#183c2f] lg:text-[30px]">Message Sent</h2>
+              <h2 className="text-[24px] font-semibold text-[#183c2f] lg:text-[30px]">{t("contact.form.sentTitle")}</h2>
               <p className="mt-2 max-w-[420px] text-[14px] leading-7 text-[#667c74] lg:text-[16px]">
-                Thank you for reaching out. Our team will review your message and get back to you as soon as possible.
+                {t("contact.form.sentBody")}
               </p>
             </div>
             <button
@@ -102,7 +104,7 @@ export default function ContactForm({ defaultSubject = "" }: { defaultSubject?: 
               onClick={() => setStatus("idle")}
               className="inline-flex h-11 items-center gap-2 rounded-full border-2 border-[#2e6f57] px-6 text-[14px] font-semibold text-[#2e6f57] transition hover:bg-[#2e6f57] hover:text-white"
             >
-              Send Another Message
+              {t("contact.form.sendAnother")}
             </button>
           </motion.div>
         ) : (
@@ -132,14 +134,14 @@ export default function ContactForm({ defaultSubject = "" }: { defaultSubject?: 
             </AnimatePresence>
 
             <motion.div variants={container} className="grid gap-5 sm:grid-cols-2">
-              <ContactInput label="Your Name" id="contact-name" name="name" value={formData.name} onChange={handleChange} placeholder="Your full name" />
-              <ContactInput label="Email Address" id="contact-email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Your email address" />
-              <ContactInput label="Phone Number" id="contact-phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="Your phone number" />
-              <ContactInput label="Subject" id="contact-subject" name="subject" value={formData.subject} onChange={handleChange} placeholder="Inquire about dates, homes, or transfers" />
+              <ContactInput label={t("contact.form.name")} id="contact-name" name="name" value={formData.name} onChange={handleChange} placeholder={t("contact.form.namePlaceholder")} />
+              <ContactInput label={t("contact.form.email")} id="contact-email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder={t("contact.form.emailPlaceholder")} />
+              <ContactInput label={t("contact.form.phone")} id="contact-phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder={t("contact.form.phonePlaceholder")} />
+              <ContactInput label={t("contact.form.subject")} id="contact-subject" name="subject" value={formData.subject} onChange={handleChange} placeholder={t("contact.form.subjectPlaceholder")} />
 
               <motion.div variants={fadeUp} className="flex flex-col gap-2 sm:col-span-2">
                 <label htmlFor="contact-message" className="text-[13px] font-semibold text-[#183c2f]">
-                  Your Message <span className="text-red-500">*</span>
+                  {t("contact.form.message")} <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   id="contact-message"
@@ -147,7 +149,7 @@ export default function ContactForm({ defaultSubject = "" }: { defaultSubject?: 
                   required
                   value={formData.message}
                   onChange={handleChange}
-                  placeholder="Write your message here..."
+                  placeholder={t("contact.form.messagePlaceholder")}
                   rows={5}
                   className="min-h-[150px] resize-y rounded-xl border border-[#c0c8c6] px-4 py-3 text-[14px] leading-6 text-[#183c2f] outline-none transition placeholder:text-[#aab4b0] focus:border-[#2e6f57] focus:ring-2 focus:ring-[#2e6f57]/10"
                 />
@@ -162,11 +164,11 @@ export default function ContactForm({ defaultSubject = "" }: { defaultSubject?: 
                   {isPending ? (
                     <>
                       <span className="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      Sending...
+                      {t("contact.form.sending")}
                     </>
                   ) : (
                     <>
-                      Send Message
+                      {t("contact.form.send")}
                       <Image src="/contact/icons/send.svg" alt="" width={16} height={14} className="h-[14px] w-4" />
                     </>
                   )}

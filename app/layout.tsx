@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_JP, Poppins, Rakkas } from "next/font/google";
 import "./globals.css";
-import AppChrome from "../components/AppChrome";
 import Providers from "./providers";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { siteConfig } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,51 +35,11 @@ const rakkas = Rakkas({
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   applicationName: siteConfig.name,
-  title: {
-    default: `${siteConfig.name} | Vacation Homes & Holiday Rentals in Hurghada`,
-    template: `%s | ${siteConfig.name}`,
-  },
+  title: siteConfig.name,
   description: siteConfig.description,
-  keywords: [
-    "Hurghada vacation homes",
-    "Hurghada holiday rentals",
-    "Hurghada vacation apartments",
-    "El Kawther vacation rentals",
-    "Hurghada short term rentals",
-    "Hurghada beach chalets",
-    "Hurghada studios for rent",
-    "Hurghada airport transfers",
-    "Red Sea vacation rentals",
-    "Hurghada holiday homes",
-  ],
   authors: [{ name: siteConfig.name }],
   creator: siteConfig.name,
   publisher: siteConfig.name,
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: siteConfig.locale,
-    url: siteConfig.url,
-    siteName: siteConfig.name,
-    title: `${siteConfig.name} | Vacation Homes & Holiday Rentals in Hurghada`,
-    description: siteConfig.description,
-    images: [
-      {
-        url: siteConfig.ogImage,
-        width: 1200,
-        height: 630,
-        alt: `${siteConfig.name} holiday vacation homes in Hurghada`,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${siteConfig.name} | Vacation Homes & Holiday Rentals in Hurghada`,
-    description: siteConfig.description,
-    images: [siteConfig.ogImage],
-  },
   robots: {
     index: true,
     follow: true,
@@ -94,47 +53,14 @@ export const metadata: Metadata = {
   },
 };
 
-const localBusinessJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "LodgingBusiness",
-  name: siteConfig.name,
-  description: siteConfig.description,
-  url: siteConfig.url,
-  telephone: siteConfig.phone,
-  image: absoluteUrl(siteConfig.ogImage),
-  logo: absoluteUrl(siteConfig.logo),
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: siteConfig.address.streetAddress,
-    addressLocality: siteConfig.address.addressLocality,
-    addressRegion: siteConfig.address.addressRegion,
-    addressCountry: siteConfig.address.addressCountry,
-  },
-  areaServed: ["Hurghada", "El Kawther", "Red Sea Governorate"],
-  contactPoint: {
-    "@type": "ContactPoint",
-    telephone: siteConfig.phone,
-    contactType: "customer support",
-    availableLanguage: ["English", "Arabic"],
-  },
-};
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${ibmPlexSansJp.variable} ${poppins.variable} ${rakkas.variable} h-full antialiased`}
     >
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
-        />
-      </head>
       <body className="min-h-full flex flex-col">
-        <Providers>
-          <AppChrome>{children}</AppChrome>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

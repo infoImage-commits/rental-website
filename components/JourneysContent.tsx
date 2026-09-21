@@ -7,12 +7,21 @@ import {
   useCreateJourney,
   useUpdateJourney,
   useDeleteJourney,
+  useJourneyTranslations,
 } from "@/lib/hooks/useJourney";
 import { useLocations } from "@/lib/hooks/useLocation";
 import type { JourneyItem, JourneysQuery } from "@/lib/types/journey";
 import { API_BASE_URL } from "@/lib/api/config";
 import ConfirmModal from "./ConfirmModal";
 import { formatUsd } from "@/lib/utils/currency";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  appendTranslationFormData,
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 // ── Form Panel Component ──────────────────────────────────────────────────────
 function JourneyFormPanel({
@@ -29,13 +38,17 @@ function JourneyFormPanel({
   const isEditing = !!journey;
   const { mutate: createJourney, isPending: isCreating } = useCreateJourney();
   const { mutate: updateJourney, isPending: isUpdating } = useUpdateJourney();
+  const translationsQuery = useJourneyTranslations(
+    journey?.id ?? "",
+    isOpen && isEditing
+  );
   
   // Fetch active locations for the dropdowns
   const { data: locationsData } = useLocations({ pageNumber: 1, pageSize: 100 });
   const activeLocations = locationsData?.items?.filter(loc => loc.isActive) || [];
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState<TranslationInput>(emptyTranslation());
+  const [description, setDescription] = useState<TranslationInput>(emptyTranslation());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [fromLocationId, setFromLocationId] = useState("");
   const [toLocationId, setToLocationId] = useState("");
@@ -43,36 +56,54 @@ function JourneyFormPanel({
   const [estimatedDurationMinutes, setEstimatedDurationMinutes] = useState<number>(0);
   const [isActive, setIsActive] = useState(true);
 
-  // Sync state when panel opens/journey changes
   useEffect(() => {
     if (!isOpen) return;
 
-    const timeoutId = window.setTimeout(() => {
-      setName(journey?.name ?? "");
-      setDescription(journey?.description ?? "");
-      setImageFile(null); // Reset file input
-      setFromLocationId(journey?.fromLocationId ?? "");
-      setToLocationId(journey?.toLocationId ?? "");
-      setBasePrice(journey?.basePrice ?? 0);
-      setEstimatedDurationMinutes(journey?.estimatedDurationMinutes ?? 0);
-      setIsActive(journey?.isActive ?? true);
-    }, 0);
+    setImageFile(null);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [isOpen, journey]);
+    if (!isEditing) {
+      setName(emptyTranslation());
+      setDescription(emptyTranslation());
+      setFromLocationId("");
+      setToLocationId("");
+      setBasePrice(0);
+      setEstimatedDurationMinutes(0);
+      setIsActive(true);
+      return;
+    }
+
+    if (translationsQuery.data) {
+      setName(translationsQuery.data.name);
+      setDescription(translationsQuery.data.description);
+      setFromLocationId(translationsQuery.data.fromLocationId);
+      setToLocationId(translationsQuery.data.toLocationId);
+      setBasePrice(translationsQuery.data.basePrice);
+      setEstimatedDurationMinutes(translationsQuery.data.estimatedDurationMinutes);
+      setIsActive(translationsQuery.data.isActive);
+    }
+  }, [isOpen, isEditing, translationsQuery.data]);
 
   if (!isOpen) return null;
 
   const isSaving = isCreating || isUpdating;
-  const isFormValid = name.trim() && fromLocationId && toLocationId && fromLocationId !== toLocationId && basePrice >= 0 && estimatedDurationMinutes > 0;
+  const isHydrating = isEditing && translationsQuery.isLoading;
+  const canEdit = !isEditing || translationsQuery.isSuccess;
+  const isFormValid =
+    canEdit &&
+    hasRequiredBaseTranslation(name) &&
+    fromLocationId &&
+    toLocationId &&
+    fromLocationId !== toLocationId &&
+    basePrice >= 0 &&
+    estimatedDurationMinutes > 0;
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!isFormValid) return;
 
     const formData = new FormData();
-    formData.append("Name", name);
-    formData.append("Description", description);
+    appendTranslationFormData(formData, "Name", trimTranslation(name));
+    appendTranslationFormData(formData, "Description", trimTranslation(description));
     if (imageFile) {
       formData.append("Image", imageFile);
     }
@@ -109,7 +140,7 @@ function JourneyFormPanel({
       />
 
       {/* Slide-in Panel */}
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transition-transform duration-300 flex flex-col">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl transition-transform duration-300">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#dfe8e4] px-6 py-4">
           <h2 className="text-[18px] font-semibold text-[#183c2f]">
@@ -129,32 +160,36 @@ function JourneyFormPanel({
         {/* Form */}
         <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-6 py-6">
           <div className="space-y-5">
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-                Journey Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Cairo to Alex VIP"
-                className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-              />
-            </div>
-            
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Details about this journey..."
-                rows={3}
-                className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-              />
-            </div>
+            {isHydrating && (
+              <div className="rounded-xl border border-[#dfe8e4] bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#667c74]">
+                Loading all language versions before editing...
+              </div>
+            )}
+
+            {translationsQuery.isError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+                Could not load every language. Editing stays locked until all four versions load.
+              </div>
+            )}
+
+            <TranslationFields
+              label="Journey Name"
+              value={name}
+              onChange={setName}
+              required
+              placeholder="e.g. Cairo to Alex VIP"
+              disabled={!canEdit || isSaving}
+            />
+
+            <TranslationFields
+              label="Description"
+              value={description}
+              onChange={setDescription}
+              textarea
+              rows={3}
+              placeholder="Details about this journey..."
+              disabled={!canEdit || isSaving}
+            />
 
             <div>
               <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
@@ -164,6 +199,7 @@ function JourneyFormPanel({
                 type="file"
                 accept="image/*"
                 onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                disabled={!canEdit || isSaving}
                 className="block w-full text-sm text-[#8a9a94] file:mr-4 file:rounded-full file:border-0 file:bg-[#f5f7f6] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#183c2f] hover:file:bg-[#dfe8e4] focus:outline-none"
               />
               {isEditing && journey?.imageUrl && !imageFile && (
@@ -179,6 +215,7 @@ function JourneyFormPanel({
                 required
                 value={fromLocationId}
                 onChange={(e) => setFromLocationId(e.target.value)}
+                disabled={!canEdit || isSaving}
                 className="w-full appearance-none rounded-xl border border-[#dfe8e4] bg-white px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
               >
                 <option value="" disabled>Select origin...</option>
@@ -198,6 +235,7 @@ function JourneyFormPanel({
                 required
                 value={toLocationId}
                 onChange={(e) => setToLocationId(e.target.value)}
+                disabled={!canEdit || isSaving}
                 className="w-full appearance-none rounded-xl border border-[#dfe8e4] bg-white px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
               >
                 <option value="" disabled>Select destination...</option>
@@ -226,6 +264,7 @@ function JourneyFormPanel({
                      required
                      value={basePrice}
                      onChange={(e) => setBasePrice(parseFloat(e.target.value) || 0)}
+                     disabled={!canEdit || isSaving}
                      className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
                   />
                </div>
@@ -239,6 +278,7 @@ function JourneyFormPanel({
                      required
                      value={estimatedDurationMinutes}
                      onChange={(e) => setEstimatedDurationMinutes(parseInt(e.target.value) || 0)}
+                     disabled={!canEdit || isSaving}
                      className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
                   />
                </div>
@@ -252,9 +292,10 @@ function JourneyFormPanel({
               <button
                 type="button"
                 onClick={() => setIsActive(!isActive)}
+                disabled={!canEdit || isSaving}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#2e6f57] focus:ring-offset-2 ${
                   isActive ? "bg-[#2e6f57]" : "bg-[#dfe8e4]"
-                }`}
+                } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 <span
                   className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
@@ -323,7 +364,6 @@ export default function JourneysContent() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data, isLoading, isError, isFetching } = useJourneys(query);
-  const { mutate: updateJourney } = useUpdateJourney();
   const { mutate: deleteJourney } = useDeleteJourney();
 
   function openCreatePanel() {
@@ -334,19 +374,6 @@ export default function JourneysContent() {
   function openEditPanel(journey: JourneyItem) {
     setEditingJourney(journey);
     setIsPanelOpen(true);
-  }
-
-  function handleToggleActive(journey: JourneyItem) {
-    const formData = new FormData();
-    formData.append("Name", journey.name || "");
-    formData.append("Description", journey.description || "");
-    formData.append("FromLocationId", journey.fromLocationId);
-    formData.append("ToLocationId", journey.toLocationId);
-    formData.append("BasePrice", journey.basePrice.toString());
-    formData.append("EstimatedDurationMinutes", journey.estimatedDurationMinutes.toString());
-    formData.append("IsActive", (!journey.isActive).toString());
-
-    updateJourney({ id: journey.id, payload: formData });
   }
 
   function confirmDelete(id: string) {
@@ -485,7 +512,8 @@ export default function JourneysContent() {
                       <td className="px-5 py-4">
                         <button
                           type="button"
-                          onClick={() => handleToggleActive(journey)}
+                          onClick={() => openEditPanel(journey)}
+                          title="Open edit panel to change status"
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium transition hover:shadow-sm ${
                             journey.isActive
                               ? "bg-[#ecf7f1] text-[#2e6f57]"

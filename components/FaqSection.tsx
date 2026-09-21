@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useFaqs } from "@/lib/hooks/useFaq";
 import FaqAccordion from "./FaqAccordion";
 import { motion } from "framer-motion";
+import { useI18n } from "./I18nProvider";
 
 export default function FaqSection() {
+  const { t, href } = useI18n();
   const { data, isLoading, isError } = useFaqs({
     IsPublished: true,
     PageNumber: 1,
@@ -28,10 +30,10 @@ export default function FaqSection() {
           className="mx-auto flex max-w-[730px] flex-col items-center gap-2 text-center lg:gap-[21px]"
         >
           <p className="text-[14px] font-medium uppercase tracking-[0.36em] text-[#d59e52] lg:text-[18px]">
-            Frequently Asked Questions
+            {t("common.faq")}
           </p>
           <h2 className="max-w-[540px] text-[20px] font-medium leading-normal tracking-[-0.02em] text-[#2e6f57] lg:max-w-none lg:text-[36px]">
-            Have Questions? We&apos;re Here to Help.
+            {t("faq.heroTitle")}
           </h2>
           <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
         </motion.div>
@@ -49,7 +51,7 @@ export default function FaqSection() {
             </div>
           ) : isError || faqs.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-[14px] text-[#8a9a94]">
-              {isError ? "Failed to load FAQs." : "No FAQs available at the moment."}
+              {isError ? t("faq.failed") : t("faq.empty")}
             </div>
           ) : (
             <FaqAccordion items={faqs} />
@@ -66,10 +68,10 @@ export default function FaqSection() {
             className="mt-10 flex justify-center"
           >
             <Link
-              href="/faq"
+              href={href("/faq")}
               className="inline-flex h-11 items-center gap-2 rounded-full border-2 border-[#2e6f57] px-6 text-[14px] font-semibold text-[#2e6f57] transition hover:bg-[#2e6f57] hover:text-white lg:text-[16px]"
             >
-              View All FAQs
+              {t("faq.viewAll")}
               <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

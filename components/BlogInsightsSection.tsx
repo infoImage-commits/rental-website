@@ -7,6 +7,7 @@ import { useBlogs } from "@/lib/hooks/useBlog";
 import type { BlogItem } from "@/lib/types/blog";
 import { resolveApiImageUrl } from "@/lib/utils/imageUrl";
 import { getBlogSlug } from "@/lib/utils/blogSlug";
+import { useI18n } from "@/components/I18nProvider";
 
 const metaIcons = {
   date: "/homepage/blogs/icons/calendar.svg",
@@ -14,10 +15,10 @@ const metaIcons = {
 
 const fallbackImage = "/homepage/blogs/articles.png";
 
-function formatDate(value: string) {
+function formatDate(value: string, locale: string, fallback: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Recently";
-  return new Intl.DateTimeFormat("en", {
+  if (Number.isNaN(date.getTime())) return fallback;
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -26,6 +27,7 @@ function formatDate(value: string) {
 
 export default function BlogInsightsSection() {
   const railRef = useRef<HTMLDivElement>(null);
+  const { t, locale } = useI18n();
   const { data, isLoading, isError } = useBlogs({
     IsPublished: true,
     PageNumber: 1,
@@ -64,7 +66,7 @@ export default function BlogInsightsSection() {
 
         {isError ? (
           <div className="mt-12 rounded-2xl border border-[#dfe8e4] bg-[#f5f7f6] px-5 py-8 text-center text-[14px] text-[#667c74]">
-            Unable to load blogs right now.
+            {t("blogs.unableHome")}
           </div>
         ) : (
           <div
@@ -75,7 +77,7 @@ export default function BlogInsightsSection() {
               {isLoading
                 ? Array.from({ length: 3 }).map((_, index) => <ArticleSkeleton key={index} />)
                 : blogs.map((blog) => (
-                    <ArticleCard key={blog.id} blog={blog} />
+                    <ArticleCard key={blog.id} blog={blog} locale={locale} />
                   ))}
             </div>
           </div>
@@ -90,13 +92,15 @@ export default function BlogInsightsSection() {
 }
 
 function SectionHeading() {
+  const { t } = useI18n();
+
   return (
     <div className="mx-auto flex max-w-[730px] flex-col items-center gap-2 text-center lg:gap-[21px]">
       <p className="text-[14px] font-medium uppercase leading-normal tracking-[0.36em] text-[#d59e52] lg:text-[18px]">
-        Travel & Stay Guides
+        {t("blogs.homeEyebrow")}
       </p>
       <h2 className="text-[20px] font-medium leading-normal tracking-[-0.02em] text-[#2e6f57] lg:text-[36px]">
-        Hurghada Holiday & Travel Guides
+        {t("blogs.homeTitle")}
       </h2>
       <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
     </div>
@@ -104,19 +108,22 @@ function SectionHeading() {
 }
 
 function ViewMoreButton({ className = "" }: { className?: string }) {
+  const { t, href } = useI18n();
+
   return (
     <Link
-      href="/blogs"
+      href={href("/blogs")}
       className={`inline-flex h-10 items-center justify-center rounded-full border border-[#737373]/70 bg-white px-8 text-[16px] text-[#737373]/70 transition hover:-translate-y-0.5 hover:border-[#2e6f57] hover:text-[#2e6f57] ${className}`}
     >
-      View More
+      {t("common.viewMore")}
     </Link>
   );
 }
 
-function ArticleCard({ blog }: { blog: BlogItem }) {
+function ArticleCard({ blog, locale }: { blog: BlogItem; locale: string }) {
+  const { t } = useI18n();
   const imageSrc = resolveApiImageUrl(blog.featuredImageUrl) || fallbackImage;
-  const excerpt = blog.summary || blog.content || "Explore the latest vacation rental tips and local Hurghada travel guides.";
+  const excerpt = blog.summary || blog.content || t("blogs.fallbackExcerpt");
 
   return (
     <article
@@ -134,7 +141,7 @@ function ArticleCard({ blog }: { blog: BlogItem }) {
 
       <div className="flex min-w-0 flex-1 flex-col bg-white px-4 py-4 sm:px-5 sm:py-5 lg:px-5 lg:py-5">
         <div className="flex items-center text-[12px] leading-normal text-[#8a9a94] sm:text-[13px] lg:text-[14px]">
-          <ArticleMeta icon={metaIcons.date} label={formatDate(blog.createdAtUtc)} />
+          <ArticleMeta icon={metaIcons.date} label={formatDate(blog.createdAtUtc, locale, t("common.recently"))} />
         </div>
 
         <div className="mt-3 flex min-w-0 flex-col gap-2 lg:mt-3 lg:gap-2.5">
@@ -153,12 +160,14 @@ function ArticleCard({ blog }: { blog: BlogItem }) {
 }
 
 function ReadArticleLink({ blog }: { blog: BlogItem }) {
+  const { t, href } = useI18n();
+
   return (
     <Link
-      href={`/blogs/${getBlogSlug(blog)}`}
+      href={href(`/blogs/${getBlogSlug(blog)}`)}
       className="mt-auto ml-auto inline-flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-full border border-[#d59e52] bg-white px-5 text-[14px] font-semibold text-[#183c2f] transition hover:-translate-y-0.5 hover:bg-[#f5f7f6] sm:h-11 sm:min-w-[170px] sm:text-[15px] lg:h-11 lg:min-w-[184px] lg:text-[16px]"
     >
-      <span>Read Article</span>
+      <span>{t("common.readArticle")}</span>
       <Image
         src="/homepage/blogs/icons/arrow.svg"
         alt=""

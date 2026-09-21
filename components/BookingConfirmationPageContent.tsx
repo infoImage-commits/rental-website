@@ -1,18 +1,23 @@
+"use client";
+
 import Link from "next/link";
+import { useI18n } from "@/components/I18nProvider";
 
 const bookingDetails = [
-  { label: "Booking ID", value: "RB-2026-1045" },
-  { label: "Check-in Date", value: "15 September 2026", strong: true },
+  { labelKey: "bookingConfirmation.details.bookingId", value: "RB-2026-1045" },
+  { labelKey: "bookingConfirmation.details.checkIn", valueKey: "bookingConfirmation.sampleDate", strong: true },
   {
-    label: "Vacation Home",
-    value: "Luxury Beachfront Apartment",
+    labelKey: "bookingConfirmation.details.vacationHome",
+    valueKey: "bookingConfirmation.sampleHome",
     helper: "Hurghada, El Kawther",
     smallMobile: true,
   },
-  { label: "Check-out Date", value: "22 September 2026" },
+  { labelKey: "bookingConfirmation.details.checkOut", valueKey: "bookingConfirmation.sampleCheckout" },
 ];
 
 export default function BookingConfirmationPageContent() {
+  const { t, href } = useI18n();
+
   return (
     <main className="bg-white font-[var(--font-poppins)] text-[#404944]">
       <section className="px-5 pb-[42px] pt-[58px] lg:px-0 lg:pb-[37px] lg:pt-0">
@@ -20,22 +25,22 @@ export default function BookingConfirmationPageContent() {
           <SuccessIcon />
 
           <h1 className="mt-[19.125px] text-center text-[24px] font-bold leading-[44px] tracking-[-0.03em] text-[#183c2f] lg:mt-6 lg:text-[36px]">
-            Booking Confirmed!
+            {t("bookingConfirmation.title")}
           </h1>
 
           <div className="flex h-[87px] items-center justify-center lg:mt-2 lg:h-6">
             <p className="max-w-[228px] text-center text-[12px] leading-6 lg:max-w-none lg:text-[16px]">
-              Your vacation rental reservation has been successfully completed.
+              {t("bookingConfirmation.body")}
             </p>
           </div>
 
           <DetailsCard />
 
           <Link
-            href="/"
+            href={href("/")}
             className="mt-4 flex h-12 items-center justify-center rounded-lg border border-[#1F4D3D] px-[33px] text-center text-[14px] font-bold leading-5 text-[#183c2f] transition hover:bg-[#f5f7f6] lg:mt-12"
           >
-            Back to Home
+            {t("common.backToHome")}
           </Link>
         </div>
       </section>
@@ -44,12 +49,14 @@ export default function BookingConfirmationPageContent() {
 }
 
 function DetailsCard() {
+  const { t } = useI18n();
+
   return (
     <section className="mt-4 flex min-h-[442px] w-full flex-col gap-[25px] rounded-xl border border-[#bfc9c3] bg-white px-[17px] pb-[34px] pt-[49px] lg:mt-12 lg:min-h-[451px] lg:gap-8 lg:p-[49px]">
       <dl className="grid grid-cols-2 gap-x-8 gap-y-6 lg:gap-y-12">
         {bookingDetails.map((detail) => (
-          <div key={detail.label} className="min-w-0">
-            <dt className="text-[12px] font-medium leading-4 tracking-[0.02em] text-[#404944]">{detail.label}</dt>
+          <div key={detail.labelKey} className="min-w-0">
+            <dt className="text-[12px] font-medium leading-4 tracking-[0.02em] text-[#404944]">{t(detail.labelKey)}</dt>
             <dd
               className={`mt-2 break-words leading-6 ${
                 detail.strong
@@ -59,7 +66,7 @@ function DetailsCard() {
                   : "text-[14px] font-medium text-[#414847] lg:text-[18px]"
               }`}
             >
-              {detail.value}
+              {"valueKey" in detail && detail.valueKey ? t(detail.valueKey) : detail.value}
             </dd>
             {detail.helper && (
               <dd className="mt-2 whitespace-nowrap text-[10px] leading-5 text-[#404944] lg:whitespace-normal lg:text-[14px]">{detail.helper}</dd>
@@ -73,9 +80,9 @@ function DetailsCard() {
       <div className="flex w-full items-start gap-4 rounded-lg bg-[#f5f7f6] p-6 lg:gap-6">
         <InfoIcon />
         <div className="min-w-0">
-          <h2 className="text-[14px] font-bold leading-5 text-[#0b1c30]">What&apos;s Next?</h2>
+          <h2 className="text-[14px] font-bold leading-5 text-[#0b1c30]">{t("payment.whatsNext")}</h2>
           <p className="mt-2 text-[12px] leading-5 text-[#404944] lg:text-[14px]">
-            Our local host team will contact you with check-in instructions, key collection, and arrival details.
+            {t("bookingConfirmation.nextBody")}
           </p>
         </div>
       </div>

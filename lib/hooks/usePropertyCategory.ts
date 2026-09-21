@@ -5,6 +5,11 @@ import type {
   PropertyCategoryRequest,
   PropertyCategoryApiResponse,
 } from "@/lib/types/propertyCategory";
+import {
+  adminTranslationLocales,
+  buildTranslationFromRecords,
+  type LocaleRecord,
+} from "@/lib/i18n/adminTranslations";
 
 const KEY = "property-categories";
 
@@ -24,17 +29,51 @@ export function usePropertyCategories() {
 }
 
 // ── 2. Single category with its items ────────────────────────────────────────
-export function usePropertyCategoryById(id: string) {
+export function usePropertyCategoryById(id: string, locale?: string) {
   return useQuery({
-    queryKey: [KEY, id],
+    queryKey: [KEY, id, locale],
     queryFn: async () => {
       const { data } = await axiosInstance.get<PropertyCategoryApiResponse<PropertyCategory>>(
         `/api/properties/categories/${id}`,
-        { params: { includeItems: true, onlyActive: false } }
+        {
+          params: { includeItems: true, onlyActive: false },
+          headers: locale ? { "Accept-Language": locale, "X-Locale": locale } : undefined,
+        }
       );
       return data.data;
     },
     enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function usePropertyCategoryTranslations(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [KEY, id, "translations"],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        adminTranslationLocales.map(async (locale) => {
+          const { data } = await axiosInstance.get<PropertyCategoryApiResponse<PropertyCategory>>(
+            `/api/properties/categories/${id}`,
+            {
+              params: { includeItems: true, onlyActive: false },
+              headers: { "Accept-Language": locale, "X-Locale": locale },
+            }
+          );
+          if (!data.data) throw new Error(`Property category ${id} did not load for ${locale}`);
+          return [locale, data.data] as const;
+        })
+      );
+      const records = Object.fromEntries(entries) as LocaleRecord<PropertyCategory>;
+      return {
+        records,
+        name: buildTranslationFromRecords(records, (record) => record.name),
+        icon: records.en.icon,
+        defaultIcon: records.en.defaultIcon,
+        displayOrder: records.en.displayOrder,
+      };
+    },
+    enabled: Boolean(id && enabled),
     staleTime: 30 * 1000,
   });
 }

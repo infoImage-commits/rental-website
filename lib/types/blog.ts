@@ -1,3 +1,5 @@
+import type { TranslationInput } from "@/lib/i18n/adminTranslations";
+
 export interface BlogSection {
   id: string;
   blogId: string;
@@ -32,9 +34,9 @@ export interface BlogsQuery {
 }
 
 export interface CreateBlogRequest {
-  title: string;
-  summary?: string;
-  content?: string;
+  title: TranslationInput;
+  summary?: TranslationInput;
+  content?: TranslationInput;
   featuredImage?: File | null;
   isPublished: boolean;
   displayOrder: number;
@@ -45,8 +47,8 @@ export interface UpdateBlogRequest extends CreateBlogRequest {
 }
 
 export interface CreateBlogSectionRequest {
-  title: string;
-  content: string;
+  title: TranslationInput;
+  content: TranslationInput;
   image?: File | null;
   displayOrder: number;
   sectionType?: string;

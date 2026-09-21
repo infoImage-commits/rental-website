@@ -3,21 +3,19 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
+import { useI18n } from "./I18nProvider";
 
 const steps = [
   {
-    title: "Search",
-    description: "Browse vacation homes by location, property type, price per night, and amenities.",
+    translationIndex: 0,
     icon: "/homepage/how-it-works/icons/search.svg",
   },
   {
-    title: "Explore",
-    description: "View high-quality photos, check live calendar availability, and review house rules.",
+    translationIndex: 1,
     icon: "/homepage/how-it-works/icons/building.svg",
   },
   {
-    title: "Book & Relax",
-    description: "Reserve your dates online with a 10% deposit, add airport transfers, and enjoy your holiday stay in Hurghada.",
+    translationIndex: 2,
     icon: "/homepage/how-it-works/icons/calendar.svg",
   },
 ];
@@ -60,7 +58,7 @@ export default function HowItWorksSection() {
           className="mt-6 grid gap-6 md:grid-cols-3 lg:mt-10 lg:gap-[59px]"
         >
           {steps.map((step) => (
-            <StepCard key={step.title} step={step} />
+            <StepCard key={step.translationIndex} step={step} />
           ))}
         </motion.div>
       </div>
@@ -69,6 +67,8 @@ export default function HowItWorksSection() {
 }
 
 function SectionHeading() {
+  const { t } = useI18n();
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -78,10 +78,10 @@ function SectionHeading() {
       className="mx-auto flex max-w-[730px] flex-col items-center gap-4 text-center"
     >
       <p className="text-[14px] font-medium uppercase tracking-[0.36em] text-[#d59e52] lg:text-[18px]">
-        How It Works
+        {t("home.how.eyebrow")}
       </p>
       <h2 className="max-w-[500px] text-[20px] font-medium leading-normal tracking-[-0.02em] text-white lg:text-[36px]">
-        Book Your Hurghada Holiday in 3 Simple Steps
+        {t("home.how.title")}
       </h2>
       <div className="h-[7px] w-[170px] rounded-[3px] bg-[#cfb072]" />
     </motion.div>
@@ -89,6 +89,9 @@ function SectionHeading() {
 }
 
 function StepCard({ step }: { step: (typeof steps)[number] }) {
+  const { tArray } = useI18n();
+  const copy = tArray<[string, string]>("home.how.steps")[step.translationIndex] ?? ["", ""];
+
   return (
     <motion.article 
       variants={itemVariants}
@@ -107,10 +110,10 @@ function StepCard({ step }: { step: (typeof steps)[number] }) {
 
       <div className="-mt-1 flex min-h-[176px] w-full max-w-[305px] flex-col items-center justify-center rounded-[34px] bg-white px-5 text-center sm:max-w-none lg:min-h-[224px] lg:rounded-[42px] lg:px-7 shadow-lg transition-shadow duration-300 hover:shadow-xl">
         <h3 className="text-[16px] font-semibold leading-normal tracking-[-0.02em] text-[#d59e52] lg:text-[20px]">
-          {step.title}
+          {copy[0]}
         </h3>
         <p className="mt-1.5 text-[16px] leading-normal tracking-[-0.02em] text-[#183c2f] lg:mt-2 lg:text-[20px]">
-          {step.description}
+          {copy[1]}
         </p>
       </div>
     </motion.article>

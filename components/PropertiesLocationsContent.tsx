@@ -7,10 +7,19 @@ import {
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
+  useCategoryTranslations,
 } from "@/lib/hooks/useCategory";
 import type { CategoryItem } from "@/lib/types/category";
 import { API_BASE_URL } from "@/lib/api/config";
 import ConfirmModal from "./ConfirmModal";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  appendTranslationFormData,
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 // ── Form Panel Component ──────────────────────────────────────────────────────
 function CategoryFormPanel({
@@ -27,32 +36,42 @@ function CategoryFormPanel({
   const isEditing = !!category;
   const { mutate: createCategory, isPending: isCreating } = useCreateCategory();
   const { mutate: updateCategory, isPending: isUpdating } = useUpdateCategory();
+  const translationsQuery = useCategoryTranslations(
+    category?.id ?? "",
+    isOpen && isEditing
+  );
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState<TranslationInput>(emptyTranslation());
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const timeoutId = window.setTimeout(() => {
-      setName(category?.name ?? "");
-      setImageFile(null);
-    }, 0);
+    setImageFile(null);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [isOpen, category]);
+    if (!isEditing) {
+      setName(emptyTranslation());
+      return;
+    }
+
+    if (translationsQuery.data) {
+      setName(translationsQuery.data.name);
+    }
+  }, [isOpen, isEditing, translationsQuery.data]);
 
   if (!isOpen) return null;
 
   const isSaving = isCreating || isUpdating;
-  const isFormValid = name.trim().length > 0;
+  const isHydrating = isEditing && translationsQuery.isLoading;
+  const canEdit = !isEditing || translationsQuery.isSuccess;
+  const isFormValid = canEdit && hasRequiredBaseTranslation(name);
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!isFormValid) return;
 
     const formData = new FormData();
-    formData.append("Name", name);
+    appendTranslationFormData(formData, "Name", trimTranslation(name));
     if (imageFile) {
       formData.append("Image", imageFile);
     }
@@ -82,7 +101,7 @@ function CategoryFormPanel({
         className="fixed inset-0 z-40 bg-black/40 transition-opacity"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transition-transform duration-300 flex flex-col">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl transition-transform duration-300">
         <div className="flex items-center justify-between border-b border-[#dfe8e4] px-6 py-4">
           <h2 className="text-[18px] font-semibold text-[#183c2f]">
             {isEditing ? "Edit Property View" : "Create Property View"}
@@ -99,19 +118,26 @@ function CategoryFormPanel({
         </div>
         <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-6 py-6">
           <div className="space-y-5">
-            <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. North Coast"
-                className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-              />
-            </div>
+            {isHydrating && (
+              <div className="rounded-xl border border-[#dfe8e4] bg-[#f5f7f6] px-4 py-3 text-[13px] text-[#667c74]">
+                Loading all language versions before editing...
+              </div>
+            )}
+
+            {translationsQuery.isError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+                Could not load every language. Editing stays locked until all four versions load.
+              </div>
+            )}
+
+            <TranslationFields
+              label="Name"
+              value={name}
+              onChange={setName}
+              required
+              placeholder="e.g. North Coast"
+              disabled={!canEdit || isSaving}
+            />
             <div>
               <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
                 Image
@@ -120,6 +146,7 @@ function CategoryFormPanel({
                 type="file"
                 accept="image/*"
                 onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                disabled={!canEdit || isSaving}
                 className="block w-full text-sm text-[#8a9a94] file:mr-4 file:rounded-full file:border-0 file:bg-[#f5f7f6] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#183c2f] hover:file:bg-[#dfe8e4] focus:outline-none"
               />
               {isEditing && category?.imageUrl && !imageFile && (

@@ -1,3 +1,5 @@
+import type { TranslationInput } from "@/lib/i18n/adminTranslations";
+
 export interface LocationItem {
   id: string;
   name: string;
@@ -11,7 +13,7 @@ export interface LocationsQuery {
 }
 
 export interface LocationRequest {
-  name: string;
+  name: TranslationInput;
   isActive?: boolean;
 }
 

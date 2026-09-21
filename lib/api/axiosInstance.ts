@@ -2,6 +2,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/lib/api/config";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { RefreshTokenResponse } from "@/lib/types/auth";
+import { defaultLocale, getPathLocale, isLocale } from "@/lib/i18n/config";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -14,10 +15,43 @@ const axiosInstance = axios.create({
 // ─── Request Interceptor ──────────────────────────────────────────────────────
 // Attaches the Bearer token from the Zustand store to every outgoing request.
 
+function readHeader(headers: unknown, name: string) {
+  const headerBag = headers as
+    | (Record<string, unknown> & { get?: (headerName: string) => unknown })
+    | undefined;
+  const viaGet = headerBag?.get?.(name);
+  if (typeof viaGet === "string" && viaGet.trim()) return viaGet.trim();
+
+  const direct = headerBag?.[name] ?? headerBag?.[name.toLowerCase()];
+  return typeof direct === "string" && direct.trim() ? direct.trim() : "";
+}
+
+function writeHeader(headers: unknown, name: string, value: string) {
+  const headerBag = headers as
+    | (Record<string, unknown> & { set?: (headerName: string, headerValue: string) => void })
+    | undefined;
+  if (headerBag?.set) {
+    headerBag.set(name, value);
+    return;
+  }
+  if (headerBag) {
+    headerBag[name] = value;
+  }
+}
+
 axiosInstance.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
+  const explicitLocale =
+    readHeader(config.headers, "Accept-Language") || readHeader(config.headers, "X-Locale");
+  const pathLocale =
+    typeof window !== "undefined" ? getPathLocale(window.location.pathname) ?? defaultLocale : defaultLocale;
+  const locale = isLocale(explicitLocale) ? explicitLocale : pathLocale;
+
+  writeHeader(config.headers, "Accept-Language", locale);
+  writeHeader(config.headers, "X-Locale", locale);
+
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    writeHeader(config.headers, "Authorization", `Bearer ${token}`);
   }
   return config;
 });

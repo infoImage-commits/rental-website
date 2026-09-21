@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  useBlogById,
+  useBlogTranslations,
   useCreateBlogSection,
   useDeleteBlogSection,
   useUpdateBlog,
@@ -13,10 +13,18 @@ import {
 import type { BlogSection } from "@/lib/types/blog";
 import { resolveApiImageUrl } from "@/lib/utils/imageUrl";
 import ConfirmModal from "./ConfirmModal";
+import TranslationFields from "@/components/admin/TranslationFields";
+import {
+  emptyTranslation,
+  hasRequiredBaseTranslation,
+  trimTranslation,
+  type TranslationInput,
+} from "@/lib/i18n/adminTranslations";
 
 function SectionFormPanel({
   blogId,
   section,
+  translations,
   isOpen,
   nextDisplayOrder,
   onClose,
@@ -24,6 +32,7 @@ function SectionFormPanel({
 }: {
   blogId: string;
   section: BlogSection | null;
+  translations?: { title: TranslationInput; content: TranslationInput };
   isOpen: boolean;
   nextDisplayOrder: number;
   onClose: () => void;
@@ -33,8 +42,8 @@ function SectionFormPanel({
   const { mutate: createSection, isPending: isCreating } = useCreateBlogSection();
   const { mutate: updateSection, isPending: isUpdating } = useUpdateBlogSection();
 
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState<TranslationInput>(emptyTranslation());
+  const [content, setContent] = useState<TranslationInput>(emptyTranslation());
   const [displayOrder, setDisplayOrder] = useState<number>(1);
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -42,13 +51,13 @@ function SectionFormPanel({
 
   useEffect(() => {
     if (isOpen) {
-      setTitle(section?.title ?? "");
-      setContent(section?.content ?? "");
+      setTitle(translations?.title ?? emptyTranslation());
+      setContent(translations?.content ?? emptyTranslation());
       setDisplayOrder(section?.displayOrder ?? nextDisplayOrder);
       setImage(null);
       setRemoveImage(false);
     }
-  }, [isOpen, nextDisplayOrder, section]);
+  }, [isOpen, nextDisplayOrder, section, translations]);
 
   useEffect(() => {
     if (!image) {
@@ -65,15 +74,15 @@ function SectionFormPanel({
 
   const isSaving = isCreating || isUpdating;
   const existingImageUrl = !removeImage ? resolveApiImageUrl(section?.imageUrl) : "";
-  const isValid = title.trim().length > 0 && content.trim().length > 0;
+  const isValid = hasRequiredBaseTranslation(title) && hasRequiredBaseTranslation(content);
 
   function handleSave(event: React.FormEvent) {
     event.preventDefault();
     if (!isValid) return;
 
     const payload = {
-      title: title.trim(),
-      content: content.trim(),
+      title: trimTranslation(title),
+      content: trimTranslation(content),
       image,
       removeImage,
       displayOrder,
@@ -114,31 +123,23 @@ function SectionFormPanel({
         </div>
 
         <form onSubmit={handleSave} className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          <TranslationFields
+            label="Title"
+            value={title}
+            onChange={setTitle}
+            required
+            disabled={isSaving}
+          />
 
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Content <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              required
-              rows={7}
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              className="w-full resize-y rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] leading-6 outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          <TranslationFields
+            label="Content"
+            value={content}
+            onChange={setContent}
+            required
+            textarea
+            rows={7}
+            disabled={isSaving}
+          />
 
           <div>
             <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Display Order</label>
@@ -239,13 +240,18 @@ function SectionFormPanel({
 
 export default function BlogEditContent({ id }: { id: string }) {
   const router = useRouter();
-  const { data: blog, isLoading, isError } = useBlogById(id, false);
+  const {
+    data: blogTranslations,
+    isLoading,
+    isError,
+  } = useBlogTranslations(id, true);
+  const blog = blogTranslations?.blog;
   const { mutate: updateBlog, isPending: isUpdatingBlog } = useUpdateBlog();
   const { mutate: deleteSection } = useDeleteBlogSection();
 
-  const [title, setTitle] = useState("");
-  const [summary, setSummary] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState<TranslationInput>(emptyTranslation());
+  const [summary, setSummary] = useState<TranslationInput>(emptyTranslation());
+  const [content, setContent] = useState<TranslationInput>(emptyTranslation());
   const [featuredImage, setFeaturedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [removeFeaturedImage, setRemoveFeaturedImage] = useState(false);
@@ -260,15 +266,15 @@ export default function BlogEditContent({ id }: { id: string }) {
   useEffect(() => {
     if (!blog) return;
     if (initializedBlogId === blog.id) return;
-    setTitle(blog.title);
-    setSummary(blog.summary ?? "");
-    setContent(blog.content ?? "");
+    setTitle(blogTranslations.title);
+    setSummary(blogTranslations.summary);
+    setContent(blogTranslations.content);
     setIsPublished(blog.isPublished);
     setDisplayOrder(blog.displayOrder);
     setFeaturedImage(null);
     setRemoveFeaturedImage(false);
     setInitializedBlogId(blog.id);
-  }, [blog, initializedBlogId]);
+  }, [blog, blogTranslations, initializedBlogId]);
 
   useEffect(() => {
     if (!featuredImage) {
@@ -287,7 +293,7 @@ export default function BlogEditContent({ id }: { id: string }) {
   const nextSectionOrder = sections.reduce((max, section) => Math.max(max, section.displayOrder), 0) + 1;
 
   const currentFeaturedUrl = !removeFeaturedImage ? resolveApiImageUrl(blog?.featuredImageUrl) : "";
-  const isBlogValid = title.trim().length > 0;
+  const isBlogValid = Boolean(blogTranslations) && hasRequiredBaseTranslation(title);
 
   function handleSaveBlog(event: React.FormEvent) {
     event.preventDefault();
@@ -297,9 +303,9 @@ export default function BlogEditContent({ id }: { id: string }) {
       {
         id,
         payload: {
-          title: title.trim(),
-          summary: summary.trim() || undefined,
-          content: content.trim() || undefined,
+          title: trimTranslation(title),
+          summary: trimTranslation(summary),
+          content: trimTranslation(content),
           featuredImage,
           removeFeaturedImage,
           isPublished,
@@ -390,38 +396,31 @@ export default function BlogEditContent({ id }: { id: string }) {
         className="rounded-2xl border border-[#dfe8e4] bg-white p-6 shadow-[0_8px_24px_rgba(31,77,61,0.05)] sm:p-8"
       >
         <div className="grid gap-6">
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="w-full rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          <TranslationFields
+            label="Title"
+            value={title}
+            onChange={setTitle}
+            required
+            disabled={isUpdatingBlog}
+          />
 
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Summary</label>
-            <textarea
-              rows={3}
-              value={summary}
-              onChange={(event) => setSummary(event.target.value)}
-              className="w-full resize-y rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          <TranslationFields
+            label="Summary"
+            value={summary}
+            onChange={setSummary}
+            textarea
+            rows={3}
+            disabled={isUpdatingBlog}
+          />
 
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#183c2f]">Main Content</label>
-            <textarea
-              rows={9}
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              className="w-full resize-y rounded-xl border border-[#dfe8e4] px-4 py-2.5 text-[14px] leading-6 outline-none transition focus:border-[#2e6f57] focus:ring-1 focus:ring-[#2e6f57]"
-            />
-          </div>
+          <TranslationFields
+            label="Main Content"
+            value={content}
+            onChange={setContent}
+            textarea
+            rows={9}
+            disabled={isUpdatingBlog}
+          />
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
             <div>
@@ -602,6 +601,11 @@ export default function BlogEditContent({ id }: { id: string }) {
       <SectionFormPanel
         blogId={id}
         section={editingSection}
+        translations={
+          editingSection
+            ? blogTranslations?.sectionTranslations.get(editingSection.id)
+            : undefined
+        }
         isOpen={isSectionPanelOpen}
         nextDisplayOrder={nextSectionOrder}
         onClose={() => setIsSectionPanelOpen(false)}
